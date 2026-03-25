@@ -1,0 +1,637 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum UserRole {
+  SUPER_ADMIN
+  DIRIGEANT
+  ASSOCIE
+  MANAGER
+  AGENT
+  ASSISTANT
+}
+
+enum PropertyType {
+  BOUTIQUE
+  BUREAU
+  LOCAL_COMMERCIAL
+  LOCAL_ACTIVITE
+  RESTAURANT
+  HOTEL
+  ENTREPOT
+  PARKING
+  TERRAIN
+  IMMEUBLE
+  AUTRE
+}
+
+enum PropertyStatus {
+  BROUILLON
+  ACTIF
+  EN_NEGOCIATION
+  SOUS_COMPROMIS
+  VENDU
+  LOUE
+  RETIRE
+  ARCHIVE
+}
+
+enum TransactionType {
+  VENTE
+  LOCATION
+  CESSION_BAIL
+  SOUS_LOCATION
+}
+
+enum PropertyConfidentiality {
+  PUBLIC
+  RESTREINT
+  CONFIDENTIEL
+}
+
+enum SearchRequestStatus {
+  NOUVELLE
+  QUALIFIEE
+  EN_COURS
+  EN_PAUSE
+  SATISFAITE
+  ABANDONNEE
+  ARCHIVEE
+}
+
+enum ContactType {
+  PROPRIETAIRE
+  LOCATAIRE
+  ACQUEREUR
+  BAILLEUR
+  APPORTEUR
+  ENSEIGNE
+  MANDATAIRE
+  NOTAIRE
+  ARCHITECTE
+  AUTRE
+}
+
+enum ContactSource {
+  SITE_WEB
+  TELEPHONE
+  EMAIL
+  RECOMMANDATION
+  PROSPECTION
+  RESEAU
+  ANNONCE
+  AUTRE
+}
+
+enum DealStage {
+  PROSPECT
+  DECOUVERTE
+  VISITE
+  NEGOCIATION
+  OFFRE
+  COMPROMIS
+  ACTE
+  CLOTURE
+  PERDU
+}
+
+enum DealStatus {
+  OUVERT
+  EN_COURS
+  GAGNE
+  PERDU
+  ANNULE
+}
+
+enum TaskPriority {
+  BASSE
+  NORMALE
+  HAUTE
+  URGENTE
+}
+
+enum TaskStatus {
+  A_FAIRE
+  EN_COURS
+  TERMINEE
+  ANNULEE
+}
+
+enum InteractionType {
+  APPEL_ENTRANT
+  APPEL_SORTANT
+  EMAIL_ENTRANT
+  EMAIL_SORTANT
+  VISITE
+  REUNION
+  NOTE
+  SMS
+  COURRIER
+  AUTRE
+}
+
+enum FieldSpottingStatus {
+  REPERE
+  A_QUALIFIER
+  QUALIFIE
+  CONVERTI
+  REJETE
+}
+
+enum MatchStatus {
+  SUGGERE
+  VALIDE
+  REJETE
+  EN_VISITE
+  RETENU
+}
+
+enum MediaType {
+  PHOTO
+  PLAN
+  VIDEO
+  DOCUMENT
+  AUTRE
+}
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model Agency {
+  id          String   @id @default(cuid())
+  name        String
+  legalName   String?
+  siret       String?
+  address     String?
+  city        String?  @default("Paris")
+  zipCode     String?
+  phone       String?
+  email       String?
+  website     String?
+  logo        String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teams Team[]
+  users User[]
+
+  @@map("agencies")
+}
+
+model Team {
+  id        String   @id @default(cuid())
+  name      String
+  agencyId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  agency Agency @relation(fields: [agencyId], references: [id])
+  users  User[]
+
+  @@map("teams")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?
+  avatar       String?
+  role         UserRole @default(AGENT)
+  isActive     Boolean  @default(true)
+  agencyId     String
+  teamId       String?
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  agency      Agency     @relation(fields: [agencyId], references: [id])
+  team        Team?      @relation(fields: [teamId], references: [id])
+
+  properties     Property[]
+  searchRequests SearchRequest[]
+  deals          Deal[]
+  tasks          Task[]
+  interactions   Interaction[]
+  fieldSpottings FieldSpotting[]
+  auditLogs      AuditLog[]
+  assignedTasks  Task[]          @relation("TaskAssignee")
+
+  @@map("users")
+}
+
+model Contact {
+  id         String        @id @default(cuid())
+  firstName  String
+  lastName   String
+  email      String?
+  phone      String?
+  mobile     String?
+  type       ContactType   @default(AUTRE)
+  source     ContactSource @default(AUTRE)
+  company    String?
+  position   String?
+  address    String?
+  city       String?
+  zipCode    String?
+  notes      String?
+  isActive   Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  organizations      OrganizationContact[]
+  searchRequests     SearchRequest[]
+  deals              Deal[]
+  tasks              Task[]
+  interactions       Interaction[]
+  propertiesAsOwner  Property[]           @relation("PropertyOwner")
+
+  @@map("contacts")
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  siret     String?
+  type      String?
+  address   String?
+  city      String?
+  zipCode   String?
+  phone     String?
+  email     String?
+  website   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts OrganizationContact[]
+
+  @@map("organizations")
+}
+
+model OrganizationContact {
+  id             String   @id @default(cuid())
+  organizationId String
+  contactId      String
+  role           String?
+  isPrimary      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact      Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, contactId])
+  @@map("organization_contacts")
+}
+
+model Property {
+  id                String                  @id @default(cuid())
+  reference         String                  @unique
+  title             String
+  description       String?
+  type              PropertyType
+  transactionType   TransactionType
+  status            PropertyStatus          @default(BROUILLON)
+  confidentiality   PropertyConfidentiality @default(PUBLIC)
+
+  // Address
+  address           String?
+  city              String                  @default("Paris")
+  zipCode           String?
+  district          String?
+  quarter           String?
+
+  // Geo
+  latitude          Float?
+  longitude         Float?
+
+  // Characteristics
+  surfaceMin        Float?
+  surfaceMax        Float?
+  surfaceTotal      Float?
+  floor             Int?
+  totalFloors       Int?
+  facadeLength      Float?
+  ceilingHeight     Float?
+  hasExtraction     Boolean                 @default(false)
+  hasTerrace        Boolean                 @default(false)
+  hasParking        Boolean                 @default(false)
+  hasLoadingDock    Boolean                 @default(false)
+
+  // Financial
+  price             Float?
+  rentMonthly       Float?
+  rentYearly        Float?
+  charges           Float?
+  deposit           Float?
+  fees              Float?
+  pricePerSqm       Float?
+
+  // Visibility
+  isPublished       Boolean                 @default(false)
+  publishedAt       DateTime?
+  isFeatured        Boolean                 @default(false)
+
+  // Relations
+  ownerId           String?
+  assignedToId      String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  owner       Contact?        @relation("PropertyOwner", fields: [ownerId], references: [id])
+  assignedTo  User?           @relation(fields: [assignedToId], references: [id])
+  media       PropertyMedia[]
+  listings    Listing[]
+  deals       Deal[]
+  matches     Match[]
+  tasks       Task[]
+  interactions Interaction[]
+  documents   Document[]
+  statusHistory StatusHistory[]
+
+  @@map("properties")
+}
+
+model PropertyMedia {
+  id          String    @id @default(cuid())
+  propertyId  String
+  url         String
+  type        MediaType @default(PHOTO)
+  title       String?
+  description String?
+  sortOrder   Int       @default(0)
+  isPrimary   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_media")
+}
+
+model Listing {
+  id          String   @id @default(cuid())
+  propertyId  String
+  platform    String
+  externalId  String?
+  url         String?
+  isActive    Boolean  @default(true)
+  publishedAt DateTime @default(now())
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("listings")
+}
+
+model SearchRequest {
+  id            String              @id @default(cuid())
+  reference     String              @unique
+  status        SearchRequestStatus @default(NOUVELLE)
+  source        ContactSource       @default(SITE_WEB)
+
+  // Contact
+  contactId     String?
+  assignedToId  String?
+
+  // Criteria
+  propertyTypes PropertyType[]
+  transactionType TransactionType?
+  budgetMin     Float?
+  budgetMax     Float?
+  surfaceMin    Float?
+  surfaceMax    Float?
+  districts     String[]
+  quarters      String[]
+  cities        String[]            @default(["Paris"])
+
+  // Requirements
+  needsExtraction  Boolean?
+  needsTerrace     Boolean?
+  needsParking     Boolean?
+  needsLoadingDock Boolean?
+  floorPreference  String?
+
+  // Details
+  activity       String?
+  description    String?
+  urgency        String?
+  notes          String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contact    Contact? @relation(fields: [contactId], references: [id])
+  assignedTo User?    @relation(fields: [assignedToId], references: [id])
+  matches    Match[]
+  deals      Deal[]
+  tasks      Task[]
+  interactions Interaction[]
+
+  @@map("search_requests")
+}
+
+model FieldSpotting {
+  id           String              @id @default(cuid())
+  address      String
+  city         String              @default("Paris")
+  zipCode      String?
+  district     String?
+  latitude     Float?
+  longitude    Float?
+  photoUrl     String?
+  notes        String?
+  status       FieldSpottingStatus @default(REPERE)
+  propertyType PropertyType?
+  surface      Float?
+  assignedToId String?
+  convertedPropertyId String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  assignedTo User? @relation(fields: [assignedToId], references: [id])
+
+  @@map("field_spottings")
+}
+
+model Deal {
+  id              String     @id @default(cuid())
+  reference       String     @unique
+  title           String
+  stage           DealStage  @default(PROSPECT)
+  status          DealStatus @default(OUVERT)
+
+  // Links
+  propertyId      String?
+  contactId       String?
+  searchRequestId String?
+  assignedToId    String?
+
+  // Financial
+  estimatedValue  Float?
+  finalValue      Float?
+  commission      Float?
+
+  // Details
+  description     String?
+  notes           String?
+  expectedCloseAt DateTime?
+  closedAt        DateTime?
+  lostReason      String?
+
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  property      Property?      @relation(fields: [propertyId], references: [id])
+  contact       Contact?       @relation(fields: [contactId], references: [id])
+  searchRequest SearchRequest? @relation(fields: [searchRequestId], references: [id])
+  assignedTo    User?          @relation(fields: [assignedToId], references: [id])
+  tasks         Task[]
+  interactions  Interaction[]
+  documents     Document[]
+  statusHistory StatusHistory[]
+
+  @@map("deals")
+}
+
+model Task {
+  id              String       @id @default(cuid())
+  title           String
+  description     String?
+  priority        TaskPriority @default(NORMALE)
+  status          TaskStatus   @default(A_FAIRE)
+  dueDate         DateTime?
+  completedAt     DateTime?
+
+  // Relations
+  createdById     String?
+  assignedToId    String?
+  contactId       String?
+  propertyId      String?
+  searchRequestId String?
+  dealId          String?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  createdBy     User?          @relation(fields: [createdById], references: [id])
+  assignedTo    User?          @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  contact       Contact?       @relation(fields: [contactId], references: [id])
+  property      Property?      @relation(fields: [propertyId], references: [id])
+  searchRequest SearchRequest? @relation(fields: [searchRequestId], references: [id])
+  deal          Deal?          @relation(fields: [dealId], references: [id])
+
+  @@map("tasks")
+}
+
+model Interaction {
+  id              String          @id @default(cuid())
+  type            InteractionType
+  subject         String?
+  content         String?
+  date            DateTime        @default(now())
+
+  // Relations
+  userId          String?
+  contactId       String?
+  propertyId      String?
+  searchRequestId String?
+  dealId          String?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user          User?           @relation(fields: [userId], references: [id])
+  contact       Contact?        @relation(fields: [contactId], references: [id])
+  property      Property?       @relation(fields: [propertyId], references: [id])
+  searchRequest SearchRequest?  @relation(fields: [searchRequestId], references: [id])
+  deal          Deal?           @relation(fields: [dealId], references: [id])
+
+  @@map("interactions")
+}
+
+model Match {
+  id              String      @id @default(cuid())
+  propertyId      String
+  searchRequestId String
+  score           Int         @default(0)
+  status          MatchStatus @default(SUGGERE)
+  reasons         String[]
+  rejectedReason  String?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  property      Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  searchRequest SearchRequest @relation(fields: [searchRequestId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, searchRequestId])
+  @@map("matches")
+}
+
+model Document {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  mimeType    String?
+  size        Int?
+  propertyId  String?
+  dealId      String?
+  createdAt   DateTime @default(now())
+
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  deal     Deal?     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([entity, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model StatusHistory {
+  id         String   @id @default(cuid())
+  entity     String
+  entityId   String
+  fromStatus String?
+  toStatus   String
+  changedBy  String?
+  notes      String?
+  propertyId String?
+  dealId     String?
+  createdAt  DateTime @default(now())
+
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  deal     Deal?     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+
+  @@index([entity, entityId])
+  @@map("status_history")
+}
