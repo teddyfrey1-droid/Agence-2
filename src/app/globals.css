@@ -1,0 +1,46 @@
+@import "mapbox-gl/dist/mapbox-gl.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-brand-50 text-anthracite-900 font-sans;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto max-w-7xl px-6;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24;
+  }
+
+  .heading-display {
+    @apply font-serif text-3xl font-semibold tracking-tight text-anthracite-900 md:text-4xl lg:text-5xl;
+  }
+
+  .heading-section {
+    @apply font-serif text-2xl font-semibold tracking-tight text-anthracite-900 md:text-3xl;
+  }
+
+  .heading-card {
+    @apply text-lg font-semibold text-anthracite-900;
+  }
+
+  .text-body {
+    @apply text-base leading-relaxed text-anthracite-600;
+  }
+
+  .text-caption {
+    @apply text-sm text-stone-500;
+  }
+}
