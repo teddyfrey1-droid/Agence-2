@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
+import { Logo } from "@/components/ui/logo";
 
 export function PublicFooter() {
   return (
@@ -8,14 +9,7 @@ export function PublicFooter() {
         <div className="grid gap-12 md:grid-cols-4">
           {/* Brand */}
           <div className="md:col-span-1">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-champagne-500/20">
-                <span className="text-lg font-bold text-champagne-300">A</span>
-              </div>
-              <p className="font-serif text-lg font-semibold text-white">
-                {APP_NAME}
-              </p>
-            </div>
+            <Logo size="md" variant="light" />
             <p className="mt-4 text-sm leading-relaxed text-stone-400">
               Votre partenaire en immobilier commercial et professionnel à Paris.
               Expertise, conseil et accompagnement sur-mesure.

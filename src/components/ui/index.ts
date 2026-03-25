@@ -6,3 +6,4 @@ export { Badge, getStatusBadgeVariant } from "./badge";
 export { Card, CardHeader, CardContent, CardFooter } from "./card";
 export { StatCard } from "./stat-card";
 export { EmptyState } from "./empty-state";
+export { Logo, LogoMark } from "./logo";
