@@ -29,7 +29,7 @@ export async function createUser(data: {
   firstName: string;
   lastName: string;
   role?: string;
-  agencyId: string;
+  agencyId?: string;
   teamId?: string;
   phone?: string;
 }) {
@@ -41,9 +41,9 @@ export async function createUser(data: {
       passwordHash,
       firstName: data.firstName,
       lastName: data.lastName,
-      role: (data.role as "SUPER_ADMIN" | "DIRIGEANT" | "ASSOCIE" | "MANAGER" | "AGENT" | "ASSISTANT") || "AGENT",
+      role: (data.role as "SUPER_ADMIN" | "DIRIGEANT" | "ASSOCIE" | "MANAGER" | "AGENT" | "ASSISTANT" | "CLIENT") || "AGENT",
       phone: data.phone,
-      agency: { connect: { id: data.agencyId } },
+      ...(data.agencyId ? { agency: { connect: { id: data.agencyId } } } : {}),
       ...(data.teamId ? { team: { connect: { id: data.teamId } } } : {}),
     },
   });

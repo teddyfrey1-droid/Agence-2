@@ -74,6 +74,7 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   MANAGER: 70,
   AGENT: 50,
   ASSISTANT: 30,
+  CLIENT: 10,
 };
 
 export function hasMinimumRole(

@@ -18,6 +18,7 @@ enum UserRole {
   MANAGER
   AGENT
   ASSISTANT
+  CLIENT
 }
 
 enum PropertyType {
@@ -212,13 +213,13 @@ model User {
   avatar       String?
   role         UserRole @default(AGENT)
   isActive     Boolean  @default(true)
-  agencyId     String
+  agencyId     String?
   teamId       String?
   lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  agency      Agency     @relation(fields: [agencyId], references: [id])
+  agency      Agency?    @relation(fields: [agencyId], references: [id])
   team        Team?      @relation(fields: [teamId], references: [id])
 
   properties     Property[]
@@ -229,6 +230,7 @@ model User {
   fieldSpottings FieldSpotting[]
   auditLogs      AuditLog[]
   assignedTasks  Task[]          @relation("TaskAssignee")
+  activities     UserActivity[]
 
   @@map("users")
 }
@@ -634,4 +636,23 @@ model StatusHistory {
 
   @@index([entity, entityId])
   @@map("status_history")
+}
+
+model UserActivity {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String   // LOGIN, LOGOUT, PAGE_VIEW, ACTION
+  path       String?  // page path for PAGE_VIEW
+  details    String?  // additional context
+  ipAddress  String?
+  userAgent  String?
+  duration   Int?     // session duration in seconds
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+  @@map("user_activities")
 }

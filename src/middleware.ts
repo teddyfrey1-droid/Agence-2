@@ -13,11 +13,13 @@ const publicPaths = [
   "/recherche-local",
   "/proposer-bien",
   "/login",
+  "/inscription",
 ];
 
 const publicApiPaths = [
   "/api/auth/login",
   "/api/auth/logout",
+  "/api/auth/register",
   "/api/contacts/public",
   "/api/search-requests/public",
   "/api/properties/public",

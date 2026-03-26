@@ -131,4 +131,5 @@ export const USER_ROLE_LABELS: Record<string, string> = {
   MANAGER: "Manager",
   AGENT: "Agent",
   ASSISTANT: "Assistant",
+  CLIENT: "Client",
 };

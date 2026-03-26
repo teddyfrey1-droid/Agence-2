@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { findUserByEmail, verifyPassword, updateUserLastLogin } from "@/modules/users";
 import { createSessionToken, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -42,12 +43,22 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       email: user.email,
       role: user.role,
-      agencyId: user.agencyId,
+      agencyId: user.agencyId || "",
       firstName: user.firstName,
       lastName: user.lastName,
     });
 
     await updateUserLastLogin(user.id);
+
+    // Track login activity
+    await prisma.userActivity.create({
+      data: {
+        userId: user.id,
+        type: "LOGIN",
+        ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip"),
+        userAgent: request.headers.get("user-agent"),
+      },
+    });
 
     // Set the session cookie on the response
     const response = NextResponse.json({ success: true });

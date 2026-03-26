@@ -91,8 +91,11 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-xs text-stone-400">
-          Accès réservé aux collaborateurs de l&apos;agence.
+        <p className="mt-6 text-center text-sm text-stone-500">
+          Pas encore de compte ?{" "}
+          <a href="/inscription" className="font-medium text-brand-600 hover:text-brand-700">
+            Créer un compte client
+          </a>
         </p>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { USER_ROLE_LABELS } from "@/lib/constants";
+import { ActivityTracker } from "@/components/activity-tracker";
 
 export default async function DashboardLayout({
   children,
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
             role: USER_ROLE_LABELS[session.role] || session.role,
           }}
         />
+        <ActivityTracker />
         <main className="p-6">{children}</main>
       </div>
     </div>
