@@ -336,6 +336,10 @@ export default function NouveauBienPage() {
   const [district, setDistrict] = useState("");
   const [city, setCity] = useState("Paris");
 
+  // Photos
+  const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Feature toggles
   const [hasExtraction, setHasExtraction] = useState(false);
   const [hasTerrace, setHasTerrace] = useState(false);
@@ -374,6 +378,44 @@ export default function NouveauBienPage() {
     }
   }, []);
 
+  // Photo handlers
+  const handlePhotoAdd = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const newPhotos = Array.from(files).map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setPhotos((prev) => [...prev, ...newPhotos]);
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+  }, []);
+
+  const handlePhotoRemove = useCallback((index: number) => {
+    setPhotos((prev) => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  }, []);
+
+  const handlePhotoDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handlePhotoDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const files = e.dataTransfer.files;
+    if (!files) return;
+    const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    const newPhotos = imageFiles.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    setPhotos((prev) => [...prev, ...newPhotos]);
+  }, []);
+
   const isLocation = transactionType === "LOCATION" || transactionType === "FOND_DE_COMMERCE";
   const isVente = transactionType === "VENTE" || transactionType === "CESSION_BAIL";
 
@@ -398,8 +440,6 @@ export default function NouveauBienPage() {
         district: district || undefined,
         quarter: formData.get("quarter") || undefined,
         surfaceTotal: formData.get("surfaceTotal") ? Number(formData.get("surfaceTotal")) : undefined,
-        surfaceMin: formData.get("surfaceMin") ? Number(formData.get("surfaceMin")) : undefined,
-        surfaceMax: formData.get("surfaceMax") ? Number(formData.get("surfaceMax")) : undefined,
         floor: formData.get("floor") ? Number(formData.get("floor")) : undefined,
         totalFloors: formData.get("totalFloors") ? Number(formData.get("totalFloors")) : undefined,
         facadeLength: formData.get("facadeLength") ? Number(formData.get("facadeLength")) : undefined,
@@ -547,6 +587,84 @@ export default function NouveauBienPage() {
           </CardContent>
         </Card>
 
+        {/* ── PHOTOS ── */}
+        <Card>
+          <CardHeader>
+            <h2 className="heading-card">Photos du bien</h2>
+          </CardHeader>
+          <CardContent>
+            <div
+              onDragOver={handlePhotoDragOver}
+              onDrop={handlePhotoDrop}
+              className="space-y-4"
+            >
+              {/* Upload zone */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full flex-col items-center gap-3 rounded-xl border-2 border-dashed border-stone-300 bg-stone-50/50 px-6 py-8 text-center transition-colors hover:border-brand-400 hover:bg-brand-50/30"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600">
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21zM8.25 8.625a1.125 1.125 0 100-2.25 1.125 1.125 0 000 2.25z" />
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-anthracite-700">
+                    Cliquez ou glissez-déposez vos photos
+                  </span>
+                  <span className="block text-xs text-stone-500 mt-1">
+                    JPG, PNG, WebP — Plusieurs fichiers acceptés
+                  </span>
+                </div>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePhotoAdd}
+                className="hidden"
+              />
+
+              {/* Photo previews */}
+              {photos.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+                  {photos.map((photo, index) => (
+                    <div key={index} className="group relative aspect-square overflow-hidden rounded-xl border border-stone-200">
+                      <img
+                        src={photo.preview}
+                        alt={`Photo ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                      {index === 0 && (
+                        <span className="absolute left-1.5 top-1.5 rounded bg-brand-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                          Principale
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handlePhotoRemove(index)}
+                        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {photos.length > 0 && (
+                <p className="text-xs text-stone-500">
+                  {photos.length} photo{photos.length > 1 ? "s" : ""} — La première sera la photo principale de l&apos;annonce.
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* ── LOCALISATION ── */}
         <Card>
           <CardHeader>
@@ -595,10 +713,8 @@ export default function NouveauBienPage() {
             <h2 className="heading-card">Surfaces & caractéristiques</h2>
           </CardHeader>
           <CardContent className="space-y-5">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Input id="surfaceTotal" name="surfaceTotal" type="number" label="Surface totale (m²)" min={0} placeholder="45" />
-              <Input id="surfaceMin" name="surfaceMin" type="number" label="Surface min (m²)" min={0} placeholder="Optionnel" />
-              <Input id="surfaceMax" name="surfaceMax" type="number" label="Surface max (m²)" min={0} placeholder="Optionnel" />
+            <div className="grid gap-4 sm:grid-cols-4">
+              <Input id="surfaceTotal" name="surfaceTotal" type="number" label="Surface (m²)" min={0} placeholder="45" />
             </div>
             <div className="grid gap-4 sm:grid-cols-4">
               <Input id="floor" name="floor" type="number" label="Étage" placeholder="0 = RDC" />
