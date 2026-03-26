@@ -6,7 +6,7 @@ export const createPropertySchema = z.object({
     "BOUTIQUE", "BUREAU", "LOCAL_COMMERCIAL", "LOCAL_ACTIVITE",
     "RESTAURANT", "HOTEL", "ENTREPOT", "PARKING", "TERRAIN", "IMMEUBLE", "AUTRE",
   ]),
-  transactionType: z.enum(["VENTE", "LOCATION", "CESSION_BAIL", "SOUS_LOCATION"]),
+  transactionType: z.enum(["VENTE", "LOCATION", "CESSION_BAIL", "FOND_DE_COMMERCE"]),
   status: z.enum([
     "BROUILLON", "ACTIF", "EN_NEGOCIATION", "SOUS_COMPROMIS",
     "VENDU", "LOUE", "RETIRE", "ARCHIVE",

@@ -10,8 +10,8 @@ export function Card({ children, className, hover = false }: CardProps) {
   return (
     <div
       className={cn(
-        "rounded-premium border border-stone-200 bg-white shadow-card",
-        hover && "transition-shadow hover:shadow-card-hover",
+        "rounded-xl border border-stone-200/80 bg-white shadow-card",
+        hover && "transition-all hover:shadow-card-hover hover:-translate-y-0.5",
         className
       )}
     >
@@ -28,7 +28,7 @@ export function CardHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("border-b border-stone-100 px-6 py-4", className)}>
+    <div className={cn("border-b border-stone-100 px-4 py-3 sm:px-6 sm:py-4", className)}>
       {children}
     </div>
   );
@@ -41,7 +41,7 @@ export function CardContent({
   children: React.ReactNode;
   className?: string;
 }) {
-  return <div className={cn("px-6 py-4", className)}>{children}</div>;
+  return <div className={cn("px-4 py-3 sm:px-6 sm:py-4", className)}>{children}</div>;
 }
 
 export function CardFooter({
@@ -54,7 +54,7 @@ export function CardFooter({
   return (
     <div
       className={cn(
-        "border-t border-stone-100 px-6 py-3 bg-stone-50/50",
+        "border-t border-stone-100 px-4 py-3 bg-stone-50/50 sm:px-6",
         className
       )}
     >

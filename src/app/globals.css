@@ -8,20 +8,27 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-brand-50 text-anthracite-900 font-sans;
   }
+
+  /* Smooth selection */
+  ::selection {
+    @apply bg-brand-200 text-anthracite-900;
+  }
 }
 
 @layer components {
   .container-page {
-    @apply mx-auto max-w-7xl px-6;
+    @apply mx-auto max-w-7xl px-4 sm:px-6;
   }
 
   .section-padding {
-    @apply py-16 md:py-24;
+    @apply py-12 sm:py-16 md:py-24;
   }
 
   .heading-display {
@@ -33,7 +40,7 @@
   }
 
   .heading-card {
-    @apply text-lg font-semibold text-anthracite-900;
+    @apply text-base font-semibold text-anthracite-900 sm:text-lg;
   }
 
   .text-body {
@@ -41,6 +48,29 @@
   }
 
   .text-caption {
-    @apply text-sm text-stone-500;
+    @apply text-xs font-medium uppercase tracking-wider text-stone-400 sm:text-sm sm:normal-case sm:tracking-normal sm:font-normal sm:text-stone-500;
+  }
+
+  /* Premium gradient backgrounds */
+  .bg-gradient-premium {
+    background: linear-gradient(135deg, #faf8f5 0%, #f3efe8 50%, #e8e0d3 100%);
+  }
+
+  .bg-gradient-dark {
+    background: linear-gradient(135deg, #1e1f27 0%, #333541 100%);
+  }
+
+  /* Glass effect for sticky headers */
+  .glass {
+    @apply bg-white/80 backdrop-blur-lg;
+  }
+
+  /* Score ring animation */
+  @keyframes score-fill {
+    from { stroke-dashoffset: 283; }
+  }
+
+  .score-ring {
+    animation: score-fill 1s ease-out forwards;
   }
 }
