@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { findUserByEmail, verifyPassword, updateUserLastLogin } from "@/modules/users";
-import { createSession } from "@/lib/auth";
+import { createSessionToken, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await createSession({
+    const token = await createSessionToken({
       userId: user.id,
       email: user.email,
       role: user.role,
@@ -49,7 +49,17 @@ export async function POST(request: NextRequest) {
 
     await updateUserLastLogin(user.id);
 
-    return NextResponse.json({ success: true });
+    // Set the session cookie on the response
+    const response = NextResponse.json({ success: true });
+    response.cookies.set(SESSION_COOKIE_OPTIONS.name, token, {
+      httpOnly: SESSION_COOKIE_OPTIONS.httpOnly,
+      secure: SESSION_COOKIE_OPTIONS.secure,
+      sameSite: SESSION_COOKIE_OPTIONS.sameSite,
+      maxAge: SESSION_COOKIE_OPTIONS.maxAge,
+      path: SESSION_COOKIE_OPTIONS.path,
+    });
+
+    return response;
   } catch {
     return NextResponse.json(
       { error: "Erreur interne" },

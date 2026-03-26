@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { APP_NAME } from "@/lib/constants";
+import { Logo } from "@/components/ui/logo";
 
 const navigation = [
   {
@@ -69,18 +69,8 @@ export function DashboardSidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-stone-200 bg-white">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-stone-100 px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-anthracite-900">
-          <span className="text-base font-bold text-champagne-300">A</span>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-anthracite-900">
-            {APP_NAME}
-          </p>
-          <p className="text-[10px] tracking-wider text-stone-400 uppercase">
-            Back-office
-          </p>
-        </div>
+      <div className="flex h-16 items-center border-b border-stone-100 px-4">
+        <Logo size="sm" />
       </div>
 
       {/* Nav */}

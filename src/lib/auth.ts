@@ -18,24 +18,29 @@ export interface SessionPayload {
   lastName: string;
 }
 
-export async function createSession(payload: SessionPayload): Promise<string> {
-  const token = await new SignJWT(payload as unknown as Record<string, unknown>)
+/**
+ * Create a JWT token for the given payload.
+ * Returns the token string — the caller is responsible for setting the cookie.
+ * Use `setSessionCookie` to apply it on a NextResponse, or `setSessionCookieFromServerAction`
+ * when calling from a Server Action / Server Component.
+ */
+export async function createSessionToken(payload: SessionPayload): Promise<string> {
+  return new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${COOKIE_MAX_AGE}s`)
     .sign(JWT_SECRET);
-
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: COOKIE_MAX_AGE,
-    path: "/",
-  });
-
-  return token;
 }
+
+/** Session cookie options shared between route handlers and server actions. */
+export const SESSION_COOKIE_OPTIONS = {
+  name: COOKIE_NAME,
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  maxAge: COOKIE_MAX_AGE,
+  path: "/",
+};
 
 export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();

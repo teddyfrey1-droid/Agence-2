@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { APP_NAME } from "@/lib/constants";
+import { Logo } from "@/components/ui/logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -45,14 +45,9 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-brand-50 px-4">
       <div className="w-full max-w-md">
-        <div className="text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-anthracite-900">
-            <span className="text-2xl font-bold text-champagne-300">A</span>
-          </div>
-          <h1 className="mt-4 font-serif text-2xl font-semibold text-anthracite-900">
-            {APP_NAME}
-          </h1>
-          <p className="mt-1 text-sm text-stone-500">
+        <div className="flex flex-col items-center">
+          <Logo size="lg" />
+          <p className="mt-3 text-sm text-stone-500">
             Connectez-vous à votre espace
           </p>
         </div>
