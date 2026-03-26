@@ -32,7 +32,8 @@ async function main() {
   });
 
   // Create admin user
-  const passwordHash = await hash("Yolodu91800!", 12);
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+  const passwordHash = await hash(adminPassword, 12);
   await prisma.user.upsert({
     where: { email: "admin@agence-immo.fr" },
     update: { passwordHash },
@@ -48,7 +49,7 @@ async function main() {
   });
 
   // Create sample agent
-  const agentHash = await hash("Yolodu91800!", 12);
+  const agentHash = await hash(adminPassword, 12);
   await prisma.user.upsert({
     where: { email: "agent@agence-immo.fr" },
     update: { passwordHash: agentHash },
