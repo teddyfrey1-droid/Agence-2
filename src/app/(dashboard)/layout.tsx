@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
+import { DashboardSidebar, SidebarProvider } from "@/components/layout/dashboard-sidebar";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { USER_ROLE_LABELS } from "@/lib/constants";
 
@@ -16,18 +16,20 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <DashboardSidebar />
-      <div className="pl-64">
-        <DashboardHeader
-          user={{
-            firstName: session.firstName,
-            lastName: session.lastName,
-            role: USER_ROLE_LABELS[session.role] || session.role,
-          }}
-        />
-        <main className="p-6">{children}</main>
+    <SidebarProvider>
+      <div className="min-h-screen bg-stone-50">
+        <DashboardSidebar />
+        <div className="lg:pl-64">
+          <DashboardHeader
+            user={{
+              firstName: session.firstName,
+              lastName: session.lastName,
+              role: USER_ROLE_LABELS[session.role] || session.role,
+            }}
+          />
+          <main className="p-4 sm:p-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }

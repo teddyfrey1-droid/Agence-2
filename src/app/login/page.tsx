@@ -43,7 +43,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-brand-50 px-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-brand-50 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center">
           <Logo size="lg" />
@@ -52,7 +52,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div className="mt-8 rounded-premium border border-stone-200 bg-white p-8 shadow-premium">
+        <div className="mt-6 rounded-premium border border-stone-200 bg-white p-6 shadow-premium sm:mt-8 sm:p-8">
           {error && (
             <div className="mb-6 rounded-premium border border-red-200 bg-red-50 p-3 text-sm text-red-700">
               {error}
