@@ -49,7 +49,7 @@ enum TransactionType {
   VENTE
   LOCATION
   CESSION_BAIL
-  SOUS_LOCATION
+  FOND_DE_COMMERCE
 }
 
 enum PropertyConfidentiality {

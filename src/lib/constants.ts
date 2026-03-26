@@ -45,10 +45,10 @@ export const PROPERTY_TYPE_LABELS: Record<string, string> = {
 };
 
 export const TRANSACTION_TYPE_LABELS: Record<string, string> = {
-  VENTE: "Vente",
-  LOCATION: "Location",
+  VENTE: "Vente murs commerciaux",
+  LOCATION: "Location pure",
   CESSION_BAIL: "Cession de bail",
-  SOUS_LOCATION: "Sous-location",
+  FOND_DE_COMMERCE: "Fond de commerce",
 };
 
 export const PROPERTY_STATUS_LABELS: Record<string, string> = {
