@@ -50,15 +50,15 @@ export async function POST(request: NextRequest) {
 
     await updateUserLastLogin(user.id);
 
-    // Track login activity
-    await prisma.userActivity.create({
+    // Track login activity (non-blocking, don't fail login if tracking fails)
+    prisma.userActivity.create({
       data: {
         userId: user.id,
         type: "LOGIN",
         ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip"),
         userAgent: request.headers.get("user-agent"),
       },
-    });
+    }).catch(() => {});
 
     // Set the session cookie on the response
     const response = NextResponse.json({ success: true, role: user.role });
