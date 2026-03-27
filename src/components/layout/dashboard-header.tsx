@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { NotificationBell } from "@/components/notification-bell";
+import { GlobalSearch } from "@/components/global-search";
 
 export function DashboardHeader({
   user,
@@ -11,7 +12,7 @@ export function DashboardHeader({
 }) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-stone-200 bg-white/95 px-6 backdrop-blur-sm dark:bg-anthracite-900/95 dark:border-stone-700/50">
-      <div />
+      <GlobalSearch />
 
       <div className="flex items-center gap-4">
         <ThemeToggle />
