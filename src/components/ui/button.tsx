@@ -22,13 +22,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const variants = {
       primary:
-        "bg-anthracite-900 text-white hover:bg-anthracite-800 active:bg-anthracite-950",
+        "bg-anthracite-900 text-white hover:bg-anthracite-800 active:bg-anthracite-950 dark:bg-brand-500 dark:text-anthracite-950 dark:hover:bg-brand-400",
       secondary:
-        "bg-brand-100 text-brand-900 hover:bg-brand-200 active:bg-brand-300",
+        "bg-brand-100 text-brand-900 hover:bg-brand-200 active:bg-brand-300 dark:bg-brand-900/30 dark:text-brand-200 dark:hover:bg-brand-900/50",
       outline:
-        "border border-stone-300 bg-white text-anthracite-800 hover:bg-stone-50 active:bg-stone-100",
+        "border border-stone-300 bg-white text-anthracite-800 hover:bg-stone-50 active:bg-stone-100 dark:border-stone-600 dark:bg-anthracite-800 dark:text-stone-200 dark:hover:bg-anthracite-700",
       ghost:
-        "text-anthracite-700 hover:bg-stone-100 active:bg-stone-200",
+        "text-anthracite-700 hover:bg-stone-100 active:bg-stone-200 dark:text-stone-300 dark:hover:bg-anthracite-800",
       danger:
         "bg-red-600 text-white hover:bg-red-700 active:bg-red-800",
     };
@@ -43,7 +43,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 rounded-premium font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center gap-2 rounded-premium font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-brand-400 dark:focus-visible:ring-offset-anthracite-950 disabled:pointer-events-none disabled:opacity-50",
           variants[variant],
           sizes[size],
           className

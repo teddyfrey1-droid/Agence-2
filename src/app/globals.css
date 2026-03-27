@@ -13,12 +13,12 @@
   }
 
   body {
-    @apply bg-brand-50 text-anthracite-900 font-sans;
+    @apply bg-brand-50 text-anthracite-900 font-sans dark:bg-anthracite-950 dark:text-stone-100;
   }
 
   /* Smooth selection */
   ::selection {
-    @apply bg-brand-200 text-anthracite-900;
+    @apply bg-brand-200 text-anthracite-900 dark:bg-brand-800 dark:text-white;
   }
 }
 
@@ -32,28 +32,32 @@
   }
 
   .heading-display {
-    @apply font-serif text-3xl font-semibold tracking-tight text-anthracite-900 md:text-4xl lg:text-5xl;
+    @apply font-serif text-3xl font-semibold tracking-tight text-anthracite-900 md:text-4xl lg:text-5xl dark:text-stone-100;
   }
 
   .heading-section {
-    @apply font-serif text-2xl font-semibold tracking-tight text-anthracite-900 md:text-3xl;
+    @apply font-serif text-2xl font-semibold tracking-tight text-anthracite-900 md:text-3xl dark:text-stone-100;
   }
 
   .heading-card {
-    @apply text-base font-semibold text-anthracite-900 sm:text-lg;
+    @apply text-base font-semibold text-anthracite-900 sm:text-lg dark:text-stone-100;
   }
 
   .text-body {
-    @apply text-base leading-relaxed text-anthracite-600;
+    @apply text-base leading-relaxed text-anthracite-600 dark:text-stone-300;
   }
 
   .text-caption {
-    @apply text-xs font-medium uppercase tracking-wider text-stone-400 sm:text-sm sm:normal-case sm:tracking-normal sm:font-normal sm:text-stone-500;
+    @apply text-xs font-medium uppercase tracking-wider text-stone-400 sm:text-sm sm:normal-case sm:tracking-normal sm:font-normal sm:text-stone-500 dark:text-stone-400;
   }
 
   /* Premium gradient backgrounds */
   .bg-gradient-premium {
     background: linear-gradient(135deg, #faf8f5 0%, #f3efe8 50%, #e8e0d3 100%);
+  }
+
+  :is(.dark) .bg-gradient-premium {
+    background: linear-gradient(135deg, #0f1117 0%, #1a1b23 50%, #252630 100%);
   }
 
   .bg-gradient-dark {
@@ -62,7 +66,7 @@
 
   /* Glass effect for sticky headers */
   .glass {
-    @apply bg-white/80 backdrop-blur-lg;
+    @apply bg-white/80 backdrop-blur-lg dark:bg-anthracite-900/80;
   }
 
   /* Score ring animation */

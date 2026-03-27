@@ -21,7 +21,7 @@ function LogoMark({
 }) {
   const sizes = { sm: "h-8 w-8", md: "h-10 w-10", lg: "h-14 w-14" };
   const iconSizes = { sm: 18, md: 22, lg: 30 };
-  const bg = variant === "dark" ? "bg-anthracite-900" : "bg-champagne-500/20";
+  const bg = variant === "dark" ? "bg-anthracite-900 dark:bg-brand-800/20" : "bg-champagne-500/20";
 
   return (
     <div

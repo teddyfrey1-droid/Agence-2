@@ -28,12 +28,14 @@ export default function LoginPage() {
         }),
       });
 
+      const data = await res.json();
       if (!res.ok) {
-        const data = await res.json();
         throw new Error(data.error || "Identifiants incorrects");
       }
 
-      router.push("/dashboard");
+      // Redirect clients to their dedicated space
+      const destination = data.role === "CLIENT" ? "/espace-client" : "/dashboard";
+      router.push(destination);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur de connexion");
@@ -43,18 +45,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-brand-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-brand-50 px-4 dark:bg-anthracite-950">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center">
           <Logo size="lg" />
-          <p className="mt-3 text-sm text-stone-500">
+          <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
             Connectez-vous à votre espace
           </p>
         </div>
 
-        <div className="mt-8 rounded-premium border border-stone-200 bg-white p-8 shadow-premium">
+        <div className="mt-8 rounded-premium border border-stone-200 bg-white p-8 shadow-premium dark:bg-anthracite-900 dark:border-stone-700">
           {error && (
-            <div className="mb-6 rounded-premium border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            <div className="mb-6 rounded-premium border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/30 dark:border-red-800 dark:text-red-400">
               {error}
             </div>
           )}
@@ -91,9 +93,9 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="mt-6 text-center text-sm text-stone-500">
+        <p className="mt-6 text-center text-sm text-stone-500 dark:text-stone-400">
           Pas encore de compte ?{" "}
-          <a href="/inscription" className="font-medium text-brand-600 hover:text-brand-700">
+          <a href="/inscription" className="font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
             Créer un compte client
           </a>
         </p>

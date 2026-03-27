@@ -67,9 +67,9 @@ export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-stone-200 bg-white">
+    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-stone-200 bg-white dark:bg-anthracite-900 dark:border-stone-700/50">
       {/* Logo */}
-      <div className="flex h-16 items-center border-b border-stone-100 px-4">
+      <div className="flex h-16 items-center border-b border-stone-100 px-4 dark:border-stone-700/50">
         <Logo size="sm" />
       </div>
 
@@ -89,14 +89,14 @@ export function DashboardSidebar() {
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-brand-50 text-brand-800"
-                      : "text-anthracite-600 hover:bg-stone-50 hover:text-anthracite-900"
+                      ? "bg-brand-50 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
+                      : "text-anthracite-600 hover:bg-stone-50 hover:text-anthracite-900 dark:text-stone-400 dark:hover:bg-anthracite-800 dark:hover:text-stone-200"
                   )}
                 >
                   <svg
                     className={cn(
                       "h-5 w-5 flex-shrink-0",
-                      isActive ? "text-brand-600" : "text-stone-400"
+                      isActive ? "text-brand-600 dark:text-brand-400" : "text-stone-400 dark:text-stone-500"
                     )}
                     fill="none"
                     viewBox="0 0 24 24"
@@ -118,10 +118,10 @@ export function DashboardSidebar() {
       </nav>
 
       {/* Bottom */}
-      <div className="border-t border-stone-100 p-4">
+      <div className="border-t border-stone-100 p-4 dark:border-stone-700/50">
         <Link
           href="/"
-          className="flex items-center gap-2 text-xs text-stone-400 hover:text-anthracite-700"
+          className="flex items-center gap-2 text-xs text-stone-400 hover:text-anthracite-700 dark:text-stone-500 dark:hover:text-stone-300"
         >
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />

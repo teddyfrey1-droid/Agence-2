@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Set the session cookie on the response
-    const response = NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true, role: user.role });
     response.cookies.set(SESSION_COOKIE_OPTIONS.name, token, {
       httpOnly: SESSION_COOKIE_OPTIONS.httpOnly,
       secure: SESSION_COOKIE_OPTIONS.secure,

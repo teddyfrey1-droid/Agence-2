@@ -20,7 +20,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border border-stone-200/80 bg-white p-4 shadow-card transition-all hover:shadow-card-hover sm:p-5",
+        "group relative overflow-hidden rounded-xl border border-stone-200/80 bg-white p-4 shadow-card transition-all hover:shadow-card-hover sm:p-5 dark:border-stone-700/50 dark:bg-anthracite-900",
         className
       )}
     >
@@ -29,11 +29,11 @@ export function StatCard({
 
       <div className="flex items-start justify-between">
         <div className="min-w-0 space-y-1 sm:space-y-2">
-          <p className="text-xs font-medium text-stone-400 sm:text-sm">{label}</p>
-          <p className="text-xl font-bold tracking-tight text-anthracite-900 sm:text-2xl">{value}</p>
+          <p className="text-xs font-medium text-stone-400 sm:text-sm dark:text-stone-400">{label}</p>
+          <p className="text-xl font-bold tracking-tight text-anthracite-900 sm:text-2xl dark:text-stone-100">{value}</p>
         </div>
         {icon && (
-          <div className="rounded-xl bg-brand-50 p-2 text-brand-600 sm:p-2.5">
+          <div className="rounded-xl bg-brand-50 p-2 text-brand-600 sm:p-2.5 dark:bg-brand-900/30 dark:text-brand-400">
             {icon}
           </div>
         )}

@@ -231,6 +231,7 @@ model User {
   auditLogs      AuditLog[]
   assignedTasks  Task[]          @relation("TaskAssignee")
   activities     UserActivity[]
+  notifications  Notification[]
 
   @@map("users")
 }
@@ -655,4 +656,21 @@ model UserActivity {
   @@index([createdAt])
   @@index([type])
   @@map("user_activities")
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String   // MATCH_NEW, MATCH_HIGH, PROPERTY_NEW, DEAL_UPDATE, TASK_DUE, SYSTEM
+  title      String
+  message    String
+  link       String?  // URL to navigate to
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }

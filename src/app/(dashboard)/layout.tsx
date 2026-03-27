@@ -16,8 +16,13 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  // Clients have their own dedicated space
+  if (session.role === "CLIENT") {
+    redirect("/espace-client");
+  }
+
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 dark:bg-anthracite-950">
       <DashboardSidebar />
       <div className="pl-64">
         <DashboardHeader

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -36,10 +37,17 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})()`,
+        }} />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="overscroll-none">{children}</body>
+      <body className="overscroll-none">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
