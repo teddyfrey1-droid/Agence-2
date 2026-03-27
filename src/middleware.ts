@@ -23,6 +23,7 @@ const publicApiPaths = [
   "/api/contacts/public",
   "/api/search-requests/public",
   "/api/properties/public",
+  "/api/setup",
 ];
 
 function isPublicPath(pathname: string): boolean {
