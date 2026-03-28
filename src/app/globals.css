@@ -14,6 +14,16 @@
 
   body {
     @apply bg-brand-50 text-anthracite-900 font-sans dark:bg-anthracite-950 dark:text-stone-100;
+    --sidebar-bg: #ffffff;
+  }
+
+  .dark body,
+  body.dark {
+    --sidebar-bg: #1a1a1a;
+  }
+
+  html.dark {
+    --sidebar-bg: #1a1a1a;
   }
 
   /* Smooth selection */
