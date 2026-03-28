@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Agence Immo",
+    title: "La Place",
   },
   formatDetection: {
     telephone: true,
@@ -45,7 +46,9 @@ export default function RootLayout({
       </head>
       <body className="overscroll-none">
         <ThemeProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
