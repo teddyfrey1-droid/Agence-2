@@ -143,6 +143,31 @@ export default async function DemandeDetailPage({
             </CardContent>
           </Card>
 
+          {/* Qualification Score */}
+          <Card>
+            <CardHeader><h2 className="heading-card">Score de qualification</h2></CardHeader>
+            <CardContent>
+              {request.qualificationScore != null ? (
+                <div className="text-center">
+                  <div className="relative mx-auto h-20 w-20">
+                    <svg className="h-20 w-20 -rotate-90" viewBox="0 0 36 36">
+                      <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                      <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={request.qualificationScore >= 70 ? "#059669" : request.qualificationScore >= 40 ? "#d97706" : "#ef4444"} strokeWidth="3" strokeDasharray={`${request.qualificationScore}, 100`} />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-anthracite-800 dark:text-stone-200">
+                      {request.qualificationScore}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
+                    {request.qualificationScore >= 70 ? "Prospect chaud" : request.qualificationScore >= 40 ? "Prospect tiède" : "Prospect froid"}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-center text-sm text-stone-400">Non évalué</p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader><h2 className="heading-card">Détails</h2></CardHeader>
             <CardContent>

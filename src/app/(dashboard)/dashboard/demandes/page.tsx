@@ -49,6 +49,7 @@ export default async function DemandesPage({
                   <th className="px-4 py-3 text-left font-medium text-stone-500">Assigné à</th>
                   <th className="px-4 py-3 text-left font-medium text-stone-500">Statut</th>
                   <th className="px-4 py-3 text-left font-medium text-stone-500">Matches</th>
+                  <th className="px-4 py-3 text-left font-medium text-stone-500">Score</th>
                   <th className="px-4 py-3 text-left font-medium text-stone-500">Date</th>
                 </tr>
               </thead>
@@ -95,6 +96,24 @@ export default async function DemandesPage({
                     </td>
                     <td className="px-4 py-3 text-center text-stone-500">
                       {request._count.matches}
+                    </td>
+                    <td className="px-4 py-3">
+                      {request.qualificationScore != null ? (
+                        <div className="flex items-center gap-1.5">
+                          <div className="h-1.5 w-12 rounded-full bg-stone-200 dark:bg-stone-700">
+                            <div
+                              className={`h-1.5 rounded-full ${
+                                request.qualificationScore >= 70 ? "bg-emerald-500" :
+                                request.qualificationScore >= 40 ? "bg-amber-500" : "bg-red-400"
+                              }`}
+                              style={{ width: `${request.qualificationScore}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-medium text-stone-600 dark:text-stone-400">{request.qualificationScore}</span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-stone-400">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-stone-400">
                       {formatDateShort(request.createdAt)}

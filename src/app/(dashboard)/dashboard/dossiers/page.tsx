@@ -26,9 +26,19 @@ export default async function DossiersPage({
           <h1 className="text-2xl font-semibold text-anthracite-900">Dossiers</h1>
           <p className="text-sm text-stone-500">{total} dossier(s)</p>
         </div>
-        <Link href="/dashboard/dossiers/nouveau">
-          <Button>Nouveau dossier</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard/dossiers/pipeline">
+            <Button variant="outline">
+              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+              </svg>
+              Pipeline
+            </Button>
+          </Link>
+          <Link href="/dashboard/dossiers/nouveau">
+            <Button>Nouveau dossier</Button>
+          </Link>
+        </div>
       </div>
 
       {items.length === 0 ? (

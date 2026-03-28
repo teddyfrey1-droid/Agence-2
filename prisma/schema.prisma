@@ -232,6 +232,7 @@ model User {
   assignedTasks  Task[]          @relation("TaskAssignee")
   activities     UserActivity[]
   notifications  Notification[]
+  events         Event[]
 
   @@map("users")
 }
@@ -261,6 +262,7 @@ model Contact {
   tasks              Task[]
   interactions       Interaction[]
   propertiesAsOwner  Property[]           @relation("PropertyOwner")
+  events             Event[]
 
   @@map("contacts")
 }
@@ -364,6 +366,7 @@ model Property {
   interactions Interaction[]
   documents   Document[]
   statusHistory StatusHistory[]
+  events        Event[]
 
   @@map("properties")
 }
@@ -434,6 +437,9 @@ model SearchRequest {
   description    String?
   urgency        String?
   notes          String?
+
+  // Scoring
+  qualificationScore Int?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -507,6 +513,7 @@ model Deal {
   interactions  Interaction[]
   documents     Document[]
   statusHistory StatusHistory[]
+  events        Event[]
 
   @@map("deals")
 }
@@ -673,4 +680,33 @@ model Notification {
   @@index([userId, isRead])
   @@index([createdAt])
   @@map("notifications")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  type        String   @default("VISITE") // VISITE, REUNION, RELANCE, SIGNATURE, AUTRE
+  description String?
+  startAt     DateTime
+  endAt       DateTime?
+  allDay      Boolean  @default(false)
+  color       String?
+
+  // Relations
+  userId      String?
+  contactId   String?
+  propertyId  String?
+  dealId      String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User?     @relation(fields: [userId], references: [id])
+  contact  Contact?  @relation(fields: [contactId], references: [id])
+  property Property? @relation(fields: [propertyId], references: [id])
+  deal     Deal?     @relation(fields: [dealId], references: [id])
+
+  @@index([userId])
+  @@index([startAt])
+  @@map("events")
 }

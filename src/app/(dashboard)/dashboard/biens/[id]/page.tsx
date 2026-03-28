@@ -10,6 +10,7 @@ import {
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PropertyPdfButton } from "@/components/property-pdf-button";
 import { prisma } from "@/lib/prisma";
 
 export default async function PropertyDetailPage({
@@ -306,6 +307,7 @@ export default async function PropertyDetailPage({
               <Button variant="outline" className="w-full justify-start">
                 Lancer le matching
               </Button>
+              <PropertyPdfButton propertyId={id} />
             </CardContent>
           </Card>
 
