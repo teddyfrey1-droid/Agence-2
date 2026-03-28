@@ -47,7 +47,7 @@ export function PublicHeader({ user }: { user?: PublicHeaderUser | null }) {
   const initials = user ? `${user.firstName[0]}${user.lastName[0]}` : null;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/95 backdrop-blur-sm">
+    <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/95 backdrop-blur-sm dark:border-stone-800 dark:bg-anthracite-900/95">
       <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
         {/* Logo */}
         <Logo size="md" />

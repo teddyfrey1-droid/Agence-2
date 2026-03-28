@@ -1,5 +1,6 @@
 import { PublicHeader } from "@/components/layout/public-header";
 import { PublicFooter } from "@/components/layout/public-footer";
+import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 import { getSession } from "@/lib/auth";
 import { USER_ROLE_LABELS } from "@/lib/constants";
 
@@ -23,6 +24,7 @@ export default async function PublicLayout({
       <PublicHeader user={user} />
       <main className="flex-1">{children}</main>
       <PublicFooter />
+      <FloatingThemeToggle />
     </div>
   );
 }

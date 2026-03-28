@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatSurface } from "@/lib/utils";
 import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
-import { Logo } from "@/components/ui/logo";
+import { LogoMark } from "@/components/ui/logo";
 
 const expertiseAreas = [
   {
@@ -78,12 +78,9 @@ export default async function HomePage() {
 
         <div className="container-page relative py-20 sm:py-28 md:py-36">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-8 flex justify-center">
-              <Logo size="lg" showText={false} />
+            <div className="mb-6 flex justify-center">
+              <LogoMark size="xl" />
             </div>
-            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.25em] text-brand-600 dark:text-brand-400">
-              Immobilier commercial &amp; professionnel
-            </p>
             <h1 className="font-serif text-4xl font-bold tracking-tight text-anthracite-900 sm:text-5xl md:text-6xl dark:text-stone-100">
               La Place,
               <br />

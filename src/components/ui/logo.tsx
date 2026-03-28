@@ -10,51 +10,65 @@ interface LogoProps {
 
 /**
  * LA PLACE — Immobilier Commercial
- * Gold LP monogram in a circle with serif text
+ * Gold LP monogram inside double gold circles, matching the real branding
  */
 function LogoMark({
   size = "md",
   variant = "dark",
 }: {
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   variant?: "light" | "dark";
 }) {
-  const sizes = { sm: "h-9 w-9", md: "h-11 w-11", lg: "h-14 w-14" };
+  const sizes = { sm: "h-9 w-9", md: "h-11 w-11", lg: "h-16 w-16", xl: "h-24 w-24" };
 
-  const gold = variant === "dark" ? "#b08d57" : "#d4b87a";
-  const goldLight = variant === "dark" ? "#d4b87a" : "#e8d5a8";
+  // Gold gradient IDs unique per variant to avoid conflicts
+  const id = variant === "dark" ? "lp" : "lp-lt";
 
   return (
-    <div className={cn("flex items-center justify-center rounded-full", sizes[size])}>
-      <svg viewBox="0 0 48 48" fill="none" className="h-full w-full">
+    <div className={cn("flex items-center justify-center", sizes[size])}>
+      <svg viewBox="0 0 100 100" fill="none" className="h-full w-full">
+        <defs>
+          {/* Gold gradient for the monogram */}
+          <linearGradient id={`${id}-gold`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#c9a54e" />
+            <stop offset="30%" stopColor="#dfc06a" />
+            <stop offset="50%" stopColor="#b08d3e" />
+            <stop offset="70%" stopColor="#d4b45c" />
+            <stop offset="100%" stopColor="#a07830" />
+          </linearGradient>
+          <linearGradient id={`${id}-gold2`} x1="100%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#d4b87a" />
+            <stop offset="50%" stopColor="#b89642" />
+            <stop offset="100%" stopColor="#c9a54e" />
+          </linearGradient>
+        </defs>
+
         {/* Outer circle */}
-        <circle cx="24" cy="24" r="22" stroke={gold} strokeWidth="1.5" fill="none" />
+        <circle cx="50" cy="50" r="47" stroke={`url(#${id}-gold)`} strokeWidth="2.5" fill="none" />
         {/* Inner circle */}
-        <circle cx="24" cy="24" r="18" stroke={goldLight} strokeWidth="0.8" fill="none" opacity="0.5" />
-        {/* L letter */}
-        <text
-          x="16"
-          y="30"
-          fontFamily="Georgia, serif"
-          fontWeight="700"
-          fontSize="18"
-          fill={gold}
-          letterSpacing="-1"
-        >
-          L
-        </text>
-        {/* P letter - overlapping */}
-        <text
-          x="24"
-          y="30"
-          fontFamily="Georgia, serif"
-          fontWeight="700"
-          fontSize="18"
-          fill={gold}
-          letterSpacing="-1"
-        >
-          P
-        </text>
+        <circle cx="50" cy="50" r="41" stroke={`url(#${id}-gold2)`} strokeWidth="1.5" fill="none" />
+
+        {/* L letter — vertical stroke */}
+        <rect x="30" y="24" width="5.5" height="42" rx="1" fill={`url(#${id}-gold)`} />
+        {/* L letter — horizontal base with slight serif curve */}
+        <rect x="30" y="61" width="22" height="5" rx="1" fill={`url(#${id}-gold)`} />
+        {/* L serif top */}
+        <rect x="28" y="24" width="10" height="3" rx="1" fill={`url(#${id}-gold)`} />
+
+        {/* P letter — vertical stroke */}
+        <rect x="46" y="24" width="5.5" height="52" rx="1" fill={`url(#${id}-gold2)`} />
+        {/* P serif top */}
+        <rect x="44" y="24" width="10" height="3" rx="1" fill={`url(#${id}-gold2)`} />
+        {/* P serif bottom */}
+        <rect x="44" y="73" width="10" height="3" rx="1" fill={`url(#${id}-gold2)`} />
+        {/* P bowl (curved part) */}
+        <path
+          d="M51.5 27 C66 27, 72 33, 72 42 C72 51, 66 57, 51.5 57"
+          stroke={`url(#${id}-gold2)`}
+          strokeWidth="5"
+          fill="none"
+          strokeLinecap="round"
+        />
       </svg>
     </div>
   );
