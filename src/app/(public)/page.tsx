@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { formatPrice, formatSurface } from "@/lib/utils";
+import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
 import { Logo } from "@/components/ui/logo";
 
 const expertiseAreas = [
@@ -41,7 +44,31 @@ const stats = [
   { value: "98%", label: "Clients satisfaits" },
 ];
 
-export default function HomePage() {
+const testimonials = [
+  {
+    quote: "La Place a trouvé le local idéal pour notre restaurant en moins de 3 semaines. Un accompagnement remarquable du début à la fin.",
+    author: "Sophie M.",
+    role: "Restauratrice, 11e arr.",
+  },
+  {
+    quote: "Professionnalisme et réactivité. Ils ont compris nos besoins dès le premier rendez-vous et nous ont présenté des biens parfaitement ciblés.",
+    author: "Thomas D.",
+    role: "Directeur, Enseigne retail",
+  },
+  {
+    quote: "Leur connaissance du marché parisien est impressionnante. Une équipe de confiance pour tous nos projets d'expansion.",
+    author: "Marie-Claire L.",
+    role: "DG, Groupe hôtelier",
+  },
+];
+
+export default async function HomePage() {
+  const featuredProperties = await prisma.property.findMany({
+    where: { status: "ACTIF", isPublished: true, confidentiality: "PUBLIC" },
+    include: { media: { where: { isPrimary: true }, take: 1 } },
+    orderBy: { createdAt: "desc" },
+    take: 6,
+  });
   return (
     <>
       {/* Hero */}
@@ -130,6 +157,111 @@ export default function HomePage() {
                 <p className="mt-2 text-sm leading-relaxed text-stone-500 dark:text-stone-400">
                   {area.description}
                 </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Property showcase */}
+      {featuredProperties.length > 0 && (
+        <section className="section-padding bg-brand-50/50 dark:bg-anthracite-900">
+          <div className="container-page">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400">
+                  En vitrine
+                </p>
+                <h2 className="heading-section mt-3">Nos biens à la une</h2>
+              </div>
+              <Link
+                href="/biens"
+                className="hidden text-sm font-medium text-brand-600 hover:text-brand-700 sm:flex items-center gap-1 dark:text-brand-400 dark:hover:text-brand-300"
+              >
+                Voir tous les biens
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredProperties.map((property) => (
+                <Link key={property.id} href={`/biens/${property.id}`} className="group">
+                  <div className="overflow-hidden rounded-xl border border-stone-200/80 bg-white transition-all hover:shadow-lg hover:-translate-y-0.5 dark:border-stone-800 dark:bg-anthracite-800">
+                    <div className="relative h-48 overflow-hidden bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900/40 dark:to-brand-800/40">
+                      {property.media[0] ? (
+                        <img
+                          src={property.media[0].url}
+                          alt={property.title}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <svg className="h-12 w-12 text-brand-300 dark:text-brand-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3H21" />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="absolute top-3 left-3">
+                        <span className="rounded-lg bg-white/90 px-2.5 py-1 text-[10px] font-semibold text-anthracite-800 backdrop-blur-sm dark:bg-anthracite-900/90 dark:text-stone-200">
+                          {PROPERTY_TYPE_LABELS[property.type] || property.type}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="truncate text-sm font-semibold text-anthracite-800 group-hover:text-brand-700 dark:text-stone-200 dark:group-hover:text-brand-400">
+                        {property.title}
+                      </h3>
+                      <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+                        {property.district || property.city}
+                      </p>
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-sm font-bold text-anthracite-900 dark:text-stone-100">
+                          {property.transactionType === "LOCATION"
+                            ? formatPrice(property.rentMonthly)
+                            : formatPrice(property.price)}
+                          {property.transactionType === "LOCATION" && <span className="text-xs font-normal text-stone-400">/mois</span>}
+                        </span>
+                        {property.surfaceTotal && (
+                          <span className="text-xs text-stone-500 dark:text-stone-400">{formatSurface(property.surfaceTotal)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="mt-6 text-center sm:hidden">
+              <Link href="/biens" className="text-sm font-medium text-brand-600 dark:text-brand-400">
+                Voir tous les biens &rarr;
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Testimonials */}
+      <section className="section-padding bg-white dark:bg-anthracite-950">
+        <div className="container-page">
+          <div className="text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400">
+              Témoignages
+            </p>
+            <h2 className="heading-section mt-3">Ce que disent nos clients</h2>
+          </div>
+          <div className="mt-12 grid gap-6 sm:grid-cols-3">
+            {testimonials.map((t) => (
+              <div key={t.author} className="rounded-xl border border-stone-200/80 bg-white p-6 dark:border-stone-800 dark:bg-anthracite-900">
+                <svg className="mb-4 h-6 w-6 text-brand-300 dark:text-brand-700" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10H14.017zM0 21v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151C7.563 6.068 6 8.789 6 11h4v10H0z" />
+                </svg>
+                <p className="text-sm leading-relaxed text-anthracite-600 dark:text-stone-300">
+                  {t.quote}
+                </p>
+                <div className="mt-4 border-t border-stone-100 pt-4 dark:border-stone-800">
+                  <p className="text-sm font-semibold text-anthracite-800 dark:text-stone-200">{t.author}</p>
+                  <p className="text-xs text-stone-500 dark:text-stone-400">{t.role}</p>
+                </div>
               </div>
             ))}
           </div>

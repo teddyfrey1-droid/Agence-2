@@ -27,6 +27,7 @@ const EVENT_TYPES = [
 ];
 
 const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+const DAYS_SHORT = ["L", "M", "M", "J", "V", "S", "D"];
 const MONTHS = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
@@ -218,10 +219,13 @@ export default function CalendrierPage() {
           </button>
         </div>
 
-        {/* Days header */}
+        {/* Days header — full labels on desktop, single letter on mobile */}
         <div className="grid grid-cols-7 border-b border-stone-200 dark:border-stone-700">
-          {DAYS.map((d) => (
-            <div key={d} className="py-2 text-center text-xs font-medium text-stone-500 dark:text-stone-400">{d}</div>
+          {DAYS.map((d, i) => (
+            <div key={d} className="py-2 text-center text-xs font-medium text-stone-500 dark:text-stone-400">
+              <span className="hidden sm:inline">{d}</span>
+              <span className="sm:hidden">{DAYS_SHORT[i]}</span>
+            </div>
           ))}
         </div>
 
@@ -235,11 +239,11 @@ export default function CalendrierPage() {
               <div
                 key={i}
                 onClick={() => openNewEvent(day.date)}
-                className={`min-h-[80px] cursor-pointer border-b border-r border-stone-100 p-1 transition-colors hover:bg-stone-50 dark:border-stone-700/50 dark:hover:bg-anthracite-800 ${
+                className={`min-h-[44px] sm:min-h-[80px] cursor-pointer border-b border-r border-stone-100 p-0.5 sm:p-1 transition-colors hover:bg-stone-50 dark:border-stone-700/50 dark:hover:bg-anthracite-800 ${
                   !day.isCurrentMonth ? "bg-stone-50/50 dark:bg-anthracite-900/50" : ""
                 }`}
               >
-                <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs ${
+                <span className={`inline-flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full text-[10px] sm:text-xs ${
                   isToday
                     ? "bg-brand-600 font-bold text-white"
                     : day.isCurrentMonth
@@ -248,31 +252,86 @@ export default function CalendrierPage() {
                 }`}>
                   {day.date.getDate()}
                 </span>
-                <div className="mt-0.5 space-y-0.5">
-                  {dayEvents.slice(0, 3).map((ev) => (
-                    <button
-                      key={ev.id}
-                      onClick={(e) => { e.stopPropagation(); openEditEvent(ev); }}
-                      className="block w-full truncate rounded px-1 py-0.5 text-left text-[10px] font-medium text-white"
-                      style={{ background: ev.color || getColor(ev.type) }}
-                    >
-                      {!ev.allDay && formatTime(ev.startAt) + " "}{ev.title}
-                    </button>
-                  ))}
-                  {dayEvents.length > 3 && (
-                    <span className="block px-1 text-[10px] text-stone-400">+{dayEvents.length - 3} de plus</span>
-                  )}
+                {/* Event dots on mobile, full labels on desktop */}
+                <div className="mt-0.5">
+                  {/* Mobile: just dots */}
+                  <div className="flex gap-0.5 sm:hidden flex-wrap">
+                    {dayEvents.slice(0, 4).map((ev) => (
+                      <button
+                        key={ev.id}
+                        onClick={(e) => { e.stopPropagation(); openEditEvent(ev); }}
+                        className="h-1.5 w-1.5 rounded-full"
+                        style={{ background: ev.color || getColor(ev.type) }}
+                      />
+                    ))}
+                  </div>
+                  {/* Desktop: full event labels */}
+                  <div className="hidden sm:block space-y-0.5">
+                    {dayEvents.slice(0, 3).map((ev) => (
+                      <button
+                        key={ev.id}
+                        onClick={(e) => { e.stopPropagation(); openEditEvent(ev); }}
+                        className="block w-full truncate rounded px-1 py-0.5 text-left text-[10px] font-medium text-white"
+                        style={{ background: ev.color || getColor(ev.type) }}
+                      >
+                        {!ev.allDay && formatTime(ev.startAt) + " "}{ev.title}
+                      </button>
+                    ))}
+                    {dayEvents.length > 3 && (
+                      <span className="block px-1 text-[10px] text-stone-400">+{dayEvents.length - 3} de plus</span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
+
+        {/* Mobile: Event list for current month */}
+        {events.length > 0 && (
+          <div className="mt-4 sm:hidden">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+              Événements ce mois
+            </p>
+            <div className="space-y-2">
+              {events
+                .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+                .map((ev) => {
+                  const d = new Date(ev.startAt);
+                  return (
+                    <button
+                      key={ev.id}
+                      onClick={() => openEditEvent(ev)}
+                      className="flex w-full items-center gap-3 rounded-lg border border-stone-100 bg-white p-3 text-left transition-colors hover:bg-stone-50 dark:border-stone-700/50 dark:bg-anthracite-800 dark:hover:bg-anthracite-700"
+                    >
+                      <div className="flex h-10 w-10 flex-shrink-0 flex-col items-center justify-center rounded-lg" style={{ background: `${ev.color || getColor(ev.type)}15` }}>
+                        <span className="text-[10px] font-semibold" style={{ color: ev.color || getColor(ev.type) }}>
+                          {d.getDate()}
+                        </span>
+                        <span className="text-[8px] uppercase" style={{ color: ev.color || getColor(ev.type) }}>
+                          {d.toLocaleDateString("fr-FR", { month: "short" })}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-anthracite-800 dark:text-stone-200">{ev.title}</p>
+                        <p className="text-xs text-stone-500 dark:text-stone-400">
+                          {ev.allDay ? "Journée entière" : formatTime(ev.startAt)}
+                          {ev.endAt && !ev.allDay && ` — ${formatTime(ev.endAt)}`}
+                        </p>
+                      </div>
+                      <div className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: ev.color || getColor(ev.type) }} />
+                    </button>
+                  );
+                })}
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl dark:bg-anthracite-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl dark:bg-anthracite-800 animate-scale-in">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold text-anthracite-900 dark:text-stone-100">
                 {selectedEvent ? "Modifier l'événement" : "Nouvel événement"}

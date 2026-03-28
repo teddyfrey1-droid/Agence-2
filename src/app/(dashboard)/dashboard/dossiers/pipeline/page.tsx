@@ -127,8 +127,8 @@ export default function PipelinePage() {
         </div>
       </div>
 
-      {/* Kanban Board */}
-      <div className="overflow-x-auto pb-4">
+      {/* Kanban Board — Desktop drag & drop */}
+      <div className="hidden sm:block overflow-x-auto pb-4">
         <div className="flex gap-3" style={{ minWidth: `${PIPELINE_STAGES.length * 260}px` }}>
           {PIPELINE_STAGES.map((stage) => {
             const stageDeals = dealsByStage[stage] || [];
@@ -146,7 +146,6 @@ export default function PipelinePage() {
                     : "border-stone-200 bg-stone-50/50 dark:border-stone-700 dark:bg-anthracite-900/50"
                 }`}
               >
-                {/* Column header */}
                 <div className="flex items-center justify-between px-3 py-2.5">
                   <div className="flex items-center gap-2">
                     <div className={`h-2.5 w-2.5 rounded-full ${STAGE_COLORS[stage] || "bg-stone-400"}`} />
@@ -162,7 +161,6 @@ export default function PipelinePage() {
                   )}
                 </div>
 
-                {/* Cards */}
                 <div className="flex-1 space-y-2 px-2 pb-2" style={{ minHeight: "80px" }}>
                   {stageDeals.map((deal) => (
                     <div
@@ -175,21 +173,15 @@ export default function PipelinePage() {
                         <p className="text-xs font-mono text-stone-400 dark:text-stone-500">{deal.reference}</p>
                         <p className="mt-0.5 text-sm font-medium text-anthracite-800 dark:text-stone-200 line-clamp-2">{deal.title}</p>
                         {deal.property && (
-                          <p className="mt-1 truncate text-xs text-stone-500 dark:text-stone-400">
-                            {deal.property.title}
-                          </p>
+                          <p className="mt-1 truncate text-xs text-stone-500 dark:text-stone-400">{deal.property.title}</p>
                         )}
                         {deal.contact && (
-                          <p className="mt-0.5 truncate text-xs text-stone-400 dark:text-stone-500">
-                            {deal.contact.firstName} {deal.contact.lastName}
-                          </p>
+                          <p className="mt-0.5 truncate text-xs text-stone-400 dark:text-stone-500">{deal.contact.firstName} {deal.contact.lastName}</p>
                         )}
                         <div className="mt-2 flex items-center justify-between">
                           {deal.estimatedValue ? (
                             <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{fmtPrice(deal.estimatedValue)}</span>
-                          ) : (
-                            <span />
-                          )}
+                          ) : <span />}
                           {deal.assignedTo && (
                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-stone-100 text-[10px] font-semibold text-stone-600 dark:bg-anthracite-700 dark:text-stone-300" title={`${deal.assignedTo.firstName} ${deal.assignedTo.lastName}`}>
                               {deal.assignedTo.firstName[0]}{deal.assignedTo.lastName[0]}
@@ -204,6 +196,64 @@ export default function PipelinePage() {
             );
           })}
         </div>
+      </div>
+
+      {/* Mobile — Grouped card list with stage selectors */}
+      <div className="sm:hidden space-y-4">
+        {PIPELINE_STAGES.map((stage) => {
+          const stageDeals = dealsByStage[stage] || [];
+          if (stageDeals.length === 0) return null;
+          return (
+            <div key={stage}>
+              <div className="mb-2 flex items-center gap-2">
+                <div className={`h-2.5 w-2.5 rounded-full ${STAGE_COLORS[stage] || "bg-stone-400"}`} />
+                <span className="text-xs font-semibold text-anthracite-700 dark:text-stone-300">
+                  {DEAL_STAGE_LABELS[stage] || stage}
+                </span>
+                <span className="rounded-full bg-stone-200 px-1.5 py-0.5 text-[10px] font-bold text-stone-600 dark:bg-anthracite-700 dark:text-stone-400">
+                  {stageDeals.length}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {stageDeals.map((deal) => (
+                  <div key={deal.id} className="rounded-xl border border-stone-200 bg-white p-4 dark:border-stone-700 dark:bg-anthracite-800">
+                    <Link href={`/dashboard/dossiers/${deal.id}`} className="block">
+                      <div className="flex items-start justify-between">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-mono text-[10px] text-stone-400 dark:text-stone-500">{deal.reference}</p>
+                          <p className="mt-0.5 text-sm font-semibold text-anthracite-800 dark:text-stone-200">{deal.title}</p>
+                        </div>
+                        {deal.estimatedValue && (
+                          <span className="text-xs font-bold text-brand-600 dark:text-brand-400 ml-2">{fmtPrice(deal.estimatedValue)}</span>
+                        )}
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
+                        {deal.property && <span>{deal.property.title}</span>}
+                        {deal.contact && <span>{deal.contact.firstName} {deal.contact.lastName}</span>}
+                      </div>
+                    </Link>
+                    {/* Quick stage move buttons */}
+                    <div className="mt-3 flex gap-1.5 overflow-x-auto">
+                      {PIPELINE_STAGES.filter((s) => s !== stage).slice(0, 4).map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => moveToStage(deal.id, s)}
+                          className="flex-shrink-0 rounded-lg border border-stone-200 px-2 py-1 text-[10px] font-medium text-stone-500 transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-stone-700 dark:text-stone-400 dark:hover:border-brand-700 dark:hover:text-brand-400"
+                        >
+                          <span className={`mr-1 inline-block h-1.5 w-1.5 rounded-full ${STAGE_COLORS[s] || "bg-stone-400"}`} />
+                          {DEAL_STAGE_LABELS[s]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+        {deals.length === 0 && !loading && (
+          <p className="py-8 text-center text-sm text-stone-400 dark:text-stone-500">Aucun dossier actif</p>
+        )}
       </div>
     </div>
   );
