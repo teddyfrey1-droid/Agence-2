@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-anthracite-950">
       <DashboardSidebar />
-      <div className="pl-64">
+      <div className="lg:pl-64">
         <DashboardHeader
           user={{
             firstName: session.firstName,

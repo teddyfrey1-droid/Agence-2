@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
 
 const typeOptions = Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({ value, label }));
@@ -15,6 +16,7 @@ export default function NouveauTerrainPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addressData, setAddressData] = useState({ city: "Paris", zipCode: "", district: "" });
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -47,17 +49,31 @@ export default function NouveauTerrainPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold text-anthracite-900">Nouveau repérage</h1>
+      <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Nouveau repérage</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {error && <div className="rounded-premium border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+        {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-900/20 dark:text-red-400">{error}</div>}
         <Card>
           <CardHeader><h2 className="heading-card">Localisation</h2></CardHeader>
           <CardContent className="space-y-4">
-            <Input id="address" name="address" label="Adresse" required placeholder="Numéro et rue" />
+            <AddressAutocomplete
+              id="address"
+              name="address"
+              label="Adresse"
+              required
+              placeholder="Numéro et rue, ou nom du commerce..."
+              onSelect={(result) => {
+                const arrNum = result.postcode.startsWith("75") ? result.postcode.slice(-2) : "";
+                setAddressData({
+                  city: result.city,
+                  zipCode: result.postcode,
+                  district: arrNum ? `${parseInt(arrNum)}${parseInt(arrNum) === 1 ? "er" : "e"} arrondissement` : "",
+                });
+              }}
+            />
             <div className="grid gap-4 sm:grid-cols-3">
-              <Input id="city" name="city" label="Ville" defaultValue="Paris" />
-              <Input id="zipCode" name="zipCode" label="Code postal" />
-              <Input id="district" name="district" label="Arrondissement" />
+              <Input id="city" name="city" label="Ville" value={addressData.city} onChange={(e) => setAddressData((prev) => ({ ...prev, city: e.target.value }))} />
+              <Input id="zipCode" name="zipCode" label="Code postal" value={addressData.zipCode} onChange={(e) => setAddressData((prev) => ({ ...prev, zipCode: e.target.value }))} />
+              <Input id="district" name="district" label="Arrondissement" value={addressData.district} onChange={(e) => setAddressData((prev) => ({ ...prev, district: e.target.value }))} />
             </div>
           </CardContent>
         </Card>

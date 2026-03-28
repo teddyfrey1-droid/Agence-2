@@ -72,7 +72,7 @@ export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-stone-200 bg-white dark:bg-anthracite-900 dark:border-stone-700/50">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-stone-200 bg-white lg:flex dark:bg-anthracite-900 dark:border-stone-700/50">
       {/* Logo */}
       <div className="flex h-16 items-center border-b border-stone-100 px-4 dark:border-stone-700/50">
         <Logo size="sm" />
