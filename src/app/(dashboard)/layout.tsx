@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { USER_ROLE_LABELS } from "@/lib/constants";
@@ -16,14 +17,31 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  // Clients have their own dedicated space
   if (session.role === "CLIENT") {
     redirect("/espace-client");
   }
 
+  // Fetch badge counts for sidebar
+  const [overdueTaskCount, newDemandCount] = await Promise.all([
+    prisma.task.count({
+      where: {
+        status: { in: ["A_FAIRE", "EN_COURS"] },
+        dueDate: { lt: new Date() },
+      },
+    }).catch(() => 0),
+    prisma.searchRequest.count({
+      where: { status: "NOUVELLE" },
+    }).catch(() => 0),
+  ]);
+
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-anthracite-950">
-      <DashboardSidebar />
+      <DashboardSidebar
+        badges={{
+          "/dashboard/taches": overdueTaskCount,
+          "/dashboard/demandes": newDemandCount,
+        }}
+      />
       <div className="lg:pl-64">
         <DashboardHeader
           user={{

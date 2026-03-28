@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { formatDateShort } from "@/lib/utils";
-import { TASK_PRIORITY_LABELS } from "@/lib/constants";
+import { TASK_PRIORITY_LABELS, DEAL_STAGE_LABELS } from "@/lib/constants";
+import { ActivityChart } from "@/components/dashboard/activity-chart";
+import { PipelineMini } from "@/components/dashboard/pipeline-mini";
 import Link from "next/link";
 
 function KpiCard({
@@ -39,6 +41,12 @@ function KpiCard({
 export default async function DashboardHomePage() {
   const session = await getSession();
 
+  // Build last 7 days range
+  const now = new Date();
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
   const [
     propertyCount,
     activePropertyCount,
@@ -48,6 +56,8 @@ export default async function DashboardHomePage() {
     overdueTasks,
     recentTasks,
     recentInteractions,
+    weekInteractions,
+    dealsByStage,
   ] = await Promise.all([
     prisma.property.count(),
     prisma.property.count({ where: { status: "ACTIF" } }),
@@ -61,7 +71,7 @@ export default async function DashboardHomePage() {
     prisma.task.count({
       where: {
         status: { in: ["A_FAIRE", "EN_COURS"] },
-        dueDate: { lt: new Date() },
+        dueDate: { lt: now },
       },
     }),
     prisma.task.findMany({
@@ -80,9 +90,39 @@ export default async function DashboardHomePage() {
         user: { select: { firstName: true, lastName: true } },
       },
     }),
+    // Interactions over last 7 days for chart
+    prisma.interaction.findMany({
+      where: { date: { gte: sevenDaysAgo } },
+      select: { date: true },
+    }),
+    // Deal counts by stage for mini pipeline
+    prisma.deal.groupBy({
+      by: ["stage"],
+      where: { status: { in: ["OUVERT", "EN_COURS"] } },
+      _count: true,
+    }),
   ]);
 
-  const now = new Date();
+  // Build activity data for last 7 days
+  const DAY_LABELS_SHORT = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+  const activityData = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(sevenDaysAgo);
+    d.setDate(d.getDate() + i);
+    const dayStr = d.toISOString().slice(0, 10);
+    const count = weekInteractions.filter(
+      (inter) => new Date(inter.date).toISOString().slice(0, 10) === dayStr
+    ).length;
+    return { label: DAY_LABELS_SHORT[d.getDay()], value: count };
+  });
+
+  // Pipeline data
+  const PIPELINE_ORDER = ["PROSPECT", "DECOUVERTE", "VISITE", "NEGOCIATION", "OFFRE", "COMPROMIS", "ACTE", "CLOTURE"];
+  const pipelineData = PIPELINE_ORDER.map((stage) => ({
+    stage,
+    label: DEAL_STAGE_LABELS[stage] || stage,
+    count: dealsByStage.find((d) => d.stage === stage)?._count || 0,
+  }));
+
   const dateStr = new Intl.DateTimeFormat("fr-FR", {
     weekday: "long",
     day: "numeric",
@@ -170,6 +210,42 @@ export default async function DashboardHomePage() {
             : <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
           }
         />
+      </div>
+
+      {/* Charts row */}
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 dark:bg-brand-900/20">
+                <svg className="h-4 w-4 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" /></svg>
+              </div>
+              <h2 className="heading-card">Activité (7 jours)</h2>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ActivityChart data={activityData} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-900/20">
+                  <svg className="h-4 w-4 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" /></svg>
+                </div>
+                <h2 className="heading-card">Pipeline</h2>
+              </div>
+              <Link href="/dashboard/dossiers/pipeline" className="text-xs font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                Voir le Kanban
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <PipelineMini data={pipelineData} />
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">

@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { PROPERTY_TYPE_LABELS, TRANSACTION_TYPE_LABELS } from "@/lib/constants";
+import { useToast } from "@/components/ui/toast";
 
 const propertyTypeOptions = Object.entries(PROPERTY_TYPE_LABELS).map(
   ([value, label]) => ({ value, label })
@@ -18,6 +19,7 @@ const transactionTypeOptions = Object.entries(TRANSACTION_TYPE_LABELS).map(
 
 export default function NouvelleDemandePage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
@@ -58,9 +60,11 @@ export default function NouvelleDemandePage() {
       }
 
       const request = await res.json();
+      addToast("Demande créée avec succès", "success");
       router.push(`/dashboard/demandes/${request.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      addToast("Erreur lors de la création", "error");
     } finally {
       setIsSubmitting(false);
     }

@@ -63,7 +63,11 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-export function DashboardSidebar() {
+interface SidebarProps {
+  badges?: Record<string, number>;
+}
+
+export function DashboardSidebar({ badges = {} }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -113,7 +117,12 @@ export function DashboardSidebar() {
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                       </svg>
-                      {item.name}
+                      <span className="flex-1">{item.name}</span>
+                      {badges[item.href] != null && badges[item.href] > 0 && (
+                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                          {badges[item.href]}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
