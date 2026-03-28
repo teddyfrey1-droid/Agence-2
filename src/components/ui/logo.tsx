@@ -10,7 +10,8 @@ interface LogoProps {
 
 /**
  * LA PLACE — Immobilier Commercial
- * Gold LP monogram inside double gold circles, matching the real branding
+ * Gold LP monogram inside double gold circles
+ * Faithful reproduction of the real branding with intertwined L & P
  */
 function LogoMark({
   size = "md",
@@ -20,52 +21,95 @@ function LogoMark({
   variant?: "light" | "dark";
 }) {
   const sizes = { sm: "h-9 w-9", md: "h-11 w-11", lg: "h-16 w-16", xl: "h-24 w-24" };
-
-  // Gold gradient IDs unique per variant to avoid conflicts
   const id = variant === "dark" ? "lp" : "lp-lt";
 
   return (
     <div className={cn("flex items-center justify-center", sizes[size])}>
-      <svg viewBox="0 0 100 100" fill="none" className="h-full w-full">
+      <svg viewBox="0 0 200 200" fill="none" className="h-full w-full">
         <defs>
-          {/* Gold gradient for the monogram */}
-          <linearGradient id={`${id}-gold`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#c9a54e" />
-            <stop offset="30%" stopColor="#dfc06a" />
-            <stop offset="50%" stopColor="#b08d3e" />
-            <stop offset="70%" stopColor="#d4b45c" />
-            <stop offset="100%" stopColor="#a07830" />
+          <linearGradient id={`${id}-g1`} x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#d4b45c" />
+            <stop offset="25%" stopColor="#e0c76e" />
+            <stop offset="50%" stopColor="#b89236" />
+            <stop offset="75%" stopColor="#d4b45c" />
+            <stop offset="100%" stopColor="#9a7a28" />
           </linearGradient>
-          <linearGradient id={`${id}-gold2`} x1="100%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#d4b87a" />
-            <stop offset="50%" stopColor="#b89642" />
-            <stop offset="100%" stopColor="#c9a54e" />
+          <linearGradient id={`${id}-g2`} x1="200" y1="0" x2="0" y2="200" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#c9a54e" />
+            <stop offset="50%" stopColor="#dfc06a" />
+            <stop offset="100%" stopColor="#b08d3e" />
+          </linearGradient>
+          <linearGradient id={`${id}-g3`} x1="0" y1="50" x2="200" y2="150" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stopColor="#c9a54e" />
+            <stop offset="30%" stopColor="#e0c76e" />
+            <stop offset="60%" stopColor="#b89236" />
+            <stop offset="100%" stopColor="#d4b45c" />
           </linearGradient>
         </defs>
 
-        {/* Outer circle */}
-        <circle cx="50" cy="50" r="47" stroke={`url(#${id}-gold)`} strokeWidth="2.5" fill="none" />
-        {/* Inner circle */}
-        <circle cx="50" cy="50" r="41" stroke={`url(#${id}-gold2)`} strokeWidth="1.5" fill="none" />
+        {/* Outer circle — thick */}
+        <circle cx="100" cy="100" r="95" stroke={`url(#${id}-g1)`} strokeWidth="4" fill="none" />
+        {/* Inner circle — thinner, slightly inside */}
+        <circle cx="100" cy="100" r="84" stroke={`url(#${id}-g2)`} strokeWidth="2.5" fill="none" />
 
-        {/* L letter — vertical stroke */}
-        <rect x="30" y="24" width="5.5" height="42" rx="1" fill={`url(#${id}-gold)`} />
-        {/* L letter — horizontal base with slight serif curve */}
-        <rect x="30" y="61" width="22" height="5" rx="1" fill={`url(#${id}-gold)`} />
-        {/* L serif top */}
-        <rect x="28" y="24" width="10" height="3" rx="1" fill={`url(#${id}-gold)`} />
-
-        {/* P letter — vertical stroke */}
-        <rect x="46" y="24" width="5.5" height="52" rx="1" fill={`url(#${id}-gold2)`} />
-        {/* P serif top */}
-        <rect x="44" y="24" width="10" height="3" rx="1" fill={`url(#${id}-gold2)`} />
-        {/* P serif bottom */}
-        <rect x="44" y="73" width="10" height="3" rx="1" fill={`url(#${id}-gold2)`} />
-        {/* P bowl (curved part) */}
+        {/*
+          L letter — elegant serif style with decorative bottom swoosh
+          The L vertical stroke, then horizontal base that curves up into a swoosh
+        */}
+        {/* L vertical stroke */}
         <path
-          d="M51.5 27 C66 27, 72 33, 72 42 C72 51, 66 57, 51.5 57"
-          stroke={`url(#${id}-gold2)`}
+          d="M62 42 L62 138"
+          stroke={`url(#${id}-g3)`}
+          strokeWidth="9"
+          strokeLinecap="round"
+        />
+        {/* L top serif — small horizontal bar */}
+        <path
+          d="M55 42 L72 42"
+          stroke={`url(#${id}-g3)`}
           strokeWidth="5"
+          strokeLinecap="round"
+        />
+        {/* L bottom horizontal + decorative swoosh curling up */}
+        <path
+          d="M58 138 L95 138 Q115 138, 118 125 Q120 116, 110 112"
+          stroke={`url(#${id}-g3)`}
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+
+        {/*
+          P letter — overlapping the L
+          Vertical stroke placed slightly to the right of L, with a classic rounded bowl
+        */}
+        {/* P vertical stroke */}
+        <path
+          d="M92 38 L92 158"
+          stroke={`url(#${id}-g1)`}
+          strokeWidth="9"
+          strokeLinecap="round"
+        />
+        {/* P top serif */}
+        <path
+          d="M85 38 L102 38"
+          stroke={`url(#${id}-g1)`}
+          strokeWidth="5"
+          strokeLinecap="round"
+        />
+        {/* P bottom serif */}
+        <path
+          d="M85 158 L102 158"
+          stroke={`url(#${id}-g1)`}
+          strokeWidth="5"
+          strokeLinecap="round"
+        />
+        {/* P bowl — the curved part */}
+        <path
+          d="M96 42 C128 42, 148 54, 148 74 C148 94, 128 106, 96 106"
+          stroke={`url(#${id}-g1)`}
+          strokeWidth="8"
           fill="none"
           strokeLinecap="round"
         />

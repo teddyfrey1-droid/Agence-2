@@ -11,6 +11,7 @@ import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PropertyPdfButton } from "@/components/property-pdf-button";
+import { PhotoUploader } from "@/components/photo-uploader";
 import { prisma } from "@/lib/prisma";
 
 export default async function PropertyDetailPage({
@@ -149,30 +150,25 @@ export default async function PropertyDetailPage({
             </CardContent>
           </Card>
 
-          {/* Media */}
-          {property.media.length > 0 && (
-            <Card>
-              <CardHeader>
-                <h2 className="heading-card">Médias ({property.media.length})</h2>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {property.media.map((m) => (
-                    <div
-                      key={m.id}
-                      className="aspect-square overflow-hidden rounded-lg bg-stone-100"
-                    >
-                      <img
-                        src={m.url}
-                        alt={m.title || property.title}
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* Media — Upload & Gallery */}
+          <Card>
+            <CardHeader>
+              <h2 className="heading-card">Photos ({property.media.length})</h2>
+            </CardHeader>
+            <CardContent>
+              <PhotoUploader
+                entityType="property"
+                entityId={id}
+                existingPhotos={property.media.map((m) => ({
+                  id: m.id,
+                  url: m.url,
+                  title: m.title,
+                  isPrimary: m.isPrimary,
+                  sortOrder: m.sortOrder,
+                }))}
+              />
+            </CardContent>
+          </Card>
 
           {/* Prospects - Score de matching */}
           <Card>
