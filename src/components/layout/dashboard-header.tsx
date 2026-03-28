@@ -12,7 +12,7 @@ export function DashboardHeader({
   user?: { firstName: string; lastName: string; role: string } | null;
 }) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-stone-200 bg-white/95 px-4 backdrop-blur-sm sm:px-6 dark:bg-anthracite-900/95 dark:border-stone-700/50">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-stone-200 bg-white/95 px-3 backdrop-blur-sm sm:h-16 sm:px-6 dark:bg-anthracite-900/95 dark:border-stone-700/50">
       <div className="flex items-center gap-3">
         <MobileSidebar />
         <GlobalSearch />

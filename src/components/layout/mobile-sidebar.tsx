@@ -42,15 +42,16 @@ export function MobileSidebar() {
 
       {/* Overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-[60] lg:hidden" style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/50"
             onClick={() => setIsOpen(false)}
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
           />
 
           {/* Sidebar panel */}
-          <aside className="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-white shadow-2xl dark:bg-anthracite-900">
+          <aside className="absolute inset-y-0 left-0 z-[61] flex w-72 flex-col bg-white shadow-2xl dark:bg-anthracite-900" style={{ position: "absolute", top: 0, bottom: 0, left: 0 }}>
             {/* Header with close */}
             <div className="flex h-16 items-center justify-between border-b border-stone-100 px-4 dark:border-stone-700/50">
               <Logo size="sm" />

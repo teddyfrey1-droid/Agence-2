@@ -56,16 +56,16 @@ export default async function DashboardHomePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-anthracite-900">
+        <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">
           Bonjour {session?.firstName}
         </h1>
-        <p className="text-sm text-stone-500">
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           Voici un aperçu de votre activité.
         </p>
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard label="Biens totaux" value={propertyCount} />
         <StatCard label="Biens actifs" value={activePropertyCount} />
         <StatCard label="Contacts" value={contactCount} />
@@ -79,7 +79,7 @@ export default async function DashboardHomePage() {
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         {/* Upcoming tasks */}
         <Card>
           <CardHeader>
@@ -103,7 +103,7 @@ export default async function DashboardHomePage() {
                 {recentTasks.map((task) => (
                   <li key={task.id} className="flex items-center justify-between px-6 py-3">
                     <div>
-                      <p className="text-sm font-medium text-anthracite-800">
+                      <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
                         {task.title}
                       </p>
                       <p className="text-xs text-stone-400">
@@ -147,10 +147,10 @@ export default async function DashboardHomePage() {
                   <li key={interaction.id} className="px-6 py-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-medium text-anthracite-800">
+                        <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
                           {interaction.subject || interaction.type}
                         </p>
-                        <p className="text-xs text-stone-400">
+                        <p className="text-xs text-stone-400 dark:text-stone-500">
                           {interaction.contact
                             ? `${interaction.contact.firstName} ${interaction.contact.lastName}`
                             : "—"}
