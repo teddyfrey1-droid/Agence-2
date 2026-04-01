@@ -52,19 +52,19 @@ export default async function PropertyDetailPage({
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/biens"
-              className="text-sm text-stone-400 hover:text-anthracite-700"
+              className="text-sm text-stone-400 hover:text-anthracite-700 dark:hover:text-stone-200"
             >
               Biens
             </Link>
-            <span className="text-stone-300">/</span>
-            <span className="text-sm text-anthracite-700">
+            <span className="text-stone-300 dark:text-stone-600">/</span>
+            <span className="text-sm text-anthracite-700 dark:text-stone-300">
               {property.reference}
             </span>
           </div>
-          <h1 className="mt-2 text-2xl font-semibold text-anthracite-900">
+          <h1 className="mt-2 text-2xl font-semibold text-anthracite-900 dark:text-stone-100">
             {property.title}
           </h1>
-          <p className="text-sm text-stone-500">
+          <p className="text-sm text-stone-500 dark:text-stone-400">
             {property.address && `${property.address}, `}
             {property.district || property.city}
           </p>
@@ -88,33 +88,33 @@ export default async function PropertyDetailPage({
               <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 <div>
                   <dt className="text-caption">Type</dt>
-                  <dd className="mt-1 text-sm font-medium text-anthracite-800">
+                  <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                     {PROPERTY_TYPE_LABELS[property.type]}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-caption">Transaction</dt>
-                  <dd className="mt-1 text-sm font-medium text-anthracite-800">
+                  <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                     {TRANSACTION_TYPE_LABELS[property.transactionType]}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-caption">Surface</dt>
-                  <dd className="mt-1 text-sm font-medium text-anthracite-800">
+                  <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                     {formatSurface(property.surfaceTotal)}
                   </dd>
                 </div>
                 {property.floor != null && (
                   <div>
                     <dt className="text-caption">Etage</dt>
-                    <dd className="mt-1 text-sm font-medium text-anthracite-800">
+                    <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                       {property.floor === 0 ? "RDC" : `${property.floor}e`}
                     </dd>
                   </div>
                 )}
                 <div>
                   <dt className="text-caption">Prix / Loyer</dt>
-                  <dd className="mt-1 text-sm font-medium text-anthracite-800">
+                  <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                     {property.transactionType === "LOCATION"
                       ? `${formatPrice(property.rentMonthly)}/mois`
                       : formatPrice(property.price)}
@@ -123,7 +123,7 @@ export default async function PropertyDetailPage({
                 {property.charges && (
                   <div>
                     <dt className="text-caption">Charges</dt>
-                    <dd className="mt-1 text-sm font-medium text-anthracite-800">
+                    <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                       {formatPrice(property.charges)}/mois
                     </dd>
                   </div>
@@ -141,8 +141,8 @@ export default async function PropertyDetailPage({
               )}
 
               {property.description && (
-                <div className="mt-6 border-t border-stone-100 pt-4">
-                  <p className="whitespace-pre-line text-sm text-anthracite-600">
+                <div className="mt-6 border-t border-stone-100 dark:border-stone-800 pt-4">
+                  <p className="whitespace-pre-line text-sm text-anthracite-600 dark:text-stone-300">
                     {property.description}
                   </p>
                 </div>
@@ -201,7 +201,7 @@ export default async function PropertyDetailPage({
                     return (
                       <div
                         key={match.id}
-                        className="flex items-center gap-4 rounded-lg border border-stone-100 p-3"
+                        className="flex items-center gap-4 rounded-lg border border-stone-100 dark:border-stone-800 p-3"
                       >
                         {/* Rank */}
                         <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-stone-100 text-xs font-semibold text-stone-500">

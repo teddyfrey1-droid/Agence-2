@@ -19,6 +19,9 @@ export async function PATCH(
     if (!event) {
       return NextResponse.json({ error: "Événement introuvable" }, { status: 404 });
     }
+    if (event.userId !== session.userId) {
+      return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+    }
 
     const updated = await prisma.event.update({
       where: { id },
@@ -50,6 +53,13 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const event = await prisma.event.findUnique({ where: { id } });
+    if (!event) {
+      return NextResponse.json({ error: "Événement introuvable" }, { status: 404 });
+    }
+    if (event.userId !== session.userId) {
+      return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+    }
     await prisma.event.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {

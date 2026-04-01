@@ -19,9 +19,9 @@ export default async function DossierDetailPage({
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <Link href="/dashboard/dossiers" className="text-sm text-stone-400 hover:text-anthracite-700">Dossiers</Link>
-          <h1 className="mt-2 text-2xl font-semibold text-anthracite-900">{deal.title}</h1>
-          <p className="text-sm text-stone-500">Réf. {deal.reference}</p>
+          <Link href="/dashboard/dossiers" className="text-sm text-stone-400 hover:text-anthracite-700 dark:hover:text-stone-200">Dossiers</Link>
+          <h1 className="mt-2 text-2xl font-semibold text-anthracite-900 dark:text-stone-100">{deal.title}</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400">Réf. {deal.reference}</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant={getStatusBadgeVariant(deal.stage)}>
@@ -40,14 +40,14 @@ export default async function DossierDetailPage({
             <CardHeader><h2 className="heading-card">Tâches ({deal.tasks.length})</h2></CardHeader>
             <CardContent className="p-0">
               {deal.tasks.length === 0 ? (
-                <p className="px-6 py-8 text-center text-sm text-stone-400">Aucune tâche</p>
+                <p className="px-6 py-8 text-center text-sm text-stone-400 dark:text-stone-500">Aucune tâche</p>
               ) : (
-                <ul className="divide-y divide-stone-100">
+                <ul className="divide-y divide-stone-100 dark:divide-stone-800">
                   {deal.tasks.map((t) => (
                     <li key={t.id} className="flex items-center justify-between px-6 py-3">
                       <div>
-                        <p className="text-sm font-medium text-anthracite-800">{t.title}</p>
-                        {t.dueDate && <p className="text-xs text-stone-400">Échéance: {formatDateShort(t.dueDate)}</p>}
+                        <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">{t.title}</p>
+                        {t.dueDate && <p className="text-xs text-stone-400 dark:text-stone-500">Échéance: {formatDateShort(t.dueDate)}</p>}
                       </div>
                       <Badge variant={getStatusBadgeVariant(t.priority)}>
                         {TASK_PRIORITY_LABELS[t.priority]}
@@ -64,19 +64,19 @@ export default async function DossierDetailPage({
             <CardHeader><h2 className="heading-card">Interactions ({deal.interactions.length})</h2></CardHeader>
             <CardContent className="p-0">
               {deal.interactions.length === 0 ? (
-                <p className="px-6 py-8 text-center text-sm text-stone-400">Aucune interaction</p>
+                <p className="px-6 py-8 text-center text-sm text-stone-400 dark:text-stone-500">Aucune interaction</p>
               ) : (
-                <ul className="divide-y divide-stone-100">
+                <ul className="divide-y divide-stone-100 dark:divide-stone-800">
                   {deal.interactions.map((i) => (
                     <li key={i.id} className="px-6 py-3">
                       <div className="flex items-start justify-between">
                         <div>
-                          <p className="text-sm font-medium text-anthracite-800">
+                          <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
                             {i.subject || INTERACTION_TYPE_LABELS[i.type]}
                           </p>
-                          {i.content && <p className="mt-1 text-xs text-stone-500 line-clamp-2">{i.content}</p>}
+                          {i.content && <p className="mt-1 text-xs text-stone-500 dark:text-stone-400 line-clamp-2">{i.content}</p>}
                         </div>
-                        <span className="text-xs text-stone-400">{formatDateShort(i.date)}</span>
+                        <span className="text-xs text-stone-400 dark:text-stone-500">{formatDateShort(i.date)}</span>
                       </div>
                     </li>
                   ))}
@@ -93,24 +93,24 @@ export default async function DossierDetailPage({
             <CardContent>
               <dl className="space-y-3 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Valeur estimée</dt>
-                  <dd className="font-medium text-anthracite-800">{formatPrice(deal.estimatedValue)}</dd>
+                  <dt className="text-stone-500 dark:text-stone-400">Valeur estimée</dt>
+                  <dd className="font-medium text-anthracite-800 dark:text-stone-200">{formatPrice(deal.estimatedValue)}</dd>
                 </div>
                 {deal.commission && (
                   <div className="flex justify-between">
-                    <dt className="text-stone-500">Commission</dt>
-                    <dd className="font-medium text-anthracite-800">{formatPrice(deal.commission)}</dd>
+                    <dt className="text-stone-500 dark:text-stone-400">Commission</dt>
+                    <dd className="font-medium text-anthracite-800 dark:text-stone-200">{formatPrice(deal.commission)}</dd>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Assigné à</dt>
-                  <dd className="font-medium text-anthracite-800">
+                  <dt className="text-stone-500 dark:text-stone-400">Assigné à</dt>
+                  <dd className="font-medium text-anthracite-800 dark:text-stone-200">
                     {deal.assignedTo ? `${deal.assignedTo.firstName} ${deal.assignedTo.lastName}` : "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Créé le</dt>
-                  <dd className="font-medium text-anthracite-800">{formatDate(deal.createdAt)}</dd>
+                  <dt className="text-stone-500 dark:text-stone-400">Créé le</dt>
+                  <dd className="font-medium text-anthracite-800 dark:text-stone-200">{formatDate(deal.createdAt)}</dd>
                 </div>
               </dl>
             </CardContent>
@@ -120,7 +120,7 @@ export default async function DossierDetailPage({
             <Card>
               <CardHeader><h2 className="heading-card">Bien lié</h2></CardHeader>
               <CardContent>
-                <Link href={`/dashboard/biens/${deal.property.id}`} className="text-sm font-medium text-brand-600 hover:underline">
+                <Link href={`/dashboard/biens/${deal.property.id}`} className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
                   {deal.property.title}
                 </Link>
               </CardContent>
@@ -131,7 +131,7 @@ export default async function DossierDetailPage({
             <Card>
               <CardHeader><h2 className="heading-card">Contact</h2></CardHeader>
               <CardContent>
-                <Link href={`/dashboard/contacts/${deal.contact.id}`} className="text-sm font-medium text-brand-600 hover:underline">
+                <Link href={`/dashboard/contacts/${deal.contact.id}`} className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
                   {deal.contact.firstName} {deal.contact.lastName}
                 </Link>
               </CardContent>

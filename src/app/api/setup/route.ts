@@ -67,12 +67,8 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      message: "Setup terminé !",
+      message: "Setup terminé ! Connectez-vous avec admin@agence-immo.fr",
       ok: true,
-      accounts: [
-        { email: "admin@agence-immo.fr", password: "admin123", role: "SUPER_ADMIN" },
-        { email: "agent@agence-immo.fr", password: "agent123", role: "AGENT" },
-      ],
     });
   } catch (error) {
     return NextResponse.json(

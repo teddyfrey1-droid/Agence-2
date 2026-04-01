@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-import { findDealById, updateDeal } from "@/modules/deals";
-import { updateDealSchema } from "@/modules/deals/deals.schema";
+import { findTaskById, updateTask } from "@/modules/tasks";
+import { updateTaskSchema } from "@/modules/tasks/tasks.schema";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -14,15 +14,15 @@ export async function GET(
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
-    if (!hasPermission(session.role, "deal", "read")) {
+    if (!hasPermission(session.role, "task", "read")) {
       return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
     }
     const { id } = await params;
-    const deal = await findDealById(id);
-    if (!deal) {
-      return NextResponse.json({ error: "Dossier introuvable" }, { status: 404 });
+    const task = await findTaskById(id);
+    if (!task) {
+      return NextResponse.json({ error: "Tâche introuvable" }, { status: 404 });
     }
-    return NextResponse.json(deal);
+    return NextResponse.json(task);
   } catch {
     return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }
@@ -37,12 +37,12 @@ export async function PATCH(
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
-    if (!hasPermission(session.role, "deal", "update")) {
+    if (!hasPermission(session.role, "task", "update")) {
       return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
     }
     const { id } = await params;
     const body = await request.json();
-    const parsed = updateDealSchema.safeParse(body);
+    const parsed = updateTaskSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { error: "Données invalides", details: parsed.error.flatten() },
@@ -50,16 +50,17 @@ export async function PATCH(
       );
     }
     const data = parsed.data;
-    const deal = await updateDeal(id, {
-      ...(data.stage !== undefined && { stage: data.stage as never }),
-      ...(data.status !== undefined && { status: data.status as never }),
+    const task = await updateTask(id, {
       ...(data.title !== undefined && { title: data.title }),
-      ...(data.estimatedValue !== undefined && { estimatedValue: data.estimatedValue }),
-      ...(data.finalValue !== undefined && { finalValue: data.finalValue }),
       ...(data.description !== undefined && { description: data.description }),
-      ...(data.lostReason !== undefined && { lostReason: data.lostReason }),
+      ...(data.priority !== undefined && { priority: data.priority as never }),
+      ...(data.status !== undefined && { status: data.status as never }),
+      ...(data.dueDate !== undefined && { dueDate: data.dueDate ? new Date(data.dueDate) : null }),
+      ...(data.assignedToId !== undefined && {
+        assignedTo: data.assignedToId ? { connect: { id: data.assignedToId } } : { disconnect: true },
+      }),
     });
-    return NextResponse.json(deal);
+    return NextResponse.json(task);
   } catch {
     return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }
@@ -74,11 +75,11 @@ export async function DELETE(
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
-    if (!hasPermission(session.role, "deal", "delete")) {
+    if (!hasPermission(session.role, "task", "delete")) {
       return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
     }
     const { id } = await params;
-    await prisma.deal.delete({ where: { id } });
+    await prisma.task.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Erreur interne" }, { status: 500 });

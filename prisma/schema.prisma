@@ -369,6 +369,10 @@ model Property {
   statusHistory StatusHistory[]
   events        Event[]
 
+  @@index([assignedToId])
+  @@index([status])
+  @@index([type])
+  @@index([city])
   @@map("properties")
 }
 
@@ -516,6 +520,9 @@ model Deal {
   statusHistory StatusHistory[]
   events        Event[]
 
+  @@index([assignedToId])
+  @@index([status])
+  @@index([stage])
   @@map("deals")
 }
 
@@ -546,6 +553,9 @@ model Task {
   searchRequest SearchRequest? @relation(fields: [searchRequestId], references: [id])
   deal          Deal?          @relation(fields: [dealId], references: [id])
 
+  @@index([assignedToId])
+  @@index([status])
+  @@index([dueDate])
   @@map("tasks")
 }
 

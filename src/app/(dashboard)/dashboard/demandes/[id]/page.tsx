@@ -19,12 +19,12 @@ export default async function DemandeDetailPage({
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-2 text-sm text-stone-400">
-            <Link href="/dashboard/demandes" className="hover:text-anthracite-700">Demandes</Link>
+          <div className="flex items-center gap-2 text-sm text-stone-400 dark:text-stone-500">
+            <Link href="/dashboard/demandes" className="hover:text-anthracite-700 dark:hover:text-stone-200">Demandes</Link>
             <span>/</span>
-            <span className="text-anthracite-700">{request.reference}</span>
+            <span className="text-anthracite-700 dark:text-stone-300">{request.reference}</span>
           </div>
-          <h1 className="mt-2 text-2xl font-semibold text-anthracite-900">
+          <h1 className="mt-2 text-2xl font-semibold text-anthracite-900 dark:text-stone-100">
             Demande {request.reference}
           </h1>
         </div>
@@ -41,7 +41,7 @@ export default async function DemandeDetailPage({
               <dl className="grid grid-cols-2 gap-4">
                 <div>
                   <dt className="text-caption">Transaction</dt>
-                  <dd className="mt-1 text-sm font-medium text-anthracite-800">
+                  <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                     {request.transactionType ? TRANSACTION_TYPE_LABELS[request.transactionType] : "—"}
                   </dd>
                 </div>
@@ -55,20 +55,20 @@ export default async function DemandeDetailPage({
                 </div>
                 <div>
                   <dt className="text-caption">Surface</dt>
-                  <dd className="mt-1 text-sm font-medium text-anthracite-800">
+                  <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                     {formatSurface(request.surfaceMin)} — {formatSurface(request.surfaceMax)}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-caption">Budget</dt>
-                  <dd className="mt-1 text-sm font-medium text-anthracite-800">
+                  <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                     {formatPrice(request.budgetMin)} — {formatPrice(request.budgetMax)}
                   </dd>
                 </div>
                 {request.activity && (
                   <div>
                     <dt className="text-caption">Activité</dt>
-                    <dd className="mt-1 text-sm font-medium text-anthracite-800">{request.activity}</dd>
+                    <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">{request.activity}</dd>
                   </div>
                 )}
                 {request.districts.length > 0 && (
@@ -83,7 +83,7 @@ export default async function DemandeDetailPage({
                 )}
               </dl>
               {request.description && (
-                <p className="mt-4 border-t border-stone-100 pt-4 text-sm text-anthracite-600">
+                <p className="mt-4 border-t border-stone-100 pt-4 text-sm text-anthracite-600 dark:border-stone-800 dark:text-stone-300">
                   {request.description}
                 </p>
               )}
@@ -97,23 +97,23 @@ export default async function DemandeDetailPage({
             </CardHeader>
             <CardContent>
               {request.matches.length === 0 ? (
-                <p className="py-4 text-center text-sm text-stone-400">Aucun match pour le moment</p>
+                <p className="py-4 text-center text-sm text-stone-400 dark:text-stone-500">Aucun match pour le moment</p>
               ) : (
                 <div className="space-y-3">
                   {request.matches.map((match) => (
-                    <div key={match.id} className="flex items-center justify-between rounded-lg border border-stone-100 p-3">
+                    <div key={match.id} className="flex items-center justify-between rounded-lg border border-stone-100 p-3 dark:border-stone-800">
                       <div>
-                        <Link href={`/dashboard/biens/${match.property.id}`} className="text-sm font-medium text-brand-600 hover:underline">
+                        <Link href={`/dashboard/biens/${match.property.id}`} className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
                           {match.property.title}
                         </Link>
                         <div className="mt-1 flex flex-wrap gap-1">
                           {match.reasons.map((r, i) => (
-                            <span key={i} className="text-xs text-stone-400">{r}{i < match.reasons.length - 1 ? " · " : ""}</span>
+                            <span key={i} className="text-xs text-stone-400 dark:text-stone-500">{r}{i < match.reasons.length - 1 ? " · " : ""}</span>
                           ))}
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="text-lg font-bold text-anthracite-900">{match.score}%</span>
+                        <span className="text-lg font-bold text-anthracite-900 dark:text-stone-100">{match.score}%</span>
                         <Badge variant={getStatusBadgeVariant(match.status)} className="ml-2">{match.status}</Badge>
                       </div>
                     </div>
@@ -131,14 +131,14 @@ export default async function DemandeDetailPage({
             <CardContent>
               {request.contact ? (
                 <div className="space-y-1 text-sm">
-                  <Link href={`/dashboard/contacts/${request.contact.id}`} className="font-medium text-brand-600 hover:underline">
+                  <Link href={`/dashboard/contacts/${request.contact.id}`} className="font-medium text-brand-600 hover:underline dark:text-brand-400">
                     {request.contact.firstName} {request.contact.lastName}
                   </Link>
-                  {request.contact.email && <p className="text-stone-500">{request.contact.email}</p>}
-                  {request.contact.phone && <p className="text-stone-500">{request.contact.phone}</p>}
+                  {request.contact.email && <p className="text-stone-500 dark:text-stone-400">{request.contact.email}</p>}
+                  {request.contact.phone && <p className="text-stone-500 dark:text-stone-400">{request.contact.phone}</p>}
                 </div>
               ) : (
-                <p className="text-sm text-stone-400">Aucun contact lié</p>
+                <p className="text-sm text-stone-400 dark:text-stone-500">Aucun contact lié</p>
               )}
             </CardContent>
           </Card>
@@ -151,7 +151,7 @@ export default async function DemandeDetailPage({
                 <div className="text-center">
                   <div className="relative mx-auto h-20 w-20">
                     <svg className="h-20 w-20 -rotate-90" viewBox="0 0 36 36">
-                      <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                      <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#e5e7eb" strokeWidth="3" className="dark:stroke-stone-700" />
                       <path d="M18 2.0845a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={request.qualificationScore >= 70 ? "#059669" : request.qualificationScore >= 40 ? "#d97706" : "#ef4444"} strokeWidth="3" strokeDasharray={`${request.qualificationScore}, 100`} />
                     </svg>
                     <span className="absolute inset-0 flex items-center justify-center text-xl font-bold text-anthracite-800 dark:text-stone-200">
@@ -163,7 +163,7 @@ export default async function DemandeDetailPage({
                   </p>
                 </div>
               ) : (
-                <p className="text-center text-sm text-stone-400">Non évalué</p>
+                <p className="text-center text-sm text-stone-400 dark:text-stone-500">Non évalué</p>
               )}
             </CardContent>
           </Card>
@@ -173,18 +173,18 @@ export default async function DemandeDetailPage({
             <CardContent>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Source</dt>
-                  <dd className="font-medium text-anthracite-800">{request.source}</dd>
+                  <dt className="text-stone-500 dark:text-stone-400">Source</dt>
+                  <dd className="font-medium text-anthracite-800 dark:text-stone-200">{request.source}</dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Assigné à</dt>
-                  <dd className="font-medium text-anthracite-800">
+                  <dt className="text-stone-500 dark:text-stone-400">Assigné à</dt>
+                  <dd className="font-medium text-anthracite-800 dark:text-stone-200">
                     {request.assignedTo ? `${request.assignedTo.firstName} ${request.assignedTo.lastName}` : "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between">
-                  <dt className="text-stone-500">Créée le</dt>
-                  <dd className="font-medium text-anthracite-800">{formatDate(request.createdAt)}</dd>
+                  <dt className="text-stone-500 dark:text-stone-400">Créée le</dt>
+                  <dd className="font-medium text-anthracite-800 dark:text-stone-200">{formatDate(request.createdAt)}</dd>
                 </div>
               </dl>
             </CardContent>
