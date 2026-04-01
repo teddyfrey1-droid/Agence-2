@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 
-interface AddressResult {
+export interface AddressResult {
   label: string;
   name: string;
   city: string;
   postcode: string;
   context: string;
+  x?: number;
+  y?: number;
 }
 
 interface AddressAutocompleteProps {
@@ -36,6 +38,14 @@ export function AddressAutocomplete({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // Sync with external value changes (e.g. from geolocation)
+  useEffect(() => {
+    if (initialValue && initialValue !== query) {
+      setQuery(initialValue);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialValue]);
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -63,12 +73,14 @@ export function AddressAutocomplete({
         if (res.ok) {
           const data = await res.json();
           const items: AddressResult[] = (data.features || []).map(
-            (f: { properties: { label: string; name: string; city: string; postcode: string; context: string } }) => ({
+            (f: { properties: { label: string; name: string; city: string; postcode: string; context: string }; geometry?: { coordinates?: number[] } }) => ({
               label: f.properties.label,
               name: f.properties.name,
               city: f.properties.city,
               postcode: f.properties.postcode,
               context: f.properties.context,
+              x: f.geometry?.coordinates?.[0],
+              y: f.geometry?.coordinates?.[1],
             })
           );
           setResults(items);

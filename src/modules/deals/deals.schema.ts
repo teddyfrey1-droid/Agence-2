@@ -15,6 +15,10 @@ export const createDealSchema = z.object({
   description: z.string().optional(),
   notes: z.string().optional(),
   expectedCloseAt: z.string().optional(),
+  propertyFoundById: z.string().optional(),
+  dealClosedById: z.string().optional(),
+  finderCommissionPct: z.number().min(0).max(100).optional(),
+  closerCommissionPct: z.number().min(0).max(100).optional(),
 });
 
 export const updateDealSchema = createDealSchema.partial().extend({

@@ -226,6 +226,8 @@ model User {
   properties     Property[]
   searchRequests SearchRequest[]
   deals          Deal[]
+  dealsFound     Deal[]          @relation("DealFinder")
+  dealsClosed    Deal[]          @relation("DealCloser")
   tasks          Task[]
   interactions   Interaction[]
   fieldSpottings FieldSpotting[]
@@ -500,6 +502,12 @@ model Deal {
   finalValue      Float?
   commission      Float?
 
+  // Commission Attribution
+  propertyFoundById  String?
+  dealClosedById     String?
+  finderCommissionPct Float?  @default(30)
+  closerCommissionPct Float?  @default(70)
+
   // Details
   description     String?
   notes           String?
@@ -513,12 +521,14 @@ model Deal {
   property      Property?      @relation(fields: [propertyId], references: [id])
   contact       Contact?       @relation(fields: [contactId], references: [id])
   searchRequest SearchRequest? @relation(fields: [searchRequestId], references: [id])
-  assignedTo    User?          @relation(fields: [assignedToId], references: [id])
-  tasks         Task[]
-  interactions  Interaction[]
-  documents     Document[]
-  statusHistory StatusHistory[]
-  events        Event[]
+  assignedTo      User?          @relation(fields: [assignedToId], references: [id])
+  propertyFoundBy User?          @relation("DealFinder", fields: [propertyFoundById], references: [id])
+  dealClosedBy    User?          @relation("DealCloser", fields: [dealClosedById], references: [id])
+  tasks           Task[]
+  interactions    Interaction[]
+  documents       Document[]
+  statusHistory   StatusHistory[]
+  events          Event[]
 
   @@index([assignedToId])
   @@index([status])

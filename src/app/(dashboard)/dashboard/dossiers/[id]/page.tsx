@@ -116,6 +116,56 @@ export default async function DossierDetailPage({
             </CardContent>
           </Card>
 
+          {/* Commission Attribution */}
+          {deal.commission && (
+            <Card>
+              <CardHeader><h2 className="heading-card">Répartition commission</h2></CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-brand-600 dark:text-brand-400">{formatPrice(deal.commission)}</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400">Commission totale</p>
+                  </div>
+                  <div className="h-px bg-stone-100 dark:bg-stone-800" />
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-anthracite-800 dark:text-stone-200">
+                          {deal.propertyFoundBy
+                            ? `${deal.propertyFoundBy.firstName} ${deal.propertyFoundBy.lastName}`
+                            : "Non attribué"}
+                        </p>
+                        <p className="text-xs text-stone-400 dark:text-stone-500">Apporteur du bien</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-anthracite-800 dark:text-stone-200">
+                          {formatPrice(deal.commission * (deal.finderCommissionPct || 30) / 100)}
+                        </p>
+                        <p className="text-xs text-stone-400 dark:text-stone-500">{deal.finderCommissionPct || 30}%</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-anthracite-800 dark:text-stone-200">
+                          {deal.dealClosedBy
+                            ? `${deal.dealClosedBy.firstName} ${deal.dealClosedBy.lastName}`
+                            : "Non attribué"}
+                        </p>
+                        <p className="text-xs text-stone-400 dark:text-stone-500">Vendeur / Closer</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-anthracite-800 dark:text-stone-200">
+                          {formatPrice(deal.commission * (deal.closerCommissionPct || 70) / 100)}
+                        </p>
+                        <p className="text-xs text-stone-400 dark:text-stone-500">{deal.closerCommissionPct || 70}%</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {deal.property && (
             <Card>
               <CardHeader><h2 className="heading-card">Bien lié</h2></CardHeader>

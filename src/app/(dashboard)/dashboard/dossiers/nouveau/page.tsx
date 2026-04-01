@@ -113,6 +113,9 @@ export default function NouveauDossierPage() {
           stage: formData.get("stage") || "PROSPECT",
           estimatedValue: formData.get("estimatedValue") ? Number(formData.get("estimatedValue")) : undefined,
           description: formData.get("description") || undefined,
+          commission: formData.get("commission") ? Number(formData.get("commission")) : undefined,
+          finderCommissionPct: formData.get("finderCommissionPct") ? Number(formData.get("finderCommissionPct")) : undefined,
+          closerCommissionPct: formData.get("closerCommissionPct") ? Number(formData.get("closerCommissionPct")) : undefined,
           propertyId: selectedProperty?.id || undefined,
           contactId: selectedContact?.id || undefined,
         }),
@@ -301,6 +304,21 @@ export default function NouveauDossierPage() {
                 </ul>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Commission */}
+        <Card>
+          <CardHeader><h2 className="heading-card">Commission</h2></CardHeader>
+          <CardContent className="space-y-4">
+            <Input id="commission" name="commission" type="number" label="Commission totale (€)" min={0} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input id="finderCommissionPct" name="finderCommissionPct" type="number" label="Part apporteur (%)" min={0} max={100} defaultValue="30" />
+              <Input id="closerCommissionPct" name="closerCommissionPct" type="number" label="Part vendeur (%)" min={0} max={100} defaultValue="70" />
+            </div>
+            <p className="text-xs text-stone-400 dark:text-stone-500">
+              L&apos;apporteur est celui qui a trouvé le bien, le vendeur est celui qui conclut la vente. L&apos;attribution se fait après la création.
+            </p>
           </CardContent>
         </Card>
 
