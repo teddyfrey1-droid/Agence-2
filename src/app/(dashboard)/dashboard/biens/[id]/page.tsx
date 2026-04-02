@@ -12,6 +12,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PropertyPdfButton } from "@/components/property-pdf-button";
 import { PhotoUploader } from "@/components/photo-uploader";
+import { DeleteButton } from "@/components/delete-button";
 import { prisma } from "@/lib/prisma";
 
 export default async function PropertyDetailPage({
@@ -306,6 +307,7 @@ export default async function PropertyDetailPage({
                 Lancer le matching
               </Button>
               <PropertyPdfButton propertyId={id} />
+              <DeleteButton entityId={id} entityType="properties" entityLabel="Bien" redirectTo="/dashboard/biens" />
             </CardContent>
           </Card>
 

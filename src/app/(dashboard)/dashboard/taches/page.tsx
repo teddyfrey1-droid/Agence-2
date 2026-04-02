@@ -5,6 +5,7 @@ import { TASK_PRIORITY_LABELS, TASK_STATUS_LABELS } from "@/lib/constants";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pagination } from "@/components/ui/pagination";
 
 export default async function TachesPage({
   searchParams,
@@ -13,7 +14,7 @@ export default async function TachesPage({
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
-  const { items, total } = await findTasks(
+  const { items, total, totalPages } = await findTasks(
     { status: params.status, priority: params.priority },
     page
   );
@@ -21,27 +22,27 @@ export default async function TachesPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-anthracite-900">Tâches</h1>
-        <p className="text-sm text-stone-500">{total} tâche(s)</p>
+        <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Taches</h1>
+        <p className="text-sm text-stone-500 dark:text-stone-400">{total} tache(s)</p>
       </div>
 
       {items.length === 0 ? (
-        <EmptyState title="Aucune tâche" description="Les tâches créées manuellement ou automatiquement apparaîtront ici." />
+        <EmptyState title="Aucune tache" description="Les taches creees manuellement ou automatiquement apparaitront ici." />
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-stone-100 bg-stone-50/50">
-                  <th className="px-4 py-3 text-left font-medium text-stone-500">Tâche</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500">Priorité</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500">Statut</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500">Assigné</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500">Lié à</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500">Échéance</th>
+                <tr className="border-b border-stone-100 bg-stone-50/50 dark:border-stone-700/50 dark:bg-anthracite-800/50">
+                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Tache</th>
+                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Priorite</th>
+                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Statut</th>
+                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Assigne</th>
+                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Lie a</th>
+                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Echeance</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
                 {items.map((task) => {
                   const isOverdue =
                     task.dueDate &&
@@ -49,11 +50,11 @@ export default async function TachesPage({
                     ["A_FAIRE", "EN_COURS"].includes(task.status);
 
                   return (
-                    <tr key={task.id} className="hover:bg-stone-50 transition-colors">
+                    <tr key={task.id} className="transition-colors hover:bg-stone-50 dark:hover:bg-anthracite-800/50">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-anthracite-800">{task.title}</p>
+                        <p className="font-medium text-anthracite-800 dark:text-stone-200">{task.title}</p>
                         {task.description && (
-                          <p className="text-xs text-stone-400 line-clamp-1">{task.description}</p>
+                          <p className="text-xs text-stone-400 dark:text-stone-500 line-clamp-1">{task.description}</p>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -66,29 +67,29 @@ export default async function TachesPage({
                           {TASK_STATUS_LABELS[task.status]}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-stone-600">
+                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">
                         {task.assignedTo
                           ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}`
                           : "—"}
                       </td>
-                      <td className="px-4 py-3 text-xs text-stone-500">
+                      <td className="px-4 py-3 text-xs text-stone-500 dark:text-stone-400">
                         {task.contact && (
-                          <Link href={`/dashboard/contacts/${task.contact.firstName}`} className="text-brand-600 hover:underline">
+                          <Link href={`/dashboard/contacts/${task.contactId}`} className="text-brand-600 hover:underline dark:text-brand-400">
                             {task.contact.firstName} {task.contact.lastName}
                           </Link>
                         )}
                         {task.property && (
-                          <Link href={`/dashboard/biens/${task.property.reference}`} className="text-brand-600 hover:underline">
+                          <Link href={`/dashboard/biens/${task.propertyId}`} className="text-brand-600 hover:underline dark:text-brand-400">
                             {task.property.title}
                           </Link>
                         )}
                         {task.deal && (
-                          <Link href={`/dashboard/dossiers/${task.deal.reference}`} className="text-brand-600 hover:underline">
+                          <Link href={`/dashboard/dossiers/${task.dealId}`} className="text-brand-600 hover:underline dark:text-brand-400">
                             {task.deal.title}
                           </Link>
                         )}
                       </td>
-                      <td className={`px-4 py-3 ${isOverdue ? "font-medium text-red-600" : "text-stone-400"}`}>
+                      <td className={`px-4 py-3 ${isOverdue ? "font-medium text-red-600 dark:text-red-400" : "text-stone-400 dark:text-stone-500"}`}>
                         {task.dueDate ? formatDateShort(task.dueDate) : "—"}
                       </td>
                     </tr>
@@ -99,6 +100,8 @@ export default async function TachesPage({
           </div>
         </Card>
       )}
+
+      <Pagination currentPage={page} totalPages={totalPages} basePath="/dashboard/taches" params={{ status: params.status, priority: params.priority }} />
     </div>
   );
 }

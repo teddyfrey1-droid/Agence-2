@@ -6,6 +6,7 @@ import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pagination } from "@/components/ui/pagination";
 
 const statusLabels: Record<string, string> = {
   REPERE: "Repéré",
@@ -22,14 +23,14 @@ export default async function TerrainPage({
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
-  const { items, total } = await findFieldSpottings({ status: params.status }, page);
+  const { items, total, totalPages } = await findFieldSpottings({ status: params.status }, page);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-anthracite-900">Repérages terrain</h1>
-          <p className="text-sm text-stone-500">{total} repérage(s)</p>
+          <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Reperages terrain</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400">{total} reperage(s)</p>
         </div>
         <Link href="/dashboard/terrain/nouveau">
           <Button>Nouveau repérage</Button>
@@ -81,6 +82,7 @@ export default async function TerrainPage({
           ))}
         </div>
       )}
+      <Pagination currentPage={page} totalPages={totalPages} basePath="/dashboard/terrain" params={{ status: params.status }} />
     </div>
   );
 }

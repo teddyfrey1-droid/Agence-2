@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { Pagination } from "@/components/ui/pagination";
 
 export default async function ContactsPage({
   searchParams,
@@ -15,7 +16,7 @@ export default async function ContactsPage({
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
-  const { items, total } = await findContacts(
+  const { items, total, totalPages } = await findContacts(
     { type: params.type, search: params.search },
     page
   );
@@ -132,6 +133,8 @@ export default async function ContactsPage({
           </Card>
         </>
       )}
+
+      <Pagination currentPage={page} totalPages={totalPages} basePath="/dashboard/contacts" params={{ type: params.type, search: params.search }} />
     </div>
   );
 }

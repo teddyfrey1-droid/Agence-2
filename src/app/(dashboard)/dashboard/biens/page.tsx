@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { Pagination } from "@/components/ui/pagination";
 
 export default async function BiensListPage({
   searchParams,
@@ -152,25 +153,7 @@ export default async function BiensListPage({
         </>
       )}
 
-      {totalPages > 1 && (
-        <div className="flex justify-center gap-2">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
-            const qp = new URLSearchParams();
-            qp.set("page", String(p));
-            if (params.status) qp.set("status", params.status);
-            if (params.type) qp.set("type", params.type);
-            if (params.search) qp.set("search", params.search);
-            return (
-              <Link key={p} href={`/dashboard/biens?${qp.toString()}`}
-                className={`rounded-lg px-3 py-1.5 text-sm ${p === page
-                  ? "bg-anthracite-900 text-white dark:bg-brand-600"
-                  : "bg-white text-stone-600 hover:bg-stone-50 border border-stone-200 dark:bg-anthracite-800 dark:text-stone-300 dark:border-stone-700 dark:hover:bg-anthracite-700"
-                }`}
-              >{p}</Link>
-            );
-          })}
-        </div>
-      )}
+      <Pagination currentPage={page} totalPages={totalPages} basePath="/dashboard/biens" params={{ status: params.status, type: params.type, search: params.search }} />
     </div>
   );
 }

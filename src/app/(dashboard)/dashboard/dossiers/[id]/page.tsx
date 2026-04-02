@@ -7,6 +7,7 @@ import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { QuickInteractionForm } from "@/components/quick-interaction-form";
 import { QuickTaskForm } from "@/components/quick-task-form";
+import { DeleteButton } from "@/components/delete-button";
 
 export default async function DossierDetailPage({
   params,
@@ -30,6 +31,7 @@ export default async function DossierDetailPage({
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" /></svg>
             Modifier
           </Link>
+          <DeleteButton entityId={id} entityType="deals" entityLabel="Dossier" redirectTo="/dashboard/dossiers" />
           <Badge variant={getStatusBadgeVariant(deal.stage)}>
             {DEAL_STAGE_LABELS[deal.stage]}
           </Badge>
