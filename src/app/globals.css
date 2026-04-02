@@ -8,39 +8,158 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-brand-50 text-anthracite-900 font-sans;
+    @apply bg-brand-50 text-anthracite-900 font-sans dark:bg-anthracite-950 dark:text-stone-100;
+    --sidebar-bg: #ffffff;
+  }
+
+  .dark body,
+  body.dark {
+    --sidebar-bg: #1a1a1a;
+  }
+
+  html.dark {
+    --sidebar-bg: #1a1a1a;
+  }
+
+  /* Smooth selection */
+  ::selection {
+    @apply bg-brand-200 text-anthracite-900 dark:bg-brand-800 dark:text-white;
   }
 }
 
 @layer components {
   .container-page {
-    @apply mx-auto max-w-7xl px-6;
+    @apply mx-auto max-w-7xl px-4 sm:px-6;
   }
 
   .section-padding {
-    @apply py-16 md:py-24;
+    @apply py-12 sm:py-16 md:py-24;
   }
 
   .heading-display {
-    @apply font-serif text-3xl font-semibold tracking-tight text-anthracite-900 md:text-4xl lg:text-5xl;
+    @apply font-serif text-3xl font-semibold tracking-tight text-anthracite-900 md:text-4xl lg:text-5xl dark:text-stone-100;
   }
 
   .heading-section {
-    @apply font-serif text-2xl font-semibold tracking-tight text-anthracite-900 md:text-3xl;
+    @apply font-serif text-2xl font-semibold tracking-tight text-anthracite-900 md:text-3xl dark:text-stone-100;
   }
 
   .heading-card {
-    @apply text-lg font-semibold text-anthracite-900;
+    @apply text-base font-semibold text-anthracite-900 sm:text-lg dark:text-stone-100;
   }
 
   .text-body {
-    @apply text-base leading-relaxed text-anthracite-600;
+    @apply text-base leading-relaxed text-anthracite-600 dark:text-stone-300;
   }
 
   .text-caption {
-    @apply text-sm text-stone-500;
+    @apply text-xs font-medium uppercase tracking-wider text-stone-400 sm:text-sm sm:normal-case sm:tracking-normal sm:font-normal sm:text-stone-500 dark:text-stone-400;
+  }
+
+  /* Premium gradient backgrounds */
+  .bg-gradient-premium {
+    background: linear-gradient(135deg, #faf8f5 0%, #f3efe8 50%, #e8e0d3 100%);
+  }
+
+  :is(.dark) .bg-gradient-premium {
+    background: linear-gradient(135deg, #0f1117 0%, #1a1b23 50%, #252630 100%);
+  }
+
+  .bg-gradient-dark {
+    background: linear-gradient(135deg, #1e1f27 0%, #333541 100%);
+  }
+
+  /* Glass effect for sticky headers */
+  .glass {
+    @apply bg-white/80 backdrop-blur-lg dark:bg-anthracite-900/80;
+  }
+
+  /* Score ring animation */
+  @keyframes score-fill {
+    from { stroke-dashoffset: 283; }
+  }
+
+  .score-ring {
+    animation: score-fill 1s ease-out forwards;
+  }
+
+  /* Toast slide up */
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
+
+  /* Modal backdrop fade-in */
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.2s ease-out;
+  }
+
+  /* Modal scale-in */
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.2s ease-out;
+  }
+
+  /* Staggered card entrance */
+  @keyframes card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-card-enter {
+    animation: card-enter 0.3s ease-out both;
+  }
+
+  /* Shimmer for skeletons */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.3) 50%, transparent 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  :is(.dark) .animate-shimmer {
+    background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.05) 50%, transparent 75%);
+    background-size: 200% 100%;
   }
 }

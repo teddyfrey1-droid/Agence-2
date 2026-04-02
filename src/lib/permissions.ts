@@ -106,6 +106,19 @@ const PERMISSIONS: PermissionMap = {
     agency: [],
     audit_log: [],
   },
+  CLIENT: {
+    property: ["read"],
+    contact: [],
+    search_request: ["create", "read"],
+    deal: ["read"],
+    task: [],
+    interaction: [],
+    field_spotting: [],
+    match: ["read"],
+    user: [],
+    agency: [],
+    audit_log: [],
+  },
 };
 
 export function hasPermission(

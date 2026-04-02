@@ -7,3 +7,6 @@ export { Card, CardHeader, CardContent, CardFooter } from "./card";
 export { StatCard } from "./stat-card";
 export { EmptyState } from "./empty-state";
 export { Logo, LogoMark } from "./logo";
+export { Modal, ConfirmModal } from "./modal";
+export { Tabs } from "./tabs";
+export { Checkbox } from "./checkbox";

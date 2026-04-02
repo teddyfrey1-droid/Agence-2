@@ -8,11 +8,13 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { CONTACT_TYPE_LABELS } from "@/lib/constants";
+import { useToast } from "@/components/ui/toast";
 
 const typeOptions = Object.entries(CONTACT_TYPE_LABELS).map(([value, label]) => ({ value, label }));
 
 export default function NouveauContactPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,9 +42,11 @@ export default function NouveauContactPage() {
       });
       if (!res.ok) { const data = await res.json(); throw new Error(data.error || "Erreur"); }
       const contact = await res.json();
+      addToast("Contact créé avec succès", "success");
       router.push(`/dashboard/contacts/${contact.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
+      addToast("Erreur lors de la création", "error");
     } finally {
       setIsSubmitting(false);
     }

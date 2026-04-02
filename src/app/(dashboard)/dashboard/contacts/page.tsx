@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { FilterBar } from "@/components/ui/filter-bar";
+import { Pagination } from "@/components/ui/pagination";
 
 export default async function ContactsPage({
   searchParams,
@@ -14,28 +16,51 @@ export default async function ContactsPage({
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
-  const { items, total } = await findContacts(
+  const { items, total, totalPages } = await findContacts(
     { type: params.type, search: params.search },
     page
   );
+
+  const hasFilters = !!(params.type || params.search);
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl">Contacts</h1>
-          <p className="text-sm text-stone-500">{total} contact(s)</p>
+          <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Contacts</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400">{total} contact(s)</p>
         </div>
-        <Link href="/dashboard/contacts/nouveau">
-          <Button className="whitespace-nowrap">
-            <span className="hidden sm:inline">Nouveau contact</span>
-            <span className="sm:hidden">+ Contact</span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <a href="/api/export?type=contacts" download>
+            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+              CSV
+            </Button>
+          </a>
+          <Link href="/dashboard/contacts/nouveau">
+            <Button className="whitespace-nowrap">
+              <span className="hidden sm:inline">Nouveau contact</span>
+              <span className="sm:hidden">+ Contact</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
+      <FilterBar
+        basePath="/dashboard/contacts"
+        searchPlaceholder="Rechercher un contact..."
+        filters={[
+          { name: "type", label: "Type", options: Object.entries(CONTACT_TYPE_LABELS).map(([value, label]) => ({ value, label })) },
+        ]}
+        currentParams={params}
+      />
+
       {items.length === 0 ? (
-        <EmptyState title="Aucun contact" description="Ajoutez votre premier contact ou attendez les premières demandes via le site." />
+        <EmptyState
+          title={hasFilters ? "Aucun résultat" : "Aucun contact"}
+          description={hasFilters ? "Aucun contact ne correspond à vos filtres." : "Ajoutez votre premier contact ou attendez les premières demandes via le site."}
+          action={hasFilters ? (<Link href="/dashboard/contacts"><Button variant="secondary">Effacer les filtres</Button></Link>) : undefined}
+        />
       ) : (
         <>
           {/* Mobile: card view */}
@@ -45,24 +70,25 @@ export default async function ContactsPage({
                 <Card className="p-4 active:bg-stone-50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-anthracite-800">
-                        {contact.firstName} {contact.lastName}
-                      </p>
-                      {contact.company && (
-                        <p className="text-xs text-stone-400 mt-0.5 truncate">{contact.company}</p>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
+                          {contact.firstName?.[0]}{contact.lastName?.[0]}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-anthracite-800 dark:text-stone-200">
+                            {contact.firstName} {contact.lastName}
+                          </p>
+                          {contact.company && (
+                            <p className="text-xs text-stone-400 dark:text-stone-500">{contact.company}</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <Badge>{CONTACT_TYPE_LABELS[contact.type] || contact.type}</Badge>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-500">
+                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
                     {contact.email && <span>{contact.email}</span>}
-                    {(contact.phone || contact.mobile) && (
-                      <a href={`tel:${contact.phone || contact.mobile}`} className="text-brand-600" onClick={(e) => e.stopPropagation()}>
-                        {contact.phone || contact.mobile}
-                      </a>
-                    )}
-                  </div>
-                  <div className="mt-2 flex items-center gap-3 text-xs text-stone-400">
+                    {(contact.phone || contact.mobile) && <span>{contact.phone || contact.mobile}</span>}
                     <span>{contact._count.searchRequests} demande(s)</span>
                     <span>{contact._count.deals} dossier(s)</span>
                     <span className="ml-auto">{formatDateShort(contact.updatedAt)}</span>
@@ -77,32 +103,32 @@ export default async function ContactsPage({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-stone-100 bg-stone-50/50">
-                    <th className="px-4 py-3 text-left font-medium text-stone-500">Nom</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500">Société</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500">Type</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500">Email</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500">Téléphone</th>
-                    <th className="px-4 py-3 text-center font-medium text-stone-500">Demandes</th>
-                    <th className="px-4 py-3 text-center font-medium text-stone-500">Dossiers</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500">Modifié</th>
+                  <tr className="border-b border-stone-100 bg-stone-50/50 dark:border-stone-700/50 dark:bg-anthracite-800/50">
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Nom</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Société</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Type</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Email</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Téléphone</th>
+                    <th className="px-4 py-3 text-center font-medium text-stone-500 dark:text-stone-400">Demandes</th>
+                    <th className="px-4 py-3 text-center font-medium text-stone-500 dark:text-stone-400">Dossiers</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Modifié</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-stone-100">
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-700/50">
                   {items.map((contact) => (
-                    <tr key={contact.id} className="hover:bg-stone-50 transition-colors">
+                    <tr key={contact.id} className="hover:bg-stone-50 dark:hover:bg-anthracite-800/50 transition-colors">
                       <td className="px-4 py-3">
-                        <Link href={`/dashboard/contacts/${contact.id}`} className="font-medium text-anthracite-800 hover:text-brand-700">
+                        <Link href={`/dashboard/contacts/${contact.id}`} className="font-medium text-anthracite-800 hover:text-brand-700 dark:text-stone-200 dark:hover:text-brand-400">
                           {contact.firstName} {contact.lastName}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-stone-600">{contact.company || "—"}</td>
+                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{contact.company || "—"}</td>
                       <td className="px-4 py-3"><Badge>{CONTACT_TYPE_LABELS[contact.type] || contact.type}</Badge></td>
-                      <td className="px-4 py-3 text-stone-600">{contact.email || "—"}</td>
-                      <td className="px-4 py-3 text-stone-600">{contact.phone || contact.mobile || "—"}</td>
-                      <td className="px-4 py-3 text-center text-stone-500">{contact._count.searchRequests}</td>
-                      <td className="px-4 py-3 text-center text-stone-500">{contact._count.deals}</td>
-                      <td className="px-4 py-3 text-stone-400">{formatDateShort(contact.updatedAt)}</td>
+                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{contact.email || "—"}</td>
+                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{contact.phone || contact.mobile || "—"}</td>
+                      <td className="px-4 py-3 text-center text-stone-500 dark:text-stone-400">{contact._count.searchRequests}</td>
+                      <td className="px-4 py-3 text-center text-stone-500 dark:text-stone-400">{contact._count.deals}</td>
+                      <td className="px-4 py-3 text-stone-400 dark:text-stone-500">{formatDateShort(contact.updatedAt)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -111,6 +137,8 @@ export default async function ContactsPage({
           </Card>
         </>
       )}
+
+      <Pagination currentPage={page} totalPages={totalPages} basePath="/dashboard/contacts" params={{ type: params.type, search: params.search }} />
     </div>
   );
 }

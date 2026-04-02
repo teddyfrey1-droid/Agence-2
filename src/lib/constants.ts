@@ -1,4 +1,4 @@
-export const APP_NAME = "Agence Immobilière";
+export const APP_NAME = "La Place";
 export const APP_DESCRIPTION =
   "Immobilier commercial & professionnel à Paris — Expertise, conseil et accompagnement sur-mesure.";
 
@@ -124,6 +124,14 @@ export const SEARCH_REQUEST_STATUS_LABELS: Record<string, string> = {
   ARCHIVEE: "Archivée",
 };
 
+export const EVENT_TYPE_LABELS: Record<string, string> = {
+  VISITE: "Visite",
+  REUNION: "Réunion",
+  RELANCE: "Relance",
+  SIGNATURE: "Signature",
+  AUTRE: "Autre",
+};
+
 export const USER_ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: "Super Admin",
   DIRIGEANT: "Dirigeant",
@@ -131,4 +139,5 @@ export const USER_ROLE_LABELS: Record<string, string> = {
   MANAGER: "Manager",
   AGENT: "Agent",
   ASSISTANT: "Assistant",
+  CLIENT: "Client",
 };

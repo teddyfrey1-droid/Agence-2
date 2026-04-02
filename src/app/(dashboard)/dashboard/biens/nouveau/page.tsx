@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { useToast } from "@/components/ui/toast";
 import {
   PROPERTY_TYPE_LABELS,
   PARIS_DISTRICTS,
@@ -325,6 +326,7 @@ function AddressAutocomplete({
 // ── Main Form ──
 export default function NouveauBienPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -468,9 +470,11 @@ export default function NouveauBienPage() {
       }
 
       const property = await res.json();
+      addToast("Bien créé avec succès", "success");
       router.push(`/dashboard/biens/${property.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur est survenue");
+      addToast("Erreur lors de la création du bien", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -479,8 +483,8 @@ export default function NouveauBienPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-anthracite-900">Nouveau bien</h1>
-        <p className="text-sm text-stone-500">
+        <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Nouveau bien</h1>
+        <p className="text-sm text-stone-500 dark:text-stone-400">
           Remplissez les informations ci-dessous. Les cases cochables vous font gagner du temps.
         </p>
       </div>

@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && prisma db push --skip-generate --accept-data-loss && tsx prisma/seed.ts && next build",
+    "build": "prisma generate && (prisma db push --accept-data-loss || echo 'Warning: db push failed, continuing build') && next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
@@ -15,11 +15,14 @@
   },
   "dependencies": {
     "@prisma/client": "^6.3.0",
+    "@supabase/supabase-js": "^2.100.1",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "jose": "^6.0.8",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "mapbox-gl": "^3.9.4",
     "next": "^15.5.14",
     "react": "^19.0.0",

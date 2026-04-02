@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================================
@@ -18,6 +19,7 @@ enum UserRole {
   MANAGER
   AGENT
   ASSISTANT
+  CLIENT
 }
 
 enum PropertyType {
@@ -212,23 +214,28 @@ model User {
   avatar       String?
   role         UserRole @default(AGENT)
   isActive     Boolean  @default(true)
-  agencyId     String
+  agencyId     String?
   teamId       String?
   lastLoginAt  DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  agency      Agency     @relation(fields: [agencyId], references: [id])
+  agency      Agency?    @relation(fields: [agencyId], references: [id])
   team        Team?      @relation(fields: [teamId], references: [id])
 
   properties     Property[]
   searchRequests SearchRequest[]
   deals          Deal[]
+  dealsFound     Deal[]          @relation("DealFinder")
+  dealsClosed    Deal[]          @relation("DealCloser")
   tasks          Task[]
   interactions   Interaction[]
   fieldSpottings FieldSpotting[]
   auditLogs      AuditLog[]
   assignedTasks  Task[]          @relation("TaskAssignee")
+  activities     UserActivity[]
+  notifications  Notification[]
+  events         Event[]
 
   @@map("users")
 }
@@ -258,6 +265,7 @@ model Contact {
   tasks              Task[]
   interactions       Interaction[]
   propertiesAsOwner  Property[]           @relation("PropertyOwner")
+  events             Event[]
 
   @@map("contacts")
 }
@@ -361,7 +369,12 @@ model Property {
   interactions Interaction[]
   documents   Document[]
   statusHistory StatusHistory[]
+  events        Event[]
 
+  @@index([assignedToId])
+  @@index([status])
+  @@index([type])
+  @@index([city])
   @@map("properties")
 }
 
@@ -432,6 +445,9 @@ model SearchRequest {
   urgency        String?
   notes          String?
 
+  // Scoring
+  qualificationScore Int?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -486,6 +502,12 @@ model Deal {
   finalValue      Float?
   commission      Float?
 
+  // Commission Attribution
+  propertyFoundById  String?
+  dealClosedById     String?
+  finderCommissionPct Float?  @default(30)
+  closerCommissionPct Float?  @default(70)
+
   // Details
   description     String?
   notes           String?
@@ -499,12 +521,18 @@ model Deal {
   property      Property?      @relation(fields: [propertyId], references: [id])
   contact       Contact?       @relation(fields: [contactId], references: [id])
   searchRequest SearchRequest? @relation(fields: [searchRequestId], references: [id])
-  assignedTo    User?          @relation(fields: [assignedToId], references: [id])
-  tasks         Task[]
-  interactions  Interaction[]
-  documents     Document[]
-  statusHistory StatusHistory[]
+  assignedTo      User?          @relation(fields: [assignedToId], references: [id])
+  propertyFoundBy User?          @relation("DealFinder", fields: [propertyFoundById], references: [id])
+  dealClosedBy    User?          @relation("DealCloser", fields: [dealClosedById], references: [id])
+  tasks           Task[]
+  interactions    Interaction[]
+  documents       Document[]
+  statusHistory   StatusHistory[]
+  events          Event[]
 
+  @@index([assignedToId])
+  @@index([status])
+  @@index([stage])
   @@map("deals")
 }
 
@@ -535,6 +563,9 @@ model Task {
   searchRequest SearchRequest? @relation(fields: [searchRequestId], references: [id])
   deal          Deal?          @relation(fields: [dealId], references: [id])
 
+  @@index([assignedToId])
+  @@index([status])
+  @@index([dueDate])
   @@map("tasks")
 }
 
@@ -634,4 +665,69 @@ model StatusHistory {
 
   @@index([entity, entityId])
   @@map("status_history")
+}
+
+model UserActivity {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String   // LOGIN, LOGOUT, PAGE_VIEW, ACTION
+  path       String?  // page path for PAGE_VIEW
+  details    String?  // additional context
+  ipAddress  String?
+  userAgent  String?
+  duration   Int?     // session duration in seconds
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+  @@map("user_activities")
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String   // MATCH_NEW, MATCH_HIGH, PROPERTY_NEW, DEAL_UPDATE, TASK_DUE, SYSTEM
+  title      String
+  message    String
+  link       String?  // URL to navigate to
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  type        String   @default("VISITE") // VISITE, REUNION, RELANCE, SIGNATURE, AUTRE
+  description String?
+  startAt     DateTime
+  endAt       DateTime?
+  allDay      Boolean  @default(false)
+  color       String?
+
+  // Relations
+  userId      String?
+  contactId   String?
+  propertyId  String?
+  dealId      String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User?     @relation(fields: [userId], references: [id])
+  contact  Contact?  @relation(fields: [contactId], references: [id])
+  property Property? @relation(fields: [propertyId], references: [id])
+  deal     Deal?     @relation(fields: [dealId], references: [id])
+
+  @@index([userId])
+  @@index([startAt])
+  @@map("events")
 }

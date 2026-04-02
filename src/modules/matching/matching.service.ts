@@ -178,6 +178,19 @@ export async function runMatchingForProperty(propertyId: string) {
     });
   }
 
+  // Notify assigned agent about new matches
+  if (property.assignedToId && results.length > 0) {
+    const { notifyMatchFound } = await import("@/modules/notifications");
+    for (const result of results) {
+      await notifyMatchFound({
+        userId: property.assignedToId,
+        propertyTitle: property.title || property.reference || "Bien",
+        score: result.score,
+        propertyId: property.id,
+      });
+    }
+  }
+
   return results;
 }
 
