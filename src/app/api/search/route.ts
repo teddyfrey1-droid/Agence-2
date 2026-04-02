@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: NextRequest) {
@@ -12,14 +13,22 @@ export async function GET(request: NextRequest) {
 
     const searchTerm = q.toLowerCase();
 
+    // Filter out confidential properties for non-admin roles
+    const isAdmin = hasPermission(session.role, "property", "delete");
+
     const [properties, contacts, deals] = await Promise.all([
       prisma.property.findMany({
         where: {
-          OR: [
-            { title: { contains: searchTerm, mode: "insensitive" } },
-            { reference: { contains: searchTerm, mode: "insensitive" } },
-            { address: { contains: searchTerm, mode: "insensitive" } },
-            { district: { contains: searchTerm, mode: "insensitive" } },
+          AND: [
+            {
+              OR: [
+                { title: { contains: searchTerm, mode: "insensitive" } },
+                { reference: { contains: searchTerm, mode: "insensitive" } },
+                { address: { contains: searchTerm, mode: "insensitive" } },
+                { district: { contains: searchTerm, mode: "insensitive" } },
+              ],
+            },
+            ...(!isAdmin ? [{ confidentiality: { not: "CONFIDENTIEL" as const } }] : []),
           ],
         },
         select: { id: true, reference: true, title: true, district: true, status: true, type: true },

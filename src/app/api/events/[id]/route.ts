@@ -23,16 +23,30 @@ export async function PATCH(
       return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
     }
 
+    // Validate dates if provided
+    if (body.startAt !== undefined) {
+      const d = new Date(body.startAt);
+      if (isNaN(d.getTime())) {
+        return NextResponse.json({ error: "Date de début invalide" }, { status: 400 });
+      }
+    }
+    if (body.endAt !== undefined && body.endAt !== null) {
+      const d = new Date(body.endAt);
+      if (isNaN(d.getTime())) {
+        return NextResponse.json({ error: "Date de fin invalide" }, { status: 400 });
+      }
+    }
+
     const updated = await prisma.event.update({
       where: { id },
       data: {
-        ...(body.title !== undefined && { title: body.title }),
+        ...(body.title !== undefined && { title: String(body.title).slice(0, 200) }),
         ...(body.type !== undefined && { type: body.type }),
         ...(body.description !== undefined && { description: body.description }),
         ...(body.startAt !== undefined && { startAt: new Date(body.startAt) }),
         ...(body.endAt !== undefined && { endAt: body.endAt ? new Date(body.endAt) : null }),
-        ...(body.allDay !== undefined && { allDay: body.allDay }),
-        ...(body.color !== undefined && { color: body.color }),
+        ...(body.allDay !== undefined && { allDay: Boolean(body.allDay) }),
+        ...(body.color !== undefined && { color: String(body.color).slice(0, 20) }),
       },
     });
 

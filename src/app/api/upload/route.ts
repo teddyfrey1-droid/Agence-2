@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { supabase, STORAGE_BUCKET } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
 
@@ -18,6 +19,27 @@ export async function POST(request: NextRequest) {
 
     if (!file || !entityType || !entityId) {
       return NextResponse.json({ error: "Fichier, type et ID requis" }, { status: 400 });
+    }
+
+    // Permission checks based on entity type
+    if (entityType === "property") {
+      if (!hasPermission(session.role, "property", "update")) {
+        return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+      }
+      const property = await prisma.property.findUnique({ where: { id: entityId }, select: { id: true } });
+      if (!property) {
+        return NextResponse.json({ error: "Bien introuvable" }, { status: 404 });
+      }
+    } else if (entityType === "fieldSpotting") {
+      if (!hasPermission(session.role, "field_spotting", "update")) {
+        return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+      }
+      const spot = await prisma.fieldSpotting.findUnique({ where: { id: entityId }, select: { id: true } });
+      if (!spot) {
+        return NextResponse.json({ error: "Repérage introuvable" }, { status: 404 });
+      }
+    } else {
+      return NextResponse.json({ error: "Type d'entité non supporté" }, { status: 400 });
     }
 
     // Validate file type
@@ -47,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     if (uploadError) {
       console.error("Supabase upload error:", uploadError);
-      return NextResponse.json({ error: "Erreur lors de l'upload: " + uploadError.message }, { status: 500 });
+      return NextResponse.json({ error: "Erreur lors de l'upload du fichier" }, { status: 500 });
     }
 
     // Get public URL

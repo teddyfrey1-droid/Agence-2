@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { supabase, STORAGE_BUCKET } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
 
@@ -12,12 +13,26 @@ export async function DELETE(
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
+  // Check permission to update properties (delete media = update property)
+  if (!hasPermission(session.role, "property", "update")) {
+    return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+  }
+
   const { id } = await params;
 
   try {
-    const media = await prisma.propertyMedia.findUnique({ where: { id } });
+    const media = await prisma.propertyMedia.findUnique({
+      where: { id },
+      include: { property: { select: { id: true, assignedToId: true } } },
+    });
     if (!media) {
       return NextResponse.json({ error: "Photo non trouvée" }, { status: 404 });
+    }
+
+    // Non-admin users can only delete media on properties assigned to them
+    const isAdmin = hasPermission(session.role, "property", "delete");
+    if (!isAdmin && media.property.assignedToId !== session.userId) {
+      return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
     }
 
     // Extract the path from the full URL to delete from storage

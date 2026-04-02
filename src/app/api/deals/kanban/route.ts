@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -7,6 +8,10 @@ export async function GET() {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
+    if (!hasPermission(session.role, "deal", "read")) {
+      return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
     }
 
     const deals = await prisma.deal.findMany({

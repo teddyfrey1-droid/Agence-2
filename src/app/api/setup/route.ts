@@ -71,8 +71,9 @@ export async function GET() {
       ok: true,
     });
   } catch (error) {
+    console.error("Setup error:", error);
     return NextResponse.json(
-      { error: "Erreur setup", details: String(error) },
+      { error: "Erreur lors du setup" },
       { status: 500 }
     );
   }
