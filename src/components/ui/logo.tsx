@@ -11,13 +11,10 @@ interface LogoProps {
 
 /**
  * LA PLACE — Immobilier Commercial
- * Uses actual logo PNG images from /public/
- * - /logo-mark.png  → LP monogram only (square, transparent bg)
- * - /logo-full.png  → Full logo with text (optional, for hero sections)
+ * Uses SVG logo from /public/logo-mark.svg
  */
 function LogoMark({
   size = "md",
-  variant = "dark",
 }: {
   size?: "sm" | "md" | "lg" | "xl";
   variant?: "light" | "dark";
@@ -34,7 +31,7 @@ function LogoMark({
   return (
     <div className={cn("relative flex-shrink-0", className)}>
       <Image
-        src="/logo-mark.png"
+        src="/logo-mark.svg"
         alt="LA PLACE"
         width={px}
         height={px}
