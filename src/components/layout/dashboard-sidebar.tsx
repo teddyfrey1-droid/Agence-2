@@ -1,9 +1,36 @@
 "use client";
 
+import { createContext, useContext, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/ui/logo";
+
+// ── Sidebar context for mobile toggle ──
+const SidebarContext = createContext<{
+  isOpen: boolean;
+  toggle: () => void;
+  close: () => void;
+}>({ isOpen: false, toggle: () => {}, close: () => {} });
+
+export function useSidebar() {
+  return useContext(SidebarContext);
+}
+
+export function SidebarProvider({ children }: { children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  return (
+    <SidebarContext.Provider
+      value={{
+        isOpen,
+        toggle: () => setIsOpen((v) => !v),
+        close: () => setIsOpen(false),
+      }}
+    >
+      {children}
+    </SidebarContext.Provider>
+  );
+}
 
 interface NavItem {
   name: string;
@@ -69,81 +96,107 @@ interface SidebarProps {
 
 export function DashboardSidebar({ badges = {} }: SidebarProps) {
   const pathname = usePathname();
+  const { isOpen, close } = useSidebar();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-stone-200/80 bg-white lg:flex dark:bg-anthracite-900 dark:border-stone-700/50">
-      {/* Logo */}
-      <div className="flex h-16 items-center border-b border-stone-100 px-4 dark:border-stone-700/50">
-        <Logo size="sm" />
-      </div>
+    <>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+          onClick={close}
+        />
+      )}
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3">
-        {navGroups.map((group, gi) => (
-          <div key={group.label} className={cn(gi > 0 && "mt-4")}>
-            {/* Section label — skip for "Principal" */}
-            {gi > 0 && (
-              <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-stone-400/80 dark:text-stone-600">
-                {group.label}
-              </p>
-            )}
-            <ul className="space-y-0.5">
-              {group.items.map((item) => {
-                const isActive =
-                  item.href === "/dashboard"
-                    ? pathname === "/dashboard"
-                    : pathname.startsWith(item.href);
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-stone-200/80 bg-white transition-transform duration-300 ease-in-out lg:z-40 lg:w-64 lg:translate-x-0 dark:bg-anthracite-900 dark:border-stone-700/50",
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {/* Logo + close on mobile */}
+        <div className="flex h-16 items-center justify-between border-b border-stone-100 px-4 dark:border-stone-700/50">
+          <Logo size="sm" />
+          <button
+            onClick={close}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 lg:hidden"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-                return (
-                  <li key={item.name}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
-                        isActive
-                          ? "bg-brand-50 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
-                          : "text-anthracite-600 hover:bg-stone-50 hover:text-anthracite-900 dark:text-stone-400 dark:hover:bg-anthracite-800 dark:hover:text-stone-200"
-                      )}
-                    >
-                      <svg
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-3 py-3">
+          {navGroups.map((group, gi) => (
+            <div key={group.label} className={cn(gi > 0 && "mt-4")}>
+              {gi > 0 && (
+                <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-stone-400/80 dark:text-stone-600">
+                  {group.label}
+                </p>
+              )}
+              <ul className="space-y-0.5">
+                {group.items.map((item) => {
+                  const isActive =
+                    item.href === "/dashboard"
+                      ? pathname === "/dashboard"
+                      : pathname.startsWith(item.href);
+
+                  return (
+                    <li key={item.name}>
+                      <Link
+                        href={item.href}
+                        onClick={close}
                         className={cn(
-                          "h-[18px] w-[18px] flex-shrink-0",
-                          isActive ? "text-brand-600 dark:text-brand-400" : "text-stone-400 dark:text-stone-500"
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors",
+                          isActive
+                            ? "bg-brand-50 text-brand-800 dark:bg-brand-900/30 dark:text-brand-300"
+                            : "text-anthracite-600 hover:bg-stone-50 hover:text-anthracite-900 active:bg-stone-100 dark:text-stone-400 dark:hover:bg-anthracite-800 dark:hover:text-stone-200"
                         )}
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
                       >
-                        <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
-                      </svg>
-                      <span className="flex-1">{item.name}</span>
-                      {badges[item.href] != null && badges[item.href] > 0 && (
-                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                          {badges[item.href]}
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
+                        <svg
+                          className={cn(
+                            "h-[18px] w-[18px] flex-shrink-0",
+                            isActive ? "text-brand-600 dark:text-brand-400" : "text-stone-400 dark:text-stone-500"
+                          )}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={1.5}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                        </svg>
+                        <span className="flex-1">{item.name}</span>
+                        {badges[item.href] != null && badges[item.href] > 0 && (
+                          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                            {badges[item.href]}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
 
-      {/* Bottom */}
-      <div className="border-t border-stone-100 p-4 dark:border-stone-700/50">
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-xs text-stone-400 hover:text-anthracite-700 dark:text-stone-500 dark:hover:text-stone-300"
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
-          Voir le site public
-        </Link>
-      </div>
-    </aside>
+        {/* Bottom */}
+        <div className="border-t border-stone-100 p-4 dark:border-stone-700/50">
+          <Link
+            href="/"
+            onClick={close}
+            className="flex items-center gap-2 text-xs text-stone-400 hover:text-anthracite-700 dark:text-stone-500 dark:hover:text-stone-300"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+            Voir le site public
+          </Link>
+        </div>
+      </aside>
+    </>
   );
 }

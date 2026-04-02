@@ -161,7 +161,7 @@ export default async function DashboardHomePage() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard
           label="Biens totaux"
           value={propertyCount}

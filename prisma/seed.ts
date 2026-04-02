@@ -32,10 +32,11 @@ async function main() {
   });
 
   // Create admin user
-  const passwordHash = await hash("admin123", 12);
+  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+  const passwordHash = await hash(adminPassword, 12);
   await prisma.user.upsert({
     where: { email: "admin@agence-immo.fr" },
-    update: {},
+    update: { passwordHash },
     create: {
       email: "admin@agence-immo.fr",
       passwordHash,
@@ -48,10 +49,10 @@ async function main() {
   });
 
   // Create sample agent
-  const agentHash = await hash("agent123", 12);
+  const agentHash = await hash(adminPassword, 12);
   await prisma.user.upsert({
     where: { email: "agent@agence-immo.fr" },
-    update: {},
+    update: { passwordHash: agentHash },
     create: {
       email: "agent@agence-immo.fr",
       passwordHash: agentHash,
@@ -64,8 +65,8 @@ async function main() {
   });
 
   console.log("Seed completed!");
-  console.log("  Admin: admin@agence-immo.fr / admin123");
-  console.log("  Agent: agent@agence-immo.fr / agent123");
+  console.log("  Admin: admin@agence-immo.fr");
+  console.log("  Agent: agent@agence-immo.fr");
 }
 
 main()

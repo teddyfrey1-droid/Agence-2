@@ -16,59 +16,74 @@ export default async function InteractionsPage({
   const { items, total, totalPages } = await findInteractions({ type: params.type }, page);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Interactions</h1>
+        <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Interactions</h1>
         <p className="text-sm text-stone-500 dark:text-stone-400">{total} interaction(s)</p>
       </div>
 
       {items.length === 0 ? (
         <EmptyState title="Aucune interaction" description="Les appels, emails, visites et notes apparaitront ici." />
       ) : (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stone-100 bg-stone-50/50 dark:border-stone-700/50 dark:bg-anthracite-800/50">
-                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Type</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Sujet</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Contact</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Par</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Bien / Dossier</th>
-                  <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
-                {items.map((interaction) => (
-                  <tr key={interaction.id} className="transition-colors hover:bg-stone-50 dark:hover:bg-anthracite-800/50">
-                    <td className="px-4 py-3">
-                      <Badge>{INTERACTION_TYPE_LABELS[interaction.type] || interaction.type}</Badge>
-                    </td>
-                    <td className="px-4 py-3 font-medium text-anthracite-800 dark:text-stone-200">
-                      {interaction.subject || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-stone-600 dark:text-stone-400">
+        <>
+          {/* Mobile: card view */}
+          <div className="space-y-3 lg:hidden">
+            {items.map((interaction) => (
+              <Card key={interaction.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-anthracite-800 dark:text-stone-200">
+                      {interaction.subject || INTERACTION_TYPE_LABELS[interaction.type] || interaction.type}
+                    </p>
+                    <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">
                       {interaction.contact
                         ? `${interaction.contact.firstName} ${interaction.contact.lastName}`
                         : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-stone-600 dark:text-stone-400">
-                      {interaction.user
-                        ? `${interaction.user.firstName} ${interaction.user.lastName}`
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-stone-500 dark:text-stone-400">
-                      {interaction.property?.title || interaction.deal?.title || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-stone-400 dark:text-stone-500">
-                      {formatDateShort(interaction.date)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      {interaction.user && ` · par ${interaction.user.firstName} ${interaction.user.lastName}`}
+                    </p>
+                  </div>
+                  <Badge>{INTERACTION_TYPE_LABELS[interaction.type] || interaction.type}</Badge>
+                </div>
+                <div className="mt-2 flex items-center gap-3 text-xs text-stone-400 dark:text-stone-500">
+                  {(interaction.property?.title || interaction.deal?.title) && (
+                    <span>{interaction.property?.title || interaction.deal?.title}</span>
+                  )}
+                  <span className="ml-auto">{formatDateShort(interaction.date)}</span>
+                </div>
+              </Card>
+            ))}
           </div>
-        </Card>
+
+          {/* Desktop: table */}
+          <Card className="hidden overflow-hidden lg:block">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stone-100 bg-stone-50/50 dark:border-stone-700/50 dark:bg-anthracite-800/50">
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Type</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Sujet</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Contact</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Par</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Bien / Dossier</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 dark:divide-stone-700/50">
+                  {items.map((interaction) => (
+                    <tr key={interaction.id} className="hover:bg-stone-50 dark:hover:bg-anthracite-800/50 transition-colors">
+                      <td className="px-4 py-3"><Badge>{INTERACTION_TYPE_LABELS[interaction.type] || interaction.type}</Badge></td>
+                      <td className="px-4 py-3 font-medium text-anthracite-800 dark:text-stone-200">{interaction.subject || "—"}</td>
+                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{interaction.contact ? `${interaction.contact.firstName} ${interaction.contact.lastName}` : "—"}</td>
+                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{interaction.user ? `${interaction.user.firstName} ${interaction.user.lastName}` : "—"}</td>
+                      <td className="px-4 py-3 text-xs text-stone-500 dark:text-stone-400">{interaction.property?.title || interaction.deal?.title || "—"}</td>
+                      <td className="px-4 py-3 text-stone-400 dark:text-stone-500">{formatDateShort(interaction.date)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </>
       )}
 
       <Pagination currentPage={page} totalPages={totalPages} basePath="/dashboard/interactions" params={{ type: params.type }} />

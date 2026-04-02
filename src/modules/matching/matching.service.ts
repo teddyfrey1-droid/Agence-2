@@ -89,7 +89,7 @@ export function calculateMatchScore(
 
   // Budget
   const propertyPrice =
-    property.transactionType === "LOCATION"
+    property.transactionType === "LOCATION" || property.transactionType === "FOND_DE_COMMERCE"
       ? property.rentMonthly
       : property.price;
   if (propertyPrice) {

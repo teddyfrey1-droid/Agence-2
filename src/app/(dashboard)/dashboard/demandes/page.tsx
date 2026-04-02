@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { Pagination } from "@/components/ui/pagination";
 
 export default async function DemandesPage({
   searchParams,
@@ -23,14 +24,17 @@ export default async function DemandesPage({
   const hasFilters = !!(params.status || params.search);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Demandes de recherche</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Demandes de recherche</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400">{total} demande(s)</p>
         </div>
         <Link href="/dashboard/demandes/nouvelle">
-          <Button>Nouvelle demande</Button>
+          <Button className="whitespace-nowrap">
+            <span className="hidden sm:inline">Nouvelle demande</span>
+            <span className="sm:hidden">+ Demande</span>
+          </Button>
         </Link>
       </div>
 
@@ -51,11 +55,11 @@ export default async function DemandesPage({
         />
       ) : (
         <>
-          {/* Mobile card view */}
-          <div className="space-y-3 md:hidden">
+          {/* Mobile: card view */}
+          <div className="space-y-3 lg:hidden">
             {items.map((request) => (
               <Link key={request.id} href={`/dashboard/demandes/${request.id}`}>
-                <Card hover className="p-4">
+                <Card className="p-4 active:bg-stone-50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-mono text-[10px] text-stone-400 dark:text-stone-500">{request.reference}</p>
@@ -69,18 +73,17 @@ export default async function DemandesPage({
                       ) : (
                         <p className="mt-0.5 text-sm text-stone-400">Sans contact</p>
                       )}
+                      <p className="text-xs text-stone-400 mt-0.5">
+                        {request.transactionType ? TRANSACTION_TYPE_LABELS[request.transactionType] : "—"}
+                        {request.activity && ` · ${request.activity}`}
+                      </p>
                     </div>
                     <Badge variant={getStatusBadgeVariant(request.status)}>
                       {SEARCH_REQUEST_STATUS_LABELS[request.status]}
                     </Badge>
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
-                    {request.transactionType && (
-                      <span>{TRANSACTION_TYPE_LABELS[request.transactionType]}</span>
-                    )}
-                    {request.activity && <span>{request.activity}</span>}
-                    <span>{request._count.matches} match{request._count.matches !== 1 ? "es" : ""}</span>
-                    <span>{formatDateShort(request.createdAt)}</span>
+                  <div className="mt-2 flex items-center gap-3 text-xs text-stone-400 dark:text-stone-500">
+                    <span>{request._count.matches} match(es)</span>
                     {request.qualificationScore != null && (
                       <span className="flex items-center gap-1">
                         <span className={`inline-block h-2 w-2 rounded-full ${
@@ -90,14 +93,17 @@ export default async function DemandesPage({
                         Score: {request.qualificationScore}
                       </span>
                     )}
+                    {request.assignedTo && (
+                      <span className="ml-auto">{request.assignedTo.firstName} {request.assignedTo.lastName}</span>
+                    )}
                   </div>
                 </Card>
               </Link>
             ))}
           </div>
 
-          {/* Desktop table view */}
-          <Card className="hidden md:block overflow-hidden">
+          {/* Desktop: table */}
+          <Card className="hidden overflow-hidden lg:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -158,6 +164,8 @@ export default async function DemandesPage({
           </Card>
         </>
       )}
+
+      <Pagination currentPage={page} totalPages={totalPages} basePath="/dashboard/demandes" params={{ status: params.status, search: params.search }} />
     </div>
   );
 }

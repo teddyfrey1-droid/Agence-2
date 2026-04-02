@@ -24,21 +24,24 @@ export default async function BiensListPage({
   const hasFilters = !!(params.status || params.type || params.search);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Biens</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Biens</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400">{total} bien(s) au total</p>
         </div>
         <div className="flex items-center gap-2">
           <a href="/api/export?type=properties" download>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
               <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
               CSV
             </Button>
           </a>
           <Link href="/dashboard/biens/nouveau">
-            <Button>Nouveau bien</Button>
+            <Button className="whitespace-nowrap">
+              <span className="hidden sm:inline">Nouveau bien</span>
+              <span className="sm:hidden">+ Bien</span>
+            </Button>
           </Link>
         </div>
       </div>
@@ -67,11 +70,11 @@ export default async function BiensListPage({
         />
       ) : (
         <>
-          {/* Mobile card view */}
-          <div className="space-y-3 md:hidden">
+          {/* Mobile: card view */}
+          <div className="space-y-3 lg:hidden">
             {properties.map((property) => (
               <Link key={property.id} href={`/dashboard/biens/${property.id}`}>
-                <Card hover className="p-4">
+                <Card className="p-4 active:bg-stone-50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-mono text-[10px] text-stone-400 dark:text-stone-500">{property.reference}</p>
@@ -79,31 +82,35 @@ export default async function BiensListPage({
                         {property.title}
                       </p>
                       <p className="text-xs text-stone-500 dark:text-stone-400">
-                        {property.district || property.city}
+                        {property.district || property.city} · {PROPERTY_TYPE_LABELS[property.type] || property.type}
                       </p>
                     </div>
                     <Badge variant={getStatusBadgeVariant(property.status)}>
                       {PROPERTY_STATUS_LABELS[property.status] || property.status}
                     </Badge>
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
-                    <span>{PROPERTY_TYPE_LABELS[property.type] || property.type}</span>
-                    <span>{TRANSACTION_TYPE_LABELS[property.transactionType]}</span>
-                    {property.surfaceTotal && <span>{formatSurface(property.surfaceTotal)}</span>}
-                    <span className="font-semibold text-anthracite-800 dark:text-stone-200">
-                      {property.transactionType === "LOCATION" ? formatPrice(property.rentMonthly) : formatPrice(property.price)}
-                    </span>
-                    {property._count.matches > 0 && (
-                      <span className="text-brand-600 dark:text-brand-400">{property._count.matches} match{property._count.matches > 1 ? "es" : ""}</span>
+                  <div className="mt-3 flex items-center gap-4 text-sm">
+                    <span className="text-stone-500 dark:text-stone-400">{TRANSACTION_TYPE_LABELS[property.transactionType]}</span>
+                    {property.surfaceTotal && (
+                      <span className="text-stone-500 dark:text-stone-400">{formatSurface(property.surfaceTotal)}</span>
                     )}
+                    <span className="ml-auto font-semibold text-anthracite-800 dark:text-stone-200">
+                      {property.transactionType === "LOCATION"
+                        ? formatPrice(property.rentMonthly)
+                        : formatPrice(property.price)}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex items-center justify-between text-xs text-stone-400 dark:text-stone-500">
+                    <span className="font-mono">{property.reference}</span>
+                    <span>{property._count.matches} match{property._count.matches !== 1 ? "es" : ""}</span>
                   </div>
                 </Card>
               </Link>
             ))}
           </div>
 
-          {/* Desktop table view */}
-          <Card className="hidden md:block overflow-hidden">
+          {/* Desktop: table view */}
+          <Card className="hidden overflow-hidden lg:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

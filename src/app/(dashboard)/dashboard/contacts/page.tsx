@@ -24,21 +24,24 @@ export default async function ContactsPage({
   const hasFilters = !!(params.type || params.search);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Contacts</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Contacts</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400">{total} contact(s)</p>
         </div>
         <div className="flex items-center gap-2">
           <a href="/api/export?type=contacts" download>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
               <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
               CSV
             </Button>
           </a>
           <Link href="/dashboard/contacts/nouveau">
-            <Button>Nouveau contact</Button>
+            <Button className="whitespace-nowrap">
+              <span className="hidden sm:inline">Nouveau contact</span>
+              <span className="sm:hidden">+ Contact</span>
+            </Button>
           </Link>
         </div>
       </div>
@@ -60,11 +63,11 @@ export default async function ContactsPage({
         />
       ) : (
         <>
-          {/* Mobile card view */}
-          <div className="space-y-3 md:hidden">
+          {/* Mobile: card view */}
+          <div className="space-y-3 lg:hidden">
             {items.map((contact) => (
               <Link key={contact.id} href={`/dashboard/contacts/${contact.id}`}>
-                <Card hover className="p-4">
+                <Card className="p-4 active:bg-stone-50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
@@ -76,7 +79,7 @@ export default async function ContactsPage({
                             {contact.firstName} {contact.lastName}
                           </p>
                           {contact.company && (
-                            <p className="text-xs text-stone-500 dark:text-stone-400">{contact.company}</p>
+                            <p className="text-xs text-stone-400 dark:text-stone-500">{contact.company}</p>
                           )}
                         </div>
                       </div>
@@ -86,16 +89,17 @@ export default async function ContactsPage({
                   <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
                     {contact.email && <span>{contact.email}</span>}
                     {(contact.phone || contact.mobile) && <span>{contact.phone || contact.mobile}</span>}
-                    <span>{contact._count.searchRequests} demande{contact._count.searchRequests !== 1 ? "s" : ""}</span>
-                    <span>{contact._count.deals} dossier{contact._count.deals !== 1 ? "s" : ""}</span>
+                    <span>{contact._count.searchRequests} demande(s)</span>
+                    <span>{contact._count.deals} dossier(s)</span>
+                    <span className="ml-auto">{formatDateShort(contact.updatedAt)}</span>
                   </div>
                 </Card>
               </Link>
             ))}
           </div>
 
-          {/* Desktop table view */}
-          <Card className="hidden md:block overflow-hidden">
+          {/* Desktop: table */}
+          <Card className="hidden overflow-hidden lg:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
