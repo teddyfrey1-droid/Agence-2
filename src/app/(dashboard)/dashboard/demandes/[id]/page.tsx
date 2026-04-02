@@ -5,6 +5,7 @@ import { formatPrice, formatSurface, formatDate } from "@/lib/utils";
 import { SEARCH_REQUEST_STATUS_LABELS, PROPERTY_TYPE_LABELS, TRANSACTION_TYPE_LABELS } from "@/lib/constants";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { MatchActions } from "@/components/match-actions";
 
 export default async function DemandeDetailPage({
   params,
@@ -28,9 +29,15 @@ export default async function DemandeDetailPage({
             Demande {request.reference}
           </h1>
         </div>
-        <Badge variant={getStatusBadgeVariant(request.status)}>
-          {SEARCH_REQUEST_STATUS_LABELS[request.status]}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Link href={`/dashboard/demandes/${id}/modifier`} className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-anthracite-700 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-anthracite-800 dark:text-stone-200 dark:hover:bg-anthracite-700">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" /></svg>
+            Modifier
+          </Link>
+          <Badge variant={getStatusBadgeVariant(request.status)}>
+            {SEARCH_REQUEST_STATUS_LABELS[request.status]}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -112,9 +119,9 @@ export default async function DemandeDetailPage({
                           ))}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="flex items-center gap-2">
                         <span className="text-lg font-bold text-anthracite-900 dark:text-stone-100">{match.score}%</span>
-                        <Badge variant={getStatusBadgeVariant(match.status)} className="ml-2">{match.status}</Badge>
+                        <MatchActions matchId={match.id} currentStatus={match.status} />
                       </div>
                     </div>
                   ))}

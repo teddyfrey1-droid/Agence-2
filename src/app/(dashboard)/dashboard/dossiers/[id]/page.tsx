@@ -5,6 +5,8 @@ import { formatPrice, formatDate, formatDateShort } from "@/lib/utils";
 import { DEAL_STAGE_LABELS, INTERACTION_TYPE_LABELS, TASK_PRIORITY_LABELS } from "@/lib/constants";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { QuickInteractionForm } from "@/components/quick-interaction-form";
+import { QuickTaskForm } from "@/components/quick-task-form";
 
 export default async function DossierDetailPage({
   params,
@@ -24,6 +26,10 @@ export default async function DossierDetailPage({
           <p className="text-sm text-stone-500 dark:text-stone-400">Réf. {deal.reference}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href={`/dashboard/dossiers/${id}/modifier`} className="inline-flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-anthracite-700 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-anthracite-800 dark:text-stone-200 dark:hover:bg-anthracite-700">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" /></svg>
+            Modifier
+          </Link>
           <Badge variant={getStatusBadgeVariant(deal.stage)}>
             {DEAL_STAGE_LABELS[deal.stage]}
           </Badge>
@@ -165,6 +171,12 @@ export default async function DossierDetailPage({
               </CardContent>
             </Card>
           )}
+
+          {/* Quick interaction */}
+          <QuickInteractionForm dealId={id} contactId={deal.contact?.id} />
+
+          {/* Quick task */}
+          <QuickTaskForm dealId={id} />
 
           {deal.property && (
             <Card>

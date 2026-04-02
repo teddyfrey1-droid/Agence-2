@@ -59,6 +59,12 @@ export async function POST(request: NextRequest) {
     }
 
     const property = await createNewProperty(parsed.data, session.userId);
+
+    // Auto-run matching for the new property (non-blocking)
+    import("@/modules/matching").then(({ runMatchingForProperty }) => {
+      runMatchingForProperty(property.id).catch(console.error);
+    });
+
     return NextResponse.json(property, { status: 201 });
   } catch (err) {
     return NextResponse.json(

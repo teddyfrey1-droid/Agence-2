@@ -294,9 +294,11 @@ export default async function PropertyDetailPage({
               <h2 className="heading-card">Actions</h2>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                Modifier
-              </Button>
+              <Link href={`/dashboard/biens/${id}/modifier`}>
+                <Button variant="outline" className="w-full justify-start">
+                  Modifier
+                </Button>
+              </Link>
               <Button variant="outline" className="w-full justify-start">
                 {property.isPublished ? "Dépublier" : "Publier"}
               </Button>

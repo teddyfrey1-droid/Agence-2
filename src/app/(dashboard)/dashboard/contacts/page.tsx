@@ -29,9 +29,17 @@ export default async function ContactsPage({
           <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Contacts</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400">{total} contact(s)</p>
         </div>
-        <Link href="/dashboard/contacts/nouveau">
-          <Button>Nouveau contact</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <a href="/api/export?type=contacts" download>
+            <Button variant="outline" size="sm">
+              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+              CSV
+            </Button>
+          </a>
+          <Link href="/dashboard/contacts/nouveau">
+            <Button>Nouveau contact</Button>
+          </Link>
+        </div>
       </div>
 
       <FilterBar
