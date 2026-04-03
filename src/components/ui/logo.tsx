@@ -15,7 +15,7 @@ function LogoMark({
   size?: "sm" | "md" | "lg" | "xl";
   variant?: "light" | "dark";
 }) {
-  // On utilise des proportions rectangulaires pour que ton logo ait la place de s'afficher en grand
+  // Dimensions rectangulaires beaucoup plus grandes
   const dimensions = {
     sm: { className: "h-12 w-32", px: 128 },
     md: { className: "h-16 w-48", px: 192 }, 
@@ -28,7 +28,7 @@ function LogoMark({
   return (
     <div className={cn("relative flex-shrink-0", className)}>
       <Image
-        src="/retail-place-logo_transparent_crop.svg"
+        src="/logo-mark.svg"
         alt="Retail Place"
         width={px}
         height={px}
@@ -44,7 +44,7 @@ export function Logo({
   variant = "dark",
   className,
 }: LogoProps) {
-  // On a complètement supprimé le bloc de texte "RETAIL PLACE / Immobilier Commercial" ici !
+  // Le texte a été complètement supprimé, on ne garde que l'image !
   return (
     <Link href="/" className={cn("flex items-center", className)}>
       <LogoMark size={size} variant={variant} />
