@@ -32,7 +32,7 @@ function LogoMark({
     <div className={cn("relative flex-shrink-0", className)}>
       <Image
         src="/logo-mark.svg"
-        alt="LA PLACE"
+        alt="RETAIL PLACE"
         width={px}
         height={px}
         className="h-full w-full object-contain"
