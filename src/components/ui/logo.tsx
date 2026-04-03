@@ -74,7 +74,7 @@ export function Logo({
                 : "text-white"
             )}
           >
-            LA PLACE
+            RETAIL PLACE
           </p>
           <p
             className={cn(
