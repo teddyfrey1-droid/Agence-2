@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PROPERTY_TYPE_LABELS, TRANSACTION_TYPE_LABELS, PARIS_DISTRICTS } from "@/lib/constants";
+import { Badge } from "@/components/ui/badge";
+import { PROPERTY_TYPE_LABELS, TRANSACTION_TYPE_LABELS, PARIS_DISTRICTS, FIELD_SPOTTING_STATUS_LABELS } from "@/lib/constants";
 
 interface MapProperty {
   id: string;
@@ -18,6 +19,23 @@ interface MapProperty {
   price: number | null;
   rentMonthly: number | null;
   surfaceTotal: number | null;
+  isCoMandat?: boolean;
+  media?: { url: string }[];
+}
+
+interface MapSpotting {
+  id: string;
+  address: string;
+  city: string;
+  zipCode: string | null;
+  district: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  photoUrl: string | null;
+  status: string;
+  propertyType: string | null;
+  surface: number | null;
+  notes: string | null;
 }
 
 interface Filters {
@@ -52,34 +70,50 @@ const COLOR_MAP: Record<string, string> = {
   FOND_DE_COMMERCE: "#7c3aed",
 };
 
+type Layer = "biens" | "terrain" | "tous";
+
 export default function CartePage() {
   const mapRef = useRef<HTMLDivElement>(null);
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const leafletRef = useRef<any>(null);
+  const drawLayerRef = useRef<any>(null);
   /* eslint-enable @typescript-eslint/no-explicit-any */
   const [properties, setProperties] = useState<MapProperty[]>([]);
+  const [spottings, setSpottings] = useState<MapSpotting[]>([]);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
+  const [activeLayer, setActiveLayer] = useState<Layer>("tous");
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [drawnBounds, setDrawnBounds] = useState<{ lat1: number; lng1: number; lat2: number; lng2: number } | null>(null);
+  const drawStartRef = useRef<{ lat: number; lng: number } | null>(null);
+  const drawRectRef = useRef<any>(null);
 
-  // Load properties
+  // Load data
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/properties?published=true");
-        if (res.ok) {
-          const data = await res.json();
+        const [propRes, spotRes] = await Promise.all([
+          fetch("/api/properties?published=true"),
+          fetch("/api/field-spotting"),
+        ]);
+        if (propRes.ok) {
+          const data = await propRes.json();
           setProperties(data.items || []);
+        }
+        if (spotRes.ok) {
+          const data = await spotRes.json();
+          setSpottings(data.items || []);
         }
       } catch { /* */ }
       finally { setLoading(false); }
     })();
   }, []);
 
-  // Filter
+  // Filter properties
   const filtered = properties.filter((p) => {
     if (filters.transactionType && p.transactionType !== filters.transactionType) return false;
     if (filters.propertyType && p.type !== filters.propertyType) return false;
@@ -91,7 +125,20 @@ export default function CartePage() {
     if (filters.surfaceMax && (!p.surfaceTotal || p.surfaceTotal > Number(filters.surfaceMax))) return false;
     return true;
   });
-  const withCoords = filtered.filter((p) => p.latitude && p.longitude);
+
+  // Apply drawn bounds filter
+  const inBounds = useCallback((lat: number | null, lng: number | null) => {
+    if (!drawnBounds || !lat || !lng) return true;
+    const { lat1, lng1, lat2, lng2 } = drawnBounds;
+    const minLat = Math.min(lat1, lat2);
+    const maxLat = Math.max(lat1, lat2);
+    const minLng = Math.min(lng1, lng2);
+    const maxLng = Math.max(lng1, lng2);
+    return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
+  }, [drawnBounds]);
+
+  const propsWithCoords = filtered.filter((p) => p.latitude && p.longitude && inBounds(p.latitude, p.longitude));
+  const spotsWithCoords = spottings.filter((s) => s.latitude && s.longitude && inBounds(s.latitude, s.longitude));
 
   // Init Leaflet
   useEffect(() => {
@@ -110,12 +157,21 @@ export default function CartePage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const L = (window as any).L;
       leafletRef.current = L;
-      const map = L.map(mapRef.current).setView([48.8566, 2.3522], 12);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+
+      // Use a dark tile style
+      const isDark = document.documentElement.classList.contains("dark");
+      const tileUrl = isDark
+        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        : "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
+
+      const map = L.map(mapRef.current, { zoomControl: false }).setView([48.8566, 2.3522], 12);
+      L.tileLayer(tileUrl, {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">Carto</a>',
         maxZoom: 19,
       }).addTo(map);
+      L.control.zoom({ position: "bottomright" }).addTo(map);
       mapInstanceRef.current = map;
+      drawLayerRef.current = L.layerGroup().addTo(map);
       setMapReady(true);
     };
     document.head.appendChild(script);
@@ -127,6 +183,91 @@ export default function CartePage() {
     };
   }, []);
 
+  // Draw mode handlers
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+    const L = leafletRef.current;
+
+    if (isDrawing) {
+      map.dragging.disable();
+      map.getContainer().style.cursor = "crosshair";
+
+      const onMouseDown = (e: any) => {
+        drawStartRef.current = { lat: e.latlng.lat, lng: e.latlng.lng };
+        if (drawRectRef.current) {
+          drawRectRef.current.remove();
+          drawRectRef.current = null;
+        }
+      };
+
+      const onMouseMove = (e: any) => {
+        if (!drawStartRef.current) return;
+        const bounds = L.latLngBounds(
+          [drawStartRef.current.lat, drawStartRef.current.lng],
+          [e.latlng.lat, e.latlng.lng]
+        );
+        if (drawRectRef.current) {
+          drawRectRef.current.setBounds(bounds);
+        } else {
+          drawRectRef.current = L.rectangle(bounds, {
+            color: "#886a4b",
+            weight: 2,
+            fillOpacity: 0.15,
+            dashArray: "6",
+          }).addTo(map);
+        }
+      };
+
+      const onMouseUp = (e: any) => {
+        if (!drawStartRef.current) return;
+        setDrawnBounds({
+          lat1: drawStartRef.current.lat,
+          lng1: drawStartRef.current.lng,
+          lat2: e.latlng.lat,
+          lng2: e.latlng.lng,
+        });
+        drawStartRef.current = null;
+        setIsDrawing(false);
+      };
+
+      map.on("mousedown", onMouseDown);
+      map.on("mousemove", onMouseMove);
+      map.on("mouseup", onMouseUp);
+
+      // Touch support
+      map.on("touchstart", (e: any) => {
+        if (e.originalEvent.touches.length === 1) {
+          onMouseDown({ latlng: e.latlng });
+        }
+      });
+      map.on("touchmove", (e: any) => {
+        if (e.originalEvent.touches.length === 1) {
+          onMouseMove({ latlng: e.latlng });
+        }
+      });
+      map.on("touchend", (e: any) => {
+        if (drawStartRef.current) {
+          onMouseUp({ latlng: e.latlng || map.mouseEventToLatLng(e.originalEvent) });
+        }
+      });
+
+      return () => {
+        map.off("mousedown", onMouseDown);
+        map.off("mousemove", onMouseMove);
+        map.off("mouseup", onMouseUp);
+        map.off("touchstart");
+        map.off("touchmove");
+        map.off("touchend");
+        map.dragging.enable();
+        map.getContainer().style.cursor = "";
+      };
+    } else {
+      map.dragging.enable();
+      map.getContainer().style.cursor = "";
+    }
+  }, [isDrawing, mapReady]);
+
   // Update markers
   useEffect(() => {
     if (!mapReady || !mapInstanceRef.current || !leafletRef.current) return;
@@ -135,55 +276,151 @@ export default function CartePage() {
     for (const m of markersRef.current) m.remove();
     markersRef.current = [];
 
-    for (const p of withCoords) {
-      const color = COLOR_MAP[p.transactionType] || "#886a4b";
-      const icon = L.divIcon({
-        className: "",
-        html: `<div style="width:26px;height:26px;background:${color};border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-        iconSize: [26, 26],
-        iconAnchor: [13, 13],
-      });
-      const priceStr = p.transactionType === "LOCATION"
-        ? (p.rentMonthly ? `${fmtPrice(p.rentMonthly)}/mois` : fmtPrice(p.price))
-        : fmtPrice(p.price);
-      const popup = `
-        <div style="font-family:system-ui;min-width:180px;">
-          <p style="font-weight:600;font-size:13px;margin:0 0 4px;">${p.title}</p>
-          <p style="color:#666;font-size:11px;margin:0 0 2px;">${p.district || p.city}${p.address ? " — " + p.address : ""}</p>
-          <p style="font-weight:700;font-size:13px;margin:4px 0 2px;">${priceStr}</p>
-          ${p.surfaceTotal ? `<p style="color:#888;font-size:11px;margin:0;">${p.surfaceTotal} m²</p>` : ""}
-          <p style="color:#999;font-size:10px;margin:4px 0 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px;"></span>${TRANSACTION_TYPE_LABELS[p.transactionType] || p.transactionType} — ${PROPERTY_TYPE_LABELS[p.type] || p.type}</p>
-          <a href="/dashboard/biens/${p.id}" style="display:block;margin-top:6px;font-size:11px;color:#886a4b;text-decoration:none;font-weight:500;">Voir le bien →</a>
-        </div>`;
-      const marker = L.marker([p.latitude!, p.longitude!], { icon }).bindPopup(popup).addTo(map);
-      markersRef.current.push(marker);
+    // Property markers
+    if (activeLayer === "biens" || activeLayer === "tous") {
+      for (const p of propsWithCoords) {
+        const color = COLOR_MAP[p.transactionType] || "#886a4b";
+        const photoHtml = p.media?.[0]?.url
+          ? `<img src="${p.media[0].url}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px;" />`
+          : "";
+        const icon = L.divIcon({
+          className: "",
+          html: `<div style="width:28px;height:28px;background:${color};border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+        const priceStr = p.transactionType === "LOCATION"
+          ? (p.rentMonthly ? `${fmtPrice(p.rentMonthly)}/mois` : fmtPrice(p.price))
+          : fmtPrice(p.price);
+        const popup = `
+          <div style="font-family:system-ui;min-width:200px;max-width:260px;">
+            ${photoHtml}
+            <p style="font-weight:600;font-size:13px;margin:0 0 4px;">${p.title}</p>
+            <p style="color:#888;font-size:11px;margin:0 0 2px;">${p.district || p.city}${p.address ? " — " + p.address : ""}</p>
+            <p style="font-weight:700;font-size:14px;margin:4px 0 2px;color:#886a4b;">${priceStr}</p>
+            ${p.surfaceTotal ? `<p style="color:#888;font-size:11px;margin:0;">${p.surfaceTotal} m²</p>` : ""}
+            <p style="color:#999;font-size:10px;margin:4px 0 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px;"></span>${TRANSACTION_TYPE_LABELS[p.transactionType] || p.transactionType} — ${PROPERTY_TYPE_LABELS[p.type] || p.type}</p>
+            ${p.isCoMandat ? '<p style="color:#2563eb;font-size:10px;font-weight:600;margin:4px 0 0;">Co-mandat</p>' : ""}
+            <a href="/dashboard/biens/${p.id}" style="display:block;margin-top:8px;font-size:11px;color:#886a4b;text-decoration:none;font-weight:600;">Voir le bien →</a>
+          </div>`;
+        const marker = L.marker([p.latitude!, p.longitude!], { icon }).bindPopup(popup).addTo(map);
+        markersRef.current.push(marker);
+      }
     }
-  }, [withCoords, mapReady]);
 
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
-  const selectClass = "h-9 rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-stone-600 dark:bg-anthracite-800 dark:text-stone-200";
-  const inputClass = "h-9 w-full rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-stone-600 dark:bg-anthracite-800 dark:text-stone-200 dark:placeholder:text-stone-500";
+    // Field spotting markers
+    if (activeLayer === "terrain" || activeLayer === "tous") {
+      for (const s of spotsWithCoords) {
+        const photoHtml = s.photoUrl
+          ? `<img src="${s.photoUrl}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px;" />`
+          : "";
+        const icon = L.divIcon({
+          className: "",
+          html: `<div style="width:28px;height:28px;background:#ef4444;border:3px solid white;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>
+          </div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+        const popup = `
+          <div style="font-family:system-ui;min-width:200px;max-width:260px;">
+            ${photoHtml}
+            <p style="font-size:10px;color:#ef4444;font-weight:700;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.05em;">Repérage terrain</p>
+            <p style="font-weight:600;font-size:13px;margin:0 0 4px;">${s.address}</p>
+            <p style="color:#888;font-size:11px;margin:0 0 2px;">${s.city} ${s.zipCode || ""} ${s.district ? "· " + s.district : ""}</p>
+            <p style="color:#888;font-size:11px;margin:4px 0 0;">Statut : <strong>${FIELD_SPOTTING_STATUS_LABELS[s.status] || s.status}</strong></p>
+            ${s.propertyType ? `<p style="color:#888;font-size:11px;margin:2px 0 0;">${PROPERTY_TYPE_LABELS[s.propertyType] || s.propertyType}${s.surface ? ` · ${s.surface} m²` : ""}</p>` : ""}
+            ${s.notes ? `<p style="color:#666;font-size:11px;margin:4px 0 0;font-style:italic;">${s.notes.substring(0, 100)}${s.notes.length > 100 ? "..." : ""}</p>` : ""}
+            <a href="/dashboard/terrain/${s.id}" style="display:block;margin-top:8px;font-size:11px;color:#ef4444;text-decoration:none;font-weight:600;">Voir le repérage →</a>
+          </div>`;
+        const marker = L.marker([s.latitude!, s.longitude!], { icon }).bindPopup(popup).addTo(map);
+        markersRef.current.push(marker);
+      }
+    }
+  }, [propsWithCoords, spotsWithCoords, mapReady, activeLayer]);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length + (drawnBounds ? 1 : 0);
+  const selectClass = "h-9 rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-stone-700 dark:bg-[#1a1a1f] dark:text-stone-200";
+  const inputClass = "h-9 w-full rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-stone-700 dark:bg-[#1a1a1f] dark:text-stone-200 dark:placeholder:text-stone-500";
+
+  function clearDrawnZone() {
+    setDrawnBounds(null);
+    if (drawRectRef.current) {
+      drawRectRef.current.remove();
+      drawRectRef.current = null;
+    }
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Carte</h1>
           <p className="text-sm text-stone-500 dark:text-stone-400">
-            {loading ? "Chargement..." : `${withCoords.length} bien${withCoords.length !== 1 ? "s" : ""} sur la carte`}
-            {filtered.length !== properties.length && ` (${filtered.length} après filtres)`}
+            {loading ? "Chargement..." : (
+              <>
+                {(activeLayer === "biens" || activeLayer === "tous") && `${propsWithCoords.length} bien${propsWithCoords.length !== 1 ? "s" : ""}`}
+                {activeLayer === "tous" && " · "}
+                {(activeLayer === "terrain" || activeLayer === "tous") && `${spotsWithCoords.length} repérage${spotsWithCoords.length !== 1 ? "s" : ""}`}
+                {drawnBounds && " (zone filtrée)"}
+              </>
+            )}
           </p>
         </div>
-        <Button
-          variant={activeFilterCount > 0 ? "primary" : "outline"}
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-        >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
-          </svg>
-          Filtres{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Layer toggle */}
+          <div className="flex rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
+            {(["tous", "biens", "terrain"] as Layer[]).map((l) => (
+              <button
+                key={l}
+                onClick={() => setActiveLayer(l)}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors capitalize ${
+                  activeLayer === l
+                    ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
+                    : "bg-white text-stone-600 hover:bg-stone-50 dark:bg-[#1a1a1f] dark:text-stone-400"
+                }`}
+              >
+                {l === "tous" ? "Tous" : l === "biens" ? "Biens" : "Terrain"}
+              </button>
+            ))}
+          </div>
+
+          {/* Draw zone button */}
+          <Button
+            variant={isDrawing ? "primary" : "outline"}
+            size="sm"
+            onClick={() => {
+              if (isDrawing) {
+                setIsDrawing(false);
+              } else {
+                clearDrawnZone();
+                setIsDrawing(true);
+              }
+            }}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+            </svg>
+            {isDrawing ? "Dessiner..." : "Zone"}
+          </Button>
+
+          {drawnBounds && (
+            <Button variant="ghost" size="sm" onClick={clearDrawnZone}>
+              Effacer zone
+            </Button>
+          )}
+
+          <Button
+            variant={activeFilterCount > 0 ? "primary" : "outline"}
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+            </svg>
+            Filtres{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+          </Button>
+        </div>
       </div>
 
       {showFilters && (
@@ -227,20 +464,27 @@ export default function CartePage() {
               </select>
             </div>
             <div className="flex items-end">
-              <Button variant="ghost" size="sm" onClick={() => setFilters(defaultFilters)} className="w-full">Réinitialiser</Button>
+              <Button variant="ghost" size="sm" onClick={() => { setFilters(defaultFilters); clearDrawnZone(); }} className="w-full">Réinitialiser</Button>
             </div>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-stone-100 pt-3 text-xs text-stone-500 dark:border-stone-700/50 dark:text-stone-400">
+          <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-stone-100 dark:border-stone-800/60 pt-3 text-xs text-stone-500 dark:text-stone-400">
             <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-full" style={{ background: "#886a4b" }} />Vente</div>
             <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-full" style={{ background: "#2563eb" }} />Location</div>
             <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-full" style={{ background: "#d97706" }} />Cession de bail</div>
             <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-full" style={{ background: "#7c3aed" }} />Fond de commerce</div>
+            <div className="flex items-center gap-1.5"><div className="h-3 w-3 rounded-sm" style={{ background: "#ef4444" }} />Repérage terrain</div>
           </div>
         </Card>
       )}
 
+      {isDrawing && (
+        <div className="rounded-lg border-2 border-dashed border-brand-400 bg-brand-50 dark:bg-brand-950/20 p-3 text-center text-sm text-brand-700 dark:text-brand-400">
+          Dessinez un rectangle sur la carte avec la souris ou le doigt pour filtrer les biens dans cette zone
+        </div>
+      )}
+
       <Card className="overflow-hidden">
-        <div ref={mapRef} className="h-[calc(100vh-280px)] min-h-[400px] w-full" />
+        <div ref={mapRef} className="h-[calc(100vh-240px)] min-h-[400px] w-full" />
       </Card>
     </div>
   );

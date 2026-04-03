@@ -63,6 +63,23 @@ export function generateReference(prefix: string): string {
   return `${prefix}-${year}${month}-${random}`;
 }
 
+export function formatRelativeDate(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  const d = typeof date === "string" ? new Date(date) : date;
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffH = Math.floor(diffMs / 3600000);
+  const diffD = Math.floor(diffMs / 86400000);
+
+  if (diffMin < 1) return "À l'instant";
+  if (diffMin < 60) return `Il y a ${diffMin} min`;
+  if (diffH < 24) return `Il y a ${diffH}h`;
+  if (diffD < 7) return `Il y a ${diffD}j`;
+  if (diffD < 30) return `Il y a ${Math.floor(diffD / 7)} sem.`;
+  return formatDateShort(d);
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

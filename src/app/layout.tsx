@@ -39,7 +39,7 @@ export default function RootLayout({
     <html lang="fr">
       <head>
         <script dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})()`,
+          __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='light'){return}document.documentElement.classList.add('dark')}catch(e){document.documentElement.classList.add('dark')}})()`,
         }} />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />

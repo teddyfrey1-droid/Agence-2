@@ -36,7 +36,7 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-stone-50 dark:bg-anthracite-950">
+      <div className="min-h-screen bg-stone-50 dark:bg-[#0f1014]">
         <DashboardSidebar
           badges={{
             "/dashboard/taches": overdueTaskCount,

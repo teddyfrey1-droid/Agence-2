@@ -8,7 +8,7 @@ export const createPropertySchema = z.object({
   ]),
   transactionType: z.enum(["VENTE", "LOCATION", "CESSION_BAIL", "FOND_DE_COMMERCE"]),
   status: z.enum([
-    "BROUILLON", "ACTIF", "EN_NEGOCIATION", "SOUS_COMPROMIS",
+    "BROUILLON", "ACTIF", "EN_NEGOCIATION", "PRENEUR_TROUVE", "SOUS_COMPROMIS",
     "VENDU", "LOUE", "RETIRE", "ARCHIVE",
   ]).optional(),
   confidentiality: z.enum(["PUBLIC", "RESTREINT", "CONFIDENTIEL"]).optional(),
@@ -37,6 +37,8 @@ export const createPropertySchema = z.object({
   charges: z.number().positive().optional(),
   deposit: z.number().positive().optional(),
   fees: z.number().positive().optional(),
+  isCoMandat: z.boolean().default(false),
+  coMandatAgency: z.string().optional(),
   ownerId: z.string().optional(),
   assignedToId: z.string().optional(),
 });

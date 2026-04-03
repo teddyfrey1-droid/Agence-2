@@ -310,13 +310,31 @@ export default async function PropertyDetailPage({
             </CardContent>
           </Card>
 
+          {property.isCoMandat && (
+            <Card>
+              <CardHeader>
+                <h2 className="heading-card">Co-mandat</h2>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Badge variant="info">Co-mandat</Badge>
+                  {property.coMandatAgency && (
+                    <span className="text-sm text-anthracite-700 dark:text-stone-300">
+                      {property.coMandatAgency}
+                    </span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
             <CardHeader>
               <h2 className="heading-card">Assignation</h2>
             </CardHeader>
             <CardContent>
               {property.assignedTo ? (
-                <p className="text-sm text-anthracite-700">
+                <p className="text-sm text-anthracite-700 dark:text-stone-300">
                   {property.assignedTo.firstName} {property.assignedTo.lastName}
                 </p>
               ) : (

@@ -55,6 +55,7 @@ export const PROPERTY_STATUS_LABELS: Record<string, string> = {
   BROUILLON: "Brouillon",
   ACTIF: "Actif",
   EN_NEGOCIATION: "En négociation",
+  PRENEUR_TROUVE: "Preneur trouvé",
   SOUS_COMPROMIS: "Sous compromis",
   VENDU: "Vendu",
   LOUE: "Loué",

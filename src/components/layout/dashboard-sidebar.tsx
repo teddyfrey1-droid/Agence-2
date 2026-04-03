@@ -111,12 +111,12 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-stone-200/80 bg-white transition-transform duration-300 ease-in-out lg:z-40 lg:w-64 lg:translate-x-0 dark:bg-anthracite-900 dark:border-stone-700/50",
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-stone-200/80 bg-white transition-transform duration-300 ease-in-out lg:z-40 lg:w-64 lg:translate-x-0 dark:bg-[#151519] dark:border-stone-800/60",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Logo + close on mobile */}
-        <div className="flex h-16 items-center justify-between border-b border-stone-100 px-4 dark:border-stone-700/50">
+        <div className="flex h-16 items-center justify-between border-b border-stone-100 px-4 dark:border-stone-800/60">
           <Logo size="sm" />
           <button
             onClick={close}
@@ -184,7 +184,7 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
         </nav>
 
         {/* Bottom */}
-        <div className="border-t border-stone-100 p-4 dark:border-stone-700/50">
+        <div className="border-t border-stone-100 p-4 dark:border-stone-800/60">
           <Link
             href="/"
             onClick={close}

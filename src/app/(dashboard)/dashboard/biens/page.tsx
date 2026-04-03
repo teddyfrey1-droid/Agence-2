@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { findProperties } from "@/modules/properties";
-import { formatPrice, formatSurface } from "@/lib/utils";
+import { formatPrice, formatSurface, formatRelativeDate } from "@/lib/utils";
 import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, TRANSACTION_TYPE_LABELS } from "@/lib/constants";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,19 +9,35 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
 
+const SORT_OPTIONS = [
+  { value: "newest", label: "Plus récent" },
+  { value: "oldest", label: "Plus ancien" },
+  { value: "updated", label: "Dernière modif." },
+];
+
 export default async function BiensListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; status?: string; type?: string; search?: string }>;
+  searchParams: Promise<{ page?: string; status?: string; type?: string; search?: string; sort?: string }>;
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
+  const sort = params.sort || "newest";
   const { items: properties, total, totalPages } = await findProperties(
-    { status: params.status, type: params.type, search: params.search },
+    { status: params.status, type: params.type, search: params.search, sort },
     page
   );
 
   const hasFilters = !!(params.status || params.type || params.search);
+
+  function sortHref(s: string) {
+    const sp = new URLSearchParams();
+    if (params.status) sp.set("status", params.status);
+    if (params.type) sp.set("type", params.type);
+    if (params.search) sp.set("search", params.search);
+    sp.set("sort", s);
+    return `/dashboard/biens?${sp.toString()}`;
+  }
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -56,6 +72,24 @@ export default async function BiensListPage({
         currentParams={params}
       />
 
+      {/* Sort bar */}
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-stone-400 dark:text-stone-500">Trier :</span>
+        {SORT_OPTIONS.map((opt) => (
+          <Link
+            key={opt.value}
+            href={sortHref(opt.value)}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              sort === opt.value
+                ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
+                : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-anthracite-800 dark:text-stone-400 dark:hover:bg-anthracite-700"
+            }`}
+          >
+            {opt.label}
+          </Link>
+        ))}
+      </div>
+
       {properties.length === 0 ? (
         <EmptyState
           title={hasFilters ? "Aucun résultat" : "Aucun bien"}
@@ -74,7 +108,7 @@ export default async function BiensListPage({
           <div className="space-y-3 lg:hidden">
             {properties.map((property) => (
               <Link key={property.id} href={`/dashboard/biens/${property.id}`}>
-                <Card className="p-4 active:bg-stone-50 transition-colors">
+                <Card className="p-4 active:bg-stone-50 dark:active:bg-anthracite-800 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-mono text-[10px] text-stone-400 dark:text-stone-500">{property.reference}</p>
@@ -85,9 +119,14 @@ export default async function BiensListPage({
                         {property.district || property.city} · {PROPERTY_TYPE_LABELS[property.type] || property.type}
                       </p>
                     </div>
-                    <Badge variant={getStatusBadgeVariant(property.status)}>
-                      {PROPERTY_STATUS_LABELS[property.status] || property.status}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant={getStatusBadgeVariant(property.status)}>
+                        {PROPERTY_STATUS_LABELS[property.status] || property.status}
+                      </Badge>
+                      {property.isCoMandat && (
+                        <Badge variant="info">Co-mandat</Badge>
+                      )}
+                    </div>
                   </div>
                   <div className="mt-3 flex items-center gap-4 text-sm">
                     <span className="text-stone-500 dark:text-stone-400">{TRANSACTION_TYPE_LABELS[property.transactionType]}</span>
@@ -101,7 +140,7 @@ export default async function BiensListPage({
                     </span>
                   </div>
                   <div className="mt-2 flex items-center justify-between text-xs text-stone-400 dark:text-stone-500">
-                    <span className="font-mono">{property.reference}</span>
+                    <span>{formatRelativeDate(property.updatedAt)}</span>
                     <span>{property._count.matches} match{property._count.matches !== 1 ? "es" : ""}</span>
                   </div>
                 </Card>
@@ -122,6 +161,7 @@ export default async function BiensListPage({
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Surface</th>
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Prix/Loyer</th>
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Statut</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Mis à jour</th>
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Matches</th>
                   </tr>
                 </thead>
@@ -146,9 +186,17 @@ export default async function BiensListPage({
                         {property.transactionType === "LOCATION" ? formatPrice(property.rentMonthly) : formatPrice(property.price)}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant={getStatusBadgeVariant(property.status)}>
-                          {PROPERTY_STATUS_LABELS[property.status] || property.status}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge variant={getStatusBadgeVariant(property.status)}>
+                            {PROPERTY_STATUS_LABELS[property.status] || property.status}
+                          </Badge>
+                          {property.isCoMandat && (
+                            <Badge variant="info">Co-mandat</Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-stone-400 dark:text-stone-500" title={property.updatedAt ? new Date(property.updatedAt).toLocaleString("fr-FR") : ""}>
+                        {formatRelativeDate(property.updatedAt)}
                       </td>
                       <td className="px-4 py-3 text-center text-stone-500 dark:text-stone-400">{property._count.matches}</td>
                     </tr>
@@ -160,7 +208,7 @@ export default async function BiensListPage({
         </>
       )}
 
-      <Pagination currentPage={page} totalPages={totalPages} basePath="/dashboard/biens" params={{ status: params.status, type: params.type, search: params.search }} />
+      <Pagination currentPage={page} totalPages={totalPages} basePath="/dashboard/biens" params={{ status: params.status, type: params.type, search: params.search, sort }} />
     </div>
   );
 }

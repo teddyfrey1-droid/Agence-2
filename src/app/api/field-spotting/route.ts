@@ -2,7 +2,23 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { createFieldSpottingSchema } from "@/modules/field-spotting/field-spotting.schema";
-import { createFieldSpotting } from "@/modules/field-spotting";
+import { createFieldSpotting, findFieldSpottings } from "@/modules/field-spotting";
+
+export async function GET() {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+    if (!hasPermission(session.role, "field_spotting", "read")) {
+      return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+    }
+    const { items } = await findFieldSpottings({}, 1, 500);
+    return NextResponse.json({ items });
+  } catch {
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
