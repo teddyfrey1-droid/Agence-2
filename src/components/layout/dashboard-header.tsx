@@ -14,7 +14,7 @@ export function DashboardHeader({
   const { toggle } = useSidebar();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-stone-200 bg-white/95 px-3 backdrop-blur-sm sm:h-16 sm:px-6 dark:bg-[#151519]/95 dark:border-stone-800/60">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-stone-200 bg-white/95 px-3 backdrop-blur-sm sm:h-16 sm:px-6 dark:bg-anthracite-900/95 dark:border-anthracite-800">
       <div className="flex items-center gap-3">
         {/* Hamburger on mobile */}
         <button

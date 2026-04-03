@@ -15,21 +15,27 @@ interface PropertyForPdf {
   district: string | null;
   description: string | null;
   surfaceTotal: number | null;
-  surfaceCommercial: number | null;
-  surfaceStorage: number | null;
+  surfaceMin: number | null;
+  surfaceMax: number | null;
   floor: number | null;
+  totalFloors: number | null;
+  facadeLength: number | null;
+  ceilingHeight: number | null;
   price: number | null;
   rentMonthly: number | null;
   rentYearly: number | null;
   charges: number | null;
+  deposit: number | null;
+  fees: number | null;
   hasExtraction: boolean;
   hasTerrace: boolean;
   hasParking: boolean;
   hasLoadingDock: boolean;
-  facade: number | null;
-  height: number | null;
+  isCoMandat: boolean;
+  coMandatAgency: string | null;
   owner: { firstName: string; lastName: string; company: string | null; phone: string | null; email: string } | null;
   assignedTo: { firstName: string; lastName: string } | null;
+  media: { url: string; isPrimary: boolean }[];
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -42,6 +48,12 @@ const TYPE_LABELS: Record<string, string> = {
 const TX_LABELS: Record<string, string> = {
   VENTE: "Vente", LOCATION: "Location", CESSION_BAIL: "Cession de bail",
   FOND_DE_COMMERCE: "Fond de commerce",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  BROUILLON: "Brouillon", ACTIF: "Actif", EN_NEGOCIATION: "En négociation",
+  PRENEUR_TROUVE: "Preneur trouvé", SOUS_COMPROMIS: "Sous compromis",
+  VENDU: "Vendu", LOUE: "Loué", RETIRE: "Retiré", ARCHIVE: "Archivé",
 };
 
 function fmtPrice(val: number | null) {
@@ -66,82 +78,151 @@ export function PropertyPdfButton({ propertyId }: { propertyId: string }) {
 
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 15;
+      const contentWidth = pageWidth - margin * 2;
 
-      // Header bar
-      doc.setFillColor(136, 106, 75); // brand color #886a4b
-      doc.rect(0, 0, pageWidth, 35, "F");
+      // ─── Brand colors ───
+      const brandRgb: [number, number, number] = [136, 106, 75];
+      const darkText: [number, number, number] = [40, 40, 40];
+      const grayText: [number, number, number] = [100, 100, 100];
+      const lightBg: [number, number, number] = [248, 247, 244];
+
+      // ─── Header band ───
+      doc.setFillColor(...brandRgb);
+      doc.rect(0, 0, pageWidth, 40, "F");
+
+      // Subtle accent line
+      doc.setFillColor(255, 255, 255);
+      doc.setGState(doc.GState({ opacity: 0.15 }));
+      doc.rect(0, 36, pageWidth, 4, "F");
+      doc.setGState(doc.GState({ opacity: 1 }));
+
+      // Agency name
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(20);
-      doc.setFont("helvetica", "bold");
-      doc.text("FICHE TECHNIQUE", 14, 16);
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text(`Réf. ${property.reference}`, 14, 25);
-      doc.text(new Date().toLocaleDateString("fr-FR"), pageWidth - 14, 25, { align: "right" });
+      doc.text("LA PLACE — Immobilier commercial", margin, 12);
 
       // Title
-      doc.setTextColor(50, 50, 50);
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("FICHE TECHNIQUE", margin, 25);
+
+      // Reference + Date on right
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.text(`Réf. ${property.reference}`, pageWidth - margin, 12, { align: "right" });
+      doc.text(new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }), pageWidth - margin, 19, { align: "right" });
+      doc.text(STATUS_LABELS[property.status] || property.status, pageWidth - margin, 26, { align: "right" });
+
+      // ─── Property title section ───
+      let y = 50;
+      doc.setTextColor(...darkText);
       doc.setFontSize(16);
       doc.setFont("helvetica", "bold");
-      doc.text(property.title, 14, 48);
+      const titleLines = doc.splitTextToSize(property.title, contentWidth);
+      doc.text(titleLines, margin, y);
+      y += titleLines.length * 7 + 3;
 
-      // Location
+      // Location line
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
-      doc.setTextColor(120, 120, 120);
+      doc.setTextColor(...grayText);
       const locationParts = [property.address, property.district, `${property.zipCode} ${property.city}`].filter(Boolean);
-      doc.text(locationParts.join(" — "), 14, 56);
+      doc.text(locationParts.join(" — "), margin, y);
+      y += 5;
 
-      // Main info table
-      const mainRows: string[][] = [];
-      mainRows.push(["Type de bien", TYPE_LABELS[property.type] || property.type]);
-      mainRows.push(["Transaction", TX_LABELS[property.transactionType] || property.transactionType]);
-      if (property.surfaceTotal) mainRows.push(["Surface totale", `${property.surfaceTotal} m²`]);
-      if (property.surfaceCommercial) mainRows.push(["Surface commerciale", `${property.surfaceCommercial} m²`]);
-      if (property.surfaceStorage) mainRows.push(["Surface stockage", `${property.surfaceStorage} m²`]);
-      if (property.floor != null) mainRows.push(["Étage", property.floor === 0 ? "RDC" : `${property.floor}e`]);
-      if (property.facade) mainRows.push(["Linéaire de façade", `${property.facade} m`]);
-      if (property.height) mainRows.push(["Hauteur sous plafond", `${property.height} m`]);
+      // Type + Transaction tag
+      doc.setFontSize(9);
+      doc.setTextColor(...brandRgb);
+      doc.setFont("helvetica", "bold");
+      doc.text(`${TYPE_LABELS[property.type] || property.type} · ${TX_LABELS[property.transactionType] || property.transactionType}`, margin, y);
+      y += 4;
 
-      autoTable(doc, {
-        startY: 62,
-        head: [["Caractéristique", "Détail"]],
-        body: mainRows,
-        theme: "striped",
-        headStyles: { fillColor: [136, 106, 75], textColor: [255, 255, 255], fontStyle: "bold" },
-        styles: { fontSize: 9, cellPadding: 4 },
-        columnStyles: { 0: { fontStyle: "bold", cellWidth: 60 } },
-      });
-
-      // Price table
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let currentY = (doc as any).lastAutoTable.finalY + 10;
-      const priceRows: string[][] = [];
-      if (property.transactionType === "LOCATION") {
-        if (property.rentMonthly) priceRows.push(["Loyer mensuel", fmtPrice(property.rentMonthly)]);
-        if (property.rentYearly) priceRows.push(["Loyer annuel", fmtPrice(property.rentYearly)]);
-      } else {
-        if (property.price) priceRows.push(["Prix", fmtPrice(property.price)]);
+      // Co-mandat tag
+      if (property.isCoMandat) {
+        doc.setTextColor(37, 99, 235);
+        doc.text(`Co-mandat${property.coMandatAgency ? ` — ${property.coMandatAgency}` : ""}`, margin, y);
+        y += 4;
       }
-      if (property.charges) priceRows.push(["Charges", `${fmtPrice(property.charges)}/mois`]);
 
-      if (priceRows.length > 0) {
+      // ─── Separator ───
+      y += 4;
+      doc.setDrawColor(220, 220, 215);
+      doc.setLineWidth(0.3);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 8;
+
+      // ─── Characteristics table ───
+      const charRows: string[][] = [];
+      if (property.surfaceTotal) charRows.push(["Surface totale", `${property.surfaceTotal} m²`]);
+      if (property.surfaceMin) charRows.push(["Surface min.", `${property.surfaceMin} m²`]);
+      if (property.surfaceMax) charRows.push(["Surface max.", `${property.surfaceMax} m²`]);
+      if (property.floor != null) charRows.push(["Étage", property.floor === 0 ? "RDC" : `${property.floor}e étage`]);
+      if (property.totalFloors) charRows.push(["Nombre d'étages", `${property.totalFloors}`]);
+      if (property.facadeLength) charRows.push(["Linéaire de façade", `${property.facadeLength} m`]);
+      if (property.ceilingHeight) charRows.push(["Hauteur sous plafond", `${property.ceilingHeight} m`]);
+
+      if (charRows.length > 0) {
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...brandRgb);
+        doc.text("CARACTÉRISTIQUES", margin, y);
+        y += 2;
+
         autoTable(doc, {
-          startY: currentY,
-          head: [["Conditions financières", "Montant"]],
-          body: priceRows,
-          theme: "striped",
-          headStyles: { fillColor: [136, 106, 75], textColor: [255, 255, 255], fontStyle: "bold" },
-          styles: { fontSize: 9, cellPadding: 4 },
-          columnStyles: { 0: { fontStyle: "bold", cellWidth: 60 } },
+          startY: y,
+          body: charRows,
+          theme: "plain",
+          styles: { fontSize: 9, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, textColor: darkText },
+          columnStyles: {
+            0: { fontStyle: "bold", cellWidth: 55, textColor: grayText },
+            1: { textColor: darkText },
+          },
+          alternateRowStyles: { fillColor: lightBg },
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        currentY = (doc as any).lastAutoTable.finalY + 10;
+        y = (doc as any).lastAutoTable.finalY + 8;
       }
 
-      // Features
+      // ─── Financial table ───
+      const finRows: string[][] = [];
+      if (property.transactionType === "LOCATION") {
+        if (property.rentMonthly) finRows.push(["Loyer mensuel HC", fmtPrice(property.rentMonthly)]);
+        if (property.rentYearly) finRows.push(["Loyer annuel HC", fmtPrice(property.rentYearly)]);
+        if (property.charges) finRows.push(["Charges/mois", fmtPrice(property.charges)]);
+        if (property.deposit) finRows.push(["Dépôt de garantie", fmtPrice(property.deposit)]);
+      } else {
+        if (property.price) finRows.push(["Prix de vente", fmtPrice(property.price)]);
+        if (property.fees) finRows.push(["Honoraires", fmtPrice(property.fees)]);
+      }
+
+      if (finRows.length > 0) {
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...brandRgb);
+        doc.text("CONDITIONS FINANCIÈRES", margin, y);
+        y += 2;
+
+        autoTable(doc, {
+          startY: y,
+          body: finRows,
+          theme: "plain",
+          styles: { fontSize: 9, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, textColor: darkText },
+          columnStyles: {
+            0: { fontStyle: "bold", cellWidth: 55, textColor: grayText },
+            1: { fontStyle: "bold", textColor: darkText },
+          },
+          alternateRowStyles: { fillColor: lightBg },
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        y = (doc as any).lastAutoTable.finalY + 8;
+      }
+
+      // ─── Equipment ───
       const features = [];
-      if (property.hasExtraction) features.push("Extraction");
+      if (property.hasExtraction) features.push("Extraction / Ventilation");
       if (property.hasTerrace) features.push("Terrasse");
       if (property.hasParking) features.push("Parking");
       if (property.hasLoadingDock) features.push("Quai de chargement");
@@ -149,44 +230,76 @@ export function PropertyPdfButton({ propertyId }: { propertyId: string }) {
       if (features.length > 0) {
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(136, 106, 75);
-        doc.text("Équipements", 14, currentY);
-        currentY += 6;
+        doc.setTextColor(...brandRgb);
+        doc.text("ÉQUIPEMENTS", margin, y);
+        y += 6;
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(80, 80, 80);
+        doc.setTextColor(...darkText);
         features.forEach((f) => {
-          doc.text(`• ${f}`, 18, currentY);
-          currentY += 5;
+          doc.setFillColor(...brandRgb);
+          doc.circle(margin + 2, y - 1.2, 1.2, "F");
+          doc.text(f, margin + 7, y);
+          y += 5;
         });
-        currentY += 5;
+        y += 4;
       }
 
-      // Description
+      // ─── Description ───
       if (property.description) {
+        if (y > pageHeight - 60) { doc.addPage(); y = 20; }
         doc.setFontSize(11);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(136, 106, 75);
-        doc.text("Description", 14, currentY);
-        currentY += 6;
+        doc.setTextColor(...brandRgb);
+        doc.text("DESCRIPTION", margin, y);
+        y += 6;
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(80, 80, 80);
-        const lines = doc.splitTextToSize(property.description, pageWidth - 28);
-        doc.text(lines, 14, currentY);
-        currentY += lines.length * 4.5 + 5;
+        doc.setTextColor(...darkText);
+        doc.setLineHeightFactor(1.5);
+        const descLines = doc.splitTextToSize(property.description, contentWidth);
+        doc.text(descLines, margin, y);
+        y += descLines.length * 4.5 + 6;
+        doc.setLineHeightFactor(1.15);
       }
 
-      // Footer
-      doc.setFillColor(136, 106, 75);
-      doc.rect(0, doc.internal.pageSize.getHeight() - 15, pageWidth, 15, "F");
+      // ─── Contact info ───
+      if (property.assignedTo) {
+        if (y > pageHeight - 40) { doc.addPage(); y = 20; }
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...brandRgb);
+        doc.text("VOTRE INTERLOCUTEUR", margin, y);
+        y += 6;
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...darkText);
+        doc.text(`${property.assignedTo.firstName} ${property.assignedTo.lastName}`, margin, y);
+        y += 5;
+      }
+
+      // ─── Footer ───
+      doc.setFillColor(...brandRgb);
+      doc.rect(0, pageHeight - 18, pageWidth, 18, "F");
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(8);
+      doc.setFontSize(7.5);
+      doc.setFont("helvetica", "normal");
       doc.text(
-        "Agence Immobilière — Document confidentiel — " + new Date().toLocaleDateString("fr-FR"),
-        pageWidth / 2, doc.internal.pageSize.getHeight() - 6,
+        "LA PLACE — Immobilier commercial & professionnel à Paris",
+        pageWidth / 2, pageHeight - 11,
         { align: "center" }
       );
+      doc.text(
+        "Document confidentiel — " + new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }),
+        pageWidth / 2, pageHeight - 6,
+        { align: "center" }
+      );
+
+      // Thin brand line at the very top of footer
+      doc.setFillColor(255, 255, 255);
+      doc.setGState(doc.GState({ opacity: 0.2 }));
+      doc.rect(0, pageHeight - 18, pageWidth, 1, "F");
+      doc.setGState(doc.GState({ opacity: 1 }));
 
       doc.save(`fiche-${property.reference}.pdf`);
     } catch (err) {

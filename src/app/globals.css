@@ -13,12 +13,12 @@
   }
 
   body {
-    @apply bg-brand-50 text-anthracite-900 font-sans dark:bg-[#0f1014] dark:text-stone-100;
+    @apply bg-brand-50 text-anthracite-900 font-sans dark:bg-anthracite-950 dark:text-stone-100;
     --sidebar-bg: #ffffff;
   }
 
   html.dark {
-    --sidebar-bg: #151519;
+    --sidebar-bg: theme('colors.anthracite.900');
     color-scheme: dark;
   }
 
@@ -63,16 +63,16 @@
   }
 
   :is(.dark) .bg-gradient-premium {
-    background: linear-gradient(135deg, #0f1014 0%, #151519 50%, #1a1a1f 100%);
+    background: linear-gradient(135deg, #1e1f27 0%, #252630 50%, #333541 100%);
   }
 
   .bg-gradient-dark {
-    background: linear-gradient(135deg, #0f1014 0%, #1a1a1f 100%);
+    background: linear-gradient(135deg, #1e1f27 0%, #333541 100%);
   }
 
   /* Glass effect for sticky headers */
   .glass {
-    @apply bg-white/80 backdrop-blur-lg dark:bg-[#151519]/80;
+    @apply bg-white/80 backdrop-blur-lg dark:bg-anthracite-900/80;
   }
 
   /* Score ring animation */
