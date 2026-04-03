@@ -27,6 +27,7 @@ export interface PropertyFilters {
   isPublished?: boolean;
   assignedToId?: string;
   search?: string;
+  sort?: string; // "newest" | "oldest" | "updated"
 }
 
 export async function findProperties(
@@ -52,6 +53,13 @@ export async function findProperties(
     ];
   }
 
+  const orderBy: Prisma.PropertyOrderByWithRelationInput =
+    filters.sort === "oldest"
+      ? { createdAt: "asc" }
+      : filters.sort === "updated"
+        ? { updatedAt: "desc" }
+        : { createdAt: "desc" }; // default: newest first
+
   const [items, total] = await Promise.all([
     prisma.property.findMany({
       where,
@@ -60,7 +68,7 @@ export async function findProperties(
         assignedTo: { select: { firstName: true, lastName: true } },
         _count: { select: { matches: true } },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy,
       skip: (page - 1) * perPage,
       take: perPage,
     }),

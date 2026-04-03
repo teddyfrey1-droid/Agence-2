@@ -40,6 +40,7 @@ enum PropertyStatus {
   BROUILLON
   ACTIF
   EN_NEGOCIATION
+  PRENEUR_TROUVE
   SOUS_COMPROMIS
   VENDU
   LOUE
@@ -349,6 +350,10 @@ model Property {
   deposit           Float?
   fees              Float?
   pricePerSqm       Float?
+
+  // Commercial
+  isCoMandat        Boolean                 @default(false)
+  coMandatAgency    String?
 
   // Visibility
   isPublished       Boolean                 @default(false)
