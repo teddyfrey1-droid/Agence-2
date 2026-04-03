@@ -17,7 +17,7 @@ const expertiseAreas = [
   },
   {
     title: "Locaux commerciaux",
-    description: "Surfaces commerciales adaptées à tous types d'activités et de projets.",
+    description: "Surfaces commerciales adaptées à tous types d'activities et de projets.",
     icon: "M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z",
   },
   {
@@ -77,16 +77,19 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-gradient-to-br from-brand-50 via-white to-champagne-50 dark:from-anthracite-950 dark:via-anthracite-900 dark:to-anthracite-950" />
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23886a4b' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
 
-        <div className="container-page relative py-20 sm:py-28 md:py-36">
+        {/* MODIFICATION ICI : pt-4 au lieu de py-20 pour coller en haut */}
+        <div className="container-page relative pt-4 pb-20 sm:pb-28 md:pb-36">
           <div className="mx-auto max-w-3xl text-center flex flex-col items-center">
             
-            {/* LOGO GRAND ET CENTRÉ */}
+            {/* LOGO ÉNORME ET ÉLARGI */}
             <Image
               src="/logo-mark.svg"
               alt="Retail Place"
-              width={400}
-              height={150}
-              className="mb-10 h-24 sm:h-32 w-auto object-contain object-center"
+              // Augmentation des indices de taille pour Next.js
+              width={800} 
+              height={300}
+              // MODIFICATION ICI : h-48 sur mobile, h-60 sur desktop pour un logo géant
+              className="mb-10 h-48 md:h-60 w-auto object-contain object-center"
               priority
             />
 
