@@ -1,8 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatSurface } from "@/lib/utils";
 import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
-import { LogoMark } from "@/components/ui/logo";
 
 const expertiseAreas = [
   {
@@ -38,15 +38,15 @@ const expertiseAreas = [
 ];
 
 const stats = [
-  { value: "15+", label: "Années d'expérience" },
-  { value: "500+", label: "Transactions réalisées" },
+  { value: "6+", label: "Années d'expérience" },
+  { value: "120+", label: "Transactions réalisées" },
   { value: "20", label: "Arrondissements couverts" },
   { value: "98%", label: "Clients satisfaits" },
 ];
 
 const testimonials = [
   {
-    quote: "La Place a trouvé le local idéal pour notre restaurant en moins de 3 semaines. Un accompagnement remarquable du début à la fin.",
+    quote: "Retail Place a trouvé le local idéal pour notre restaurant en moins de 3 semaines. Un accompagnement remarquable du début à la fin.",
     author: "Sophie M.",
     role: "Restauratrice, 11e arr.",
   },
@@ -69,6 +69,7 @@ export default async function HomePage() {
     orderBy: { createdAt: "desc" },
     take: 6,
   });
+
   return (
     <>
       {/* Hero */}
@@ -77,12 +78,20 @@ export default async function HomePage() {
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23886a4b' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")" }} />
 
         <div className="container-page relative py-20 sm:py-28 md:py-36">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 flex justify-center">
-              <LogoMark size="xl" />
-            </div>
+          <div className="mx-auto max-w-3xl text-center flex flex-col items-center">
+            
+            {/* LOGO GRAND ET CENTRÉ */}
+            <Image
+              src="/logo-mark.svg"
+              alt="Retail Place"
+              width={400}
+              height={150}
+              className="mb-10 h-24 sm:h-32 w-auto object-contain object-center"
+              priority
+            />
+
             <h1 className="font-serif text-4xl font-bold tracking-tight text-anthracite-900 sm:text-5xl md:text-6xl dark:text-stone-100">
-              La Place,
+              Retail Place,
               <br />
               <span className="bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">votre partenaire</span>
               <br />
