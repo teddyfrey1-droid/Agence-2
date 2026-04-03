@@ -7,14 +7,8 @@ import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SinglePhotoUploader } from "@/components/photo-uploader";
-
-const statusLabels: Record<string, string> = {
-  REPERE: "Repéré",
-  A_QUALIFIER: "À qualifier",
-  QUALIFIE: "Qualifié",
-  CONVERTI: "Converti",
-  REJETE: "Rejeté",
-};
+import { StatusSelector } from "@/components/status-selector";
+import { FIELD_SPOTTING_STATUS_LABELS } from "@/lib/constants";
 
 export default async function TerrainDetailPage({
   params,
@@ -50,7 +44,7 @@ export default async function TerrainDetailPage({
           </p>
         </div>
         <Badge variant={getStatusBadgeVariant(spot.status)}>
-          {statusLabels[spot.status] || spot.status}
+          {FIELD_SPOTTING_STATUS_LABELS[spot.status] || spot.status}
         </Badge>
       </div>
 
@@ -109,6 +103,20 @@ export default async function TerrainDetailPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Pipeline de suivi */}
+      <Card>
+        <CardHeader>
+          <h2 className="heading-card">Suivi</h2>
+        </CardHeader>
+        <CardContent>
+          <StatusSelector
+            entityId={id}
+            entityType="field-spotting"
+            currentStatus={spot.status}
+          />
+        </CardContent>
+      </Card>
 
       {/* Notes */}
       {spot.notes && (

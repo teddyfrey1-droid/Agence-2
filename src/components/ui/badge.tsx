@@ -40,9 +40,9 @@ export function Badge({ children, variant = "default", className }: BadgeProps) 
 // Helper to get badge variant from status
 export function getStatusBadgeVariant(status: string): BadgeVariant {
   const successStatuses = ["ACTIF", "TERMINEE", "GAGNE", "SATISFAITE", "QUALIFIE", "CONVERTI", "VALIDE", "RETENU"];
-  const warningStatuses = ["EN_NEGOCIATION", "EN_COURS", "SOUS_COMPROMIS", "EN_PAUSE", "A_QUALIFIER", "EN_VISITE"];
+  const warningStatuses = ["EN_NEGOCIATION", "EN_COURS", "SOUS_COMPROMIS", "EN_PAUSE", "A_QUALIFIER", "EN_VISITE", "EN_ATTENTE_RETOUR"];
   const dangerStatuses = ["PERDU", "ANNULE", "ANNULEE", "REJETE", "ABANDONNEE", "URGENTE"];
-  const infoStatuses = ["NOUVELLE", "BROUILLON", "REPERE", "SUGGERE", "A_FAIRE"];
+  const infoStatuses = ["NOUVELLE", "BROUILLON", "REPERE", "SUGGERE", "A_FAIRE", "APPELE"];
 
   if (successStatuses.includes(status)) return "success";
   if (warningStatuses.includes(status)) return "warning";

@@ -1,20 +1,12 @@
 import Link from "next/link";
 import { findFieldSpottings } from "@/modules/field-spotting";
 import { formatDateShort } from "@/lib/utils";
-import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
+import { PROPERTY_TYPE_LABELS, FIELD_SPOTTING_STATUS_LABELS } from "@/lib/constants";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
-
-const statusLabels: Record<string, string> = {
-  REPERE: "Repéré",
-  A_QUALIFIER: "À qualifier",
-  QUALIFIE: "Qualifié",
-  CONVERTI: "Converti",
-  REJETE: "Rejeté",
-};
 
 export default async function TerrainPage({
   searchParams,
@@ -56,7 +48,7 @@ export default async function TerrainPage({
                       <p className="text-xs text-stone-400 dark:text-stone-500">{spot.city} {spot.zipCode}</p>
                     </div>
                     <Badge variant={getStatusBadgeVariant(spot.status)}>
-                      {statusLabels[spot.status] || spot.status}
+                      {FIELD_SPOTTING_STATUS_LABELS[spot.status] || spot.status}
                     </Badge>
                   </div>
                   {spot.propertyType && (

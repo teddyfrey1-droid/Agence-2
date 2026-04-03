@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { PropertyPdfButton } from "@/components/property-pdf-button";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { DeleteButton } from "@/components/delete-button";
+import { PublishButton } from "@/components/publish-button";
 import { prisma } from "@/lib/prisma";
 
 export default async function PropertyDetailPage({
@@ -300,9 +301,7 @@ export default async function PropertyDetailPage({
                   Modifier
                 </Button>
               </Link>
-              <Button variant="outline" className="w-full justify-start">
-                {property.isPublished ? "Dépublier" : "Publier"}
-              </Button>
+              <PublishButton propertyId={id} isPublished={property.isPublished} />
               <Button variant="outline" className="w-full justify-start">
                 Lancer le matching
               </Button>

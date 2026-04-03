@@ -143,6 +143,8 @@ enum InteractionType {
 
 enum FieldSpottingStatus {
   REPERE
+  APPELE
+  EN_ATTENTE_RETOUR
   A_QUALIFIER
   QUALIFIE
   CONVERTI

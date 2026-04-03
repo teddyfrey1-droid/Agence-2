@@ -18,7 +18,7 @@ export const createFieldSpottingSchema = z.object({
 });
 
 export const updateFieldSpottingSchema = createFieldSpottingSchema.partial().extend({
-  status: z.enum(["REPERE", "A_QUALIFIER", "QUALIFIE", "CONVERTI", "REJETE"]).optional(),
+  status: z.enum(["REPERE", "APPELE", "EN_ATTENTE_RETOUR", "A_QUALIFIER", "QUALIFIE", "CONVERTI", "REJETE"]).optional(),
 });
 
 export type CreateFieldSpottingInput = z.infer<typeof createFieldSpottingSchema>;
