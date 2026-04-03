@@ -20,10 +20,10 @@ function LogoMark({
   variant?: "light" | "dark";
 }) {
   const dimensions = {
-    sm: { className: "h-9 w-9", px: 36 },
-    md: { className: "h-11 w-11", px: 44 },
-    lg: { className: "h-16 w-16", px: 64 },
-    xl: { className: "h-24 w-24", px: 96 },
+    sm: { className: "h-14 w-14", px: 56 },
+    md: { className: "h-20 w-20", px: 80 }, 
+    lg: { className: "h-24 w-24", px: 96 }, 
+    xl: { className: "h-32 w-32", px: 128 },
   };
 
   const { className, px } = dimensions[size];
