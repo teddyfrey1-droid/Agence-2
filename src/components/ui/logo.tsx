@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 
 interface LogoProps {
   size?: "sm" | "md" | "lg";
-  showText?: boolean;
   variant?: "light" | "dark";
   className?: string;
 }
@@ -13,9 +12,8 @@ function LogoMark({
   size = "md",
 }: {
   size?: "sm" | "md" | "lg" | "xl";
-  variant?: "light" | "dark";
 }) {
-  // Dimensions rectangulaires beaucoup plus grandes
+  // Dimensions rectangulaires larges pour que votre logo SVG s'affiche en grand
   const dimensions = {
     sm: { className: "h-12 w-32", px: 128 },
     md: { className: "h-16 w-48", px: 192 }, 
@@ -29,7 +27,7 @@ function LogoMark({
     <div className={cn("relative flex-shrink-0", className)}>
       <Image
         src="/logo-mark.svg"
-        alt="Retail Place"
+        alt=""
         width={px}
         height={px}
         className="h-full w-full object-contain object-left"
@@ -44,7 +42,7 @@ export function Logo({
   variant = "dark",
   className,
 }: LogoProps) {
-  // Le texte a été complètement supprimé, on ne garde que l'image !
+  // On ne retourne QUE l'image, le texte "RETAIL PLACE" est supprimé du code
   return (
     <Link href="/" className={cn("flex items-center", className)}>
       <LogoMark size={size} variant={variant} />
