@@ -9,21 +9,18 @@ interface LogoProps {
   className?: string;
 }
 
-/**
- * LA PLACE — Immobilier Commercial
- * Uses SVG logo from /public/logo-mark.svg
- */
 function LogoMark({
   size = "md",
 }: {
   size?: "sm" | "md" | "lg" | "xl";
   variant?: "light" | "dark";
 }) {
+  // On utilise des proportions rectangulaires pour que ton logo ait la place de s'afficher en grand
   const dimensions = {
-    sm: { className: "h-14 w-14", px: 56 },
-    md: { className: "h-20 w-20", px: 80 }, 
-    lg: { className: "h-24 w-24", px: 96 }, 
-    xl: { className: "h-32 w-32", px: 128 },
+    sm: { className: "h-12 w-32", px: 128 },
+    md: { className: "h-16 w-48", px: 192 }, 
+    lg: { className: "h-20 w-64", px: 256 }, 
+    xl: { className: "h-24 w-80", px: 320 },
   };
 
   const { className, px } = dimensions[size];
@@ -31,11 +28,11 @@ function LogoMark({
   return (
     <div className={cn("relative flex-shrink-0", className)}>
       <Image
-        src="/logo-mark.svg"
-        alt="RETAIL PLACE"
+        src="/retail-place-logo_transparent_crop.svg"
+        alt="Retail Place"
         width={px}
         height={px}
-        className="h-full w-full object-contain"
+        className="h-full w-full object-contain object-left"
         priority
       />
     </div>
@@ -44,51 +41,13 @@ function LogoMark({
 
 export function Logo({
   size = "md",
-  showText = true,
   variant = "dark",
   className,
 }: LogoProps) {
-  const textSizes = {
-    sm: "text-sm",
-    md: "text-base",
-    lg: "text-xl",
-  };
-
-  const subtitleSizes = {
-    sm: "text-[7px]",
-    md: "text-[8px]",
-    lg: "text-[10px]",
-  };
-
+  // On a complètement supprimé le bloc de texte "RETAIL PLACE / Immobilier Commercial" ici !
   return (
-    <Link href="/" className={cn("flex items-center gap-2.5", className)}>
+    <Link href="/" className={cn("flex items-center", className)}>
       <LogoMark size={size} variant={variant} />
-      {showText && (
-        <div className="leading-tight">
-          <p
-            className={cn(
-              "font-serif font-bold tracking-wide",
-              textSizes[size],
-              variant === "dark"
-                ? "text-anthracite-900 dark:text-stone-100"
-                : "text-white"
-            )}
-          >
-            RETAIL PLACE
-          </p>
-          <p
-            className={cn(
-              "font-medium uppercase",
-              subtitleSizes[size],
-              variant === "dark"
-                ? "tracking-[0.15em] text-brand-500 dark:text-brand-400"
-                : "tracking-[0.15em] text-champagne-300"
-            )}
-          >
-            Immobilier Commercial
-          </p>
-        </div>
-      )}
     </Link>
   );
 }
