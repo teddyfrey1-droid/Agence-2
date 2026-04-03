@@ -124,6 +124,16 @@ export const SEARCH_REQUEST_STATUS_LABELS: Record<string, string> = {
   ARCHIVEE: "Archivée",
 };
 
+export const FIELD_SPOTTING_STATUS_LABELS: Record<string, string> = {
+  REPERE: "Repéré",
+  APPELE: "Appelé",
+  EN_ATTENTE_RETOUR: "En attente de retour",
+  A_QUALIFIER: "À qualifier",
+  QUALIFIE: "Qualifié",
+  CONVERTI: "Converti",
+  REJETE: "Rejeté",
+};
+
 export const EVENT_TYPE_LABELS: Record<string, string> = {
   VISITE: "Visite",
   REUNION: "Réunion",
