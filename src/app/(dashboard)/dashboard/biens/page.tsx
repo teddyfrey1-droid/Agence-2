@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
+import { InlineStatusSelect } from "@/components/inline-status-select";
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Plus récent" },
@@ -119,14 +120,11 @@ export default async function BiensListPage({
                         {property.district || property.city} · {PROPERTY_TYPE_LABELS[property.type] || property.type}
                       </p>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <Badge variant={getStatusBadgeVariant(property.status)}>
-                        {PROPERTY_STATUS_LABELS[property.status] || property.status}
-                      </Badge>
-                      {property.isCoMandat && (
-                        <Badge variant="info">Co-mandat</Badge>
-                      )}
-                    </div>
+                    <InlineStatusSelect
+                      propertyId={property.id}
+                      currentStatus={property.status}
+                      isCoMandat={property.isCoMandat}
+                    />
                   </div>
                   <div className="mt-3 flex items-center gap-4 text-sm">
                     <span className="text-stone-500 dark:text-stone-400">{TRANSACTION_TYPE_LABELS[property.transactionType]}</span>
@@ -186,14 +184,11 @@ export default async function BiensListPage({
                         {property.transactionType === "LOCATION" ? formatPrice(property.rentMonthly) : formatPrice(property.price)}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1">
-                          <Badge variant={getStatusBadgeVariant(property.status)}>
-                            {PROPERTY_STATUS_LABELS[property.status] || property.status}
-                          </Badge>
-                          {property.isCoMandat && (
-                            <Badge variant="info">Co-mandat</Badge>
-                          )}
-                        </div>
+                        <InlineStatusSelect
+                          propertyId={property.id}
+                          currentStatus={property.status}
+                          isCoMandat={property.isCoMandat}
+                        />
                       </td>
                       <td className="px-4 py-3 text-xs text-stone-400 dark:text-stone-500" title={property.updatedAt ? new Date(property.updatedAt).toLocaleString("fr-FR") : ""}>
                         {formatRelativeDate(property.updatedAt)}

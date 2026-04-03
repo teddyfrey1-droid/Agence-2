@@ -18,6 +18,7 @@ export async function GET(
       include: {
         owner: { select: { firstName: true, lastName: true, company: true, phone: true, email: true } },
         assignedTo: { select: { firstName: true, lastName: true } },
+        media: { where: { isPrimary: true }, take: 1, select: { url: true, isPrimary: true } },
       },
     });
 

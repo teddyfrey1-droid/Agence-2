@@ -3,7 +3,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/toast";
-import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { FIELD_SPOTTING_STATUS_LABELS } from "@/lib/constants";
 
 interface SpotItem {
@@ -21,13 +20,13 @@ interface SpotItem {
 }
 
 const COLUMNS = [
-  { key: "REPERE", label: "Repéré", color: "border-blue-400 bg-blue-50 dark:bg-blue-950/30", dotColor: "bg-blue-400" },
-  { key: "APPELE", label: "Appelé", color: "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30", dotColor: "bg-indigo-400" },
-  { key: "EN_ATTENTE_RETOUR", label: "En attente", color: "border-amber-400 bg-amber-50 dark:bg-amber-950/30", dotColor: "bg-amber-400" },
-  { key: "A_QUALIFIER", label: "À qualifier", color: "border-orange-400 bg-orange-50 dark:bg-orange-950/30", dotColor: "bg-orange-400" },
-  { key: "QUALIFIE", label: "Qualifié", color: "border-emerald-400 bg-emerald-50 dark:bg-emerald-950/30", dotColor: "bg-emerald-400" },
-  { key: "CONVERTI", label: "Converti", color: "border-green-400 bg-green-50 dark:bg-green-950/30", dotColor: "bg-green-400" },
-  { key: "REJETE", label: "Rejeté", color: "border-red-400 bg-red-50 dark:bg-red-950/30", dotColor: "bg-red-400" },
+  { key: "REPERE", label: "Repéré", dotColor: "bg-blue-400", bgActive: "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800" },
+  { key: "APPELE", label: "Appelé", dotColor: "bg-indigo-400", bgActive: "bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800" },
+  { key: "EN_ATTENTE_RETOUR", label: "En attente", dotColor: "bg-amber-400", bgActive: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800" },
+  { key: "A_QUALIFIER", label: "À qualifier", dotColor: "bg-orange-400", bgActive: "bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800" },
+  { key: "QUALIFIE", label: "Qualifié", dotColor: "bg-emerald-400", bgActive: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800" },
+  { key: "CONVERTI", label: "Converti", dotColor: "bg-green-400", bgActive: "bg-green-50 dark:bg-green-950/40 border-green-200 dark:border-green-800" },
+  { key: "REJETE", label: "Rejeté", dotColor: "bg-red-400", bgActive: "bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800" },
 ];
 
 interface TerrainKanbanProps {
@@ -82,7 +81,6 @@ export function TerrainKanban({ items: initialItems }: TerrainKanbanProps) {
     setDragging(itemId);
     e.dataTransfer.effectAllowed = "move";
     e.dataTransfer.setData("text/plain", itemId);
-    // For a nicer ghost image
     if (e.currentTarget instanceof HTMLElement) {
       e.dataTransfer.setDragImage(e.currentTarget, 50, 20);
     }
@@ -128,7 +126,6 @@ export function TerrainKanban({ items: initialItems }: TerrainKanbanProps) {
     if (!touchItemRef.current) return;
     const touch = e.touches[0];
 
-    // Create/move ghost element
     if (!touchGhostRef.current) {
       const ghost = document.createElement("div");
       ghost.className =
@@ -141,12 +138,10 @@ export function TerrainKanban({ items: initialItems }: TerrainKanbanProps) {
     touchGhostRef.current.style.left = `${touch.clientX - 40}px`;
     touchGhostRef.current.style.top = `${touch.clientY - 20}px`;
 
-    // Detect which column we're over
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const colEl = el?.closest("[data-kanban-column]");
     if (colEl) {
-      const colKey = colEl.getAttribute("data-kanban-column");
-      setOverColumn(colKey);
+      setOverColumn(colEl.getAttribute("data-kanban-column"));
     } else {
       setOverColumn(null);
     }
@@ -165,10 +160,13 @@ export function TerrainKanban({ items: initialItems }: TerrainKanbanProps) {
     setOverColumn(null);
   }
 
+  // Count totals
+  const totalActive = COLUMNS.slice(0, 5).reduce((sum, c) => sum + getColumnItems(c.key).length, 0);
+
   return (
     <div className="space-y-4">
-      {/* Horizontal scroll kanban */}
-      <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 snap-x snap-mandatory">
+      {/* Pipeline as a compact grid — all columns visible */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
         {COLUMNS.map((col) => {
           const colItems = getColumnItems(col.key);
           const isOver = overColumn === col.key;
@@ -178,30 +176,31 @@ export function TerrainKanban({ items: initialItems }: TerrainKanbanProps) {
               key={col.key}
               data-kanban-column={col.key}
               className={`
-                flex-shrink-0 w-[260px] sm:w-[280px] snap-start rounded-xl border-t-4 ${col.color}
-                bg-white dark:bg-anthracite-900 border border-stone-200/80 dark:border-stone-700/50
-                transition-all duration-200
-                ${isOver ? "ring-2 ring-brand-500 scale-[1.02]" : ""}
+                rounded-xl border transition-all duration-200 overflow-hidden
+                ${isOver
+                  ? "ring-2 ring-brand-500 scale-[1.02] " + col.bgActive
+                  : "border-stone-200 dark:border-stone-800 bg-white dark:bg-[#1a1a1f]"
+                }
               `}
               onDragOver={(e) => handleDragOver(e, col.key)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, col.key)}
             >
-              {/* Column header */}
-              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-stone-100 dark:border-stone-800">
-                <div className={`h-2.5 w-2.5 rounded-full ${col.dotColor}`} />
-                <span className="text-xs font-semibold text-anthracite-800 dark:text-stone-200">
+              {/* Column header — compact */}
+              <div className="flex items-center gap-1.5 px-2.5 py-2 border-b border-stone-100 dark:border-stone-800">
+                <div className={`h-2 w-2 rounded-full flex-shrink-0 ${col.dotColor}`} />
+                <span className="text-[11px] font-semibold text-anthracite-800 dark:text-stone-200 truncate">
                   {col.label}
                 </span>
-                <span className="ml-auto flex h-5 min-w-[20px] items-center justify-center rounded-full bg-stone-100 dark:bg-anthracite-800 px-1.5 text-[10px] font-bold text-stone-500 dark:text-stone-400">
+                <span className="ml-auto flex h-4 min-w-[16px] items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800 px-1 text-[9px] font-bold text-stone-500 dark:text-stone-400">
                   {colItems.length}
                 </span>
               </div>
 
-              {/* Column body */}
-              <div className="p-2 space-y-2 min-h-[120px] max-h-[60vh] overflow-y-auto">
+              {/* Column body — scrollable */}
+              <div className="p-1.5 space-y-1.5 min-h-[80px] max-h-[50vh] overflow-y-auto">
                 {colItems.length === 0 && (
-                  <div className="flex items-center justify-center h-20 text-xs text-stone-300 dark:text-stone-600 italic">
+                  <div className="flex items-center justify-center h-16 text-[10px] text-stone-300 dark:text-stone-600 italic">
                     Glisser ici
                   </div>
                 )}
@@ -215,14 +214,15 @@ export function TerrainKanban({ items: initialItems }: TerrainKanbanProps) {
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                     className={`
-                      group rounded-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-anthracite-800
-                      p-2.5 cursor-grab active:cursor-grabbing touch-none select-none
+                      group rounded-lg border border-stone-200 dark:border-stone-700/60
+                      bg-white dark:bg-[#1e1e24] p-2
+                      cursor-grab active:cursor-grabbing touch-none select-none
                       transition-all duration-150 hover:shadow-md hover:-translate-y-0.5
-                      ${dragging === item.id ? "opacity-40 scale-95" : "opacity-100"}
+                      ${dragging === item.id ? "opacity-30 scale-95" : "opacity-100"}
                     `}
                   >
                     {item.photoUrl && (
-                      <div className="mb-2 h-20 w-full overflow-hidden rounded-md">
+                      <div className="mb-1.5 h-14 w-full overflow-hidden rounded">
                         <img
                           src={item.photoUrl}
                           alt={item.address}
@@ -233,32 +233,19 @@ export function TerrainKanban({ items: initialItems }: TerrainKanbanProps) {
                     )}
                     <a
                       href={`/dashboard/terrain/${item.id}`}
-                      className="block text-sm font-medium text-anthracite-800 dark:text-stone-200 leading-tight hover:text-brand-600 dark:hover:text-brand-400"
+                      className="block text-xs font-medium text-anthracite-800 dark:text-stone-200 leading-tight hover:text-brand-600 dark:hover:text-brand-400 line-clamp-2"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {item.address}
                     </a>
-                    <p className="mt-0.5 text-[11px] text-stone-400 dark:text-stone-500">
+                    <p className="mt-0.5 text-[10px] text-stone-400 dark:text-stone-500 truncate">
                       {item.city} {item.zipCode}
                     </p>
-                    {item.notes && (
-                      <p className="mt-1 text-[11px] text-stone-500 dark:text-stone-400 line-clamp-2">
-                        {item.notes}
+                    {item.assignedTo && (
+                      <p className="mt-1 text-[10px] text-stone-400 dark:text-stone-500 truncate">
+                        {item.assignedTo.firstName} {item.assignedTo.lastName}
                       </p>
                     )}
-                    <div className="mt-2 flex items-center justify-between">
-                      {item.assignedTo ? (
-                        <span className="text-[10px] text-stone-400 dark:text-stone-500">
-                          {item.assignedTo.firstName} {item.assignedTo.lastName}
-                        </span>
-                      ) : (
-                        <span />
-                      )}
-                      {/* Drag handle icon */}
-                      <svg className="h-4 w-4 text-stone-300 dark:text-stone-600 group-hover:text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M8 9h.01M8 12h.01M8 15h.01M12 9h.01M12 12h.01M12 15h.01M16 9h.01M16 12h.01M16 15h.01" />
-                      </svg>
-                    </div>
                   </div>
                 ))}
               </div>

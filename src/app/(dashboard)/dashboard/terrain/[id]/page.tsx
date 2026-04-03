@@ -8,6 +8,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SinglePhotoUploader } from "@/components/photo-uploader";
 import { StatusSelector } from "@/components/status-selector";
+import { ConvertToPropertyButton } from "@/components/convert-to-property-button";
 import { FIELD_SPOTTING_STATUS_LABELS } from "@/lib/constants";
 
 export default async function TerrainDetailPage({
@@ -132,11 +133,33 @@ export default async function TerrainDetailPage({
         </Card>
       )}
 
-      <div className="flex gap-3">
-        <Link href="/dashboard/terrain">
-          <Button variant="outline">Retour</Button>
-        </Link>
-      </div>
+      {/* Actions */}
+      <Card>
+        <CardContent className="space-y-2">
+          {spot.status !== "CONVERTI" && (
+            <ConvertToPropertyButton
+              spotId={id}
+              address={spot.address}
+              city={spot.city}
+              zipCode={spot.zipCode}
+              district={spot.district}
+              propertyType={spot.propertyType}
+              surface={spot.surface}
+              latitude={spot.latitude}
+              longitude={spot.longitude}
+              notes={spot.notes}
+            />
+          )}
+          {spot.status === "CONVERTI" && (
+            <p className="text-center text-sm text-emerald-600 dark:text-emerald-400 font-medium py-2">
+              Ce repérage a été converti en bien
+            </p>
+          )}
+          <Link href="/dashboard/terrain" className="block">
+            <Button variant="outline" className="w-full">Retour</Button>
+          </Link>
+        </CardContent>
+      </Card>
     </div>
   );
 }

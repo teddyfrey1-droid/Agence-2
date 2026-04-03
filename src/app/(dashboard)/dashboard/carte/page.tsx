@@ -87,10 +87,13 @@ export default function CartePage() {
   const [loading, setLoading] = useState(true);
   const [mapReady, setMapReady] = useState(false);
   const [activeLayer, setActiveLayer] = useState<Layer>("tous");
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [drawnBounds, setDrawnBounds] = useState<{ lat1: number; lng1: number; lat2: number; lng2: number } | null>(null);
+  type DrawMode = "off" | "rect" | "circle" | "free";
+  const [drawMode, setDrawMode] = useState<DrawMode>("off");
+  // Generic shape: polygon points used for point-in-polygon test
+  const [drawnPolygon, setDrawnPolygon] = useState<{ lat: number; lng: number }[] | null>(null);
   const drawStartRef = useRef<{ lat: number; lng: number } | null>(null);
-  const drawRectRef = useRef<any>(null);
+  const drawShapeRef = useRef<any>(null);
+  const freePointsRef = useRef<{ lat: number; lng: number }[]>([]);
 
   // Load data
   useEffect(() => {
@@ -126,19 +129,23 @@ export default function CartePage() {
     return true;
   });
 
-  // Apply drawn bounds filter
-  const inBounds = useCallback((lat: number | null, lng: number | null) => {
-    if (!drawnBounds || !lat || !lng) return true;
-    const { lat1, lng1, lat2, lng2 } = drawnBounds;
-    const minLat = Math.min(lat1, lat2);
-    const maxLat = Math.max(lat1, lat2);
-    const minLng = Math.min(lng1, lng2);
-    const maxLng = Math.max(lng1, lng2);
-    return lat >= minLat && lat <= maxLat && lng >= minLng && lng <= maxLng;
-  }, [drawnBounds]);
+  // Point-in-polygon (ray casting) for freehand; bounding box for rect/circle
+  const inDrawnArea = useCallback((lat: number | null, lng: number | null) => {
+    if (!drawnPolygon || drawnPolygon.length < 3 || !lat || !lng) return true;
+    // Ray casting algorithm
+    let inside = false;
+    const pts = drawnPolygon;
+    for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+      const xi = pts[i].lng, yi = pts[i].lat;
+      const xj = pts[j].lng, yj = pts[j].lat;
+      const intersect = ((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }, [drawnPolygon]);
 
-  const propsWithCoords = filtered.filter((p) => p.latitude && p.longitude && inBounds(p.latitude, p.longitude));
-  const spotsWithCoords = spottings.filter((s) => s.latitude && s.longitude && inBounds(s.latitude, s.longitude));
+  const propsWithCoords = filtered.filter((p) => p.latitude && p.longitude && inDrawnArea(p.latitude, p.longitude));
+  const spotsWithCoords = spottings.filter((s) => s.latitude && s.longitude && inDrawnArea(s.latitude, s.longitude));
 
   // Init Leaflet
   useEffect(() => {
@@ -183,90 +190,106 @@ export default function CartePage() {
     };
   }, []);
 
+  // Helper: generate polygon points from a circle
+  function circleToPolygon(center: { lat: number; lng: number }, radiusLat: number, radiusLng: number, n = 36) {
+    const pts: { lat: number; lng: number }[] = [];
+    for (let i = 0; i < n; i++) {
+      const angle = (2 * Math.PI * i) / n;
+      pts.push({ lat: center.lat + radiusLat * Math.sin(angle), lng: center.lng + radiusLng * Math.cos(angle) });
+    }
+    return pts;
+  }
+
   // Draw mode handlers
   useEffect(() => {
     if (!mapReady || !mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
     const L = leafletRef.current;
+    const shapeStyle = { color: "#886a4b", weight: 2, fillOpacity: 0.15, dashArray: "6" };
 
-    if (isDrawing) {
-      map.dragging.disable();
-      map.getContainer().style.cursor = "crosshair";
-
-      const onMouseDown = (e: any) => {
-        drawStartRef.current = { lat: e.latlng.lat, lng: e.latlng.lng };
-        if (drawRectRef.current) {
-          drawRectRef.current.remove();
-          drawRectRef.current = null;
-        }
-      };
-
-      const onMouseMove = (e: any) => {
-        if (!drawStartRef.current) return;
-        const bounds = L.latLngBounds(
-          [drawStartRef.current.lat, drawStartRef.current.lng],
-          [e.latlng.lat, e.latlng.lng]
-        );
-        if (drawRectRef.current) {
-          drawRectRef.current.setBounds(bounds);
-        } else {
-          drawRectRef.current = L.rectangle(bounds, {
-            color: "#886a4b",
-            weight: 2,
-            fillOpacity: 0.15,
-            dashArray: "6",
-          }).addTo(map);
-        }
-      };
-
-      const onMouseUp = (e: any) => {
-        if (!drawStartRef.current) return;
-        setDrawnBounds({
-          lat1: drawStartRef.current.lat,
-          lng1: drawStartRef.current.lng,
-          lat2: e.latlng.lat,
-          lng2: e.latlng.lng,
-        });
-        drawStartRef.current = null;
-        setIsDrawing(false);
-      };
-
-      map.on("mousedown", onMouseDown);
-      map.on("mousemove", onMouseMove);
-      map.on("mouseup", onMouseUp);
-
-      // Touch support
-      map.on("touchstart", (e: any) => {
-        if (e.originalEvent.touches.length === 1) {
-          onMouseDown({ latlng: e.latlng });
-        }
-      });
-      map.on("touchmove", (e: any) => {
-        if (e.originalEvent.touches.length === 1) {
-          onMouseMove({ latlng: e.latlng });
-        }
-      });
-      map.on("touchend", (e: any) => {
-        if (drawStartRef.current) {
-          onMouseUp({ latlng: e.latlng || map.mouseEventToLatLng(e.originalEvent) });
-        }
-      });
-
-      return () => {
-        map.off("mousedown", onMouseDown);
-        map.off("mousemove", onMouseMove);
-        map.off("mouseup", onMouseUp);
-        map.off("touchstart");
-        map.off("touchmove");
-        map.off("touchend");
-        map.dragging.enable();
-        map.getContainer().style.cursor = "";
-      };
-    } else {
+    if (drawMode === "off") {
       map.dragging.enable();
       map.getContainer().style.cursor = "";
+      return;
     }
-  }, [isDrawing, mapReady]);
+
+    map.dragging.disable();
+    map.getContainer().style.cursor = "crosshair";
+
+    const onDown = (e: any) => {
+      drawStartRef.current = { lat: e.latlng.lat, lng: e.latlng.lng };
+      if (drawShapeRef.current) { drawShapeRef.current.remove(); drawShapeRef.current = null; }
+      if (drawMode === "free") {
+        freePointsRef.current = [{ lat: e.latlng.lat, lng: e.latlng.lng }];
+      }
+    };
+
+    const onMove = (e: any) => {
+      if (!drawStartRef.current) return;
+      const cur = { lat: e.latlng.lat, lng: e.latlng.lng };
+
+      if (drawMode === "rect") {
+        const bounds = L.latLngBounds([drawStartRef.current.lat, drawStartRef.current.lng], [cur.lat, cur.lng]);
+        if (drawShapeRef.current) drawShapeRef.current.setBounds(bounds);
+        else drawShapeRef.current = L.rectangle(bounds, shapeStyle).addTo(map);
+      } else if (drawMode === "circle") {
+        const dx = cur.lat - drawStartRef.current.lat;
+        const dy = cur.lng - drawStartRef.current.lng;
+        const radius = Math.sqrt(dx * dx + dy * dy) * 111320;
+        if (drawShapeRef.current) drawShapeRef.current.setRadius(radius);
+        else drawShapeRef.current = L.circle([drawStartRef.current.lat, drawStartRef.current.lng], { radius, ...shapeStyle }).addTo(map);
+      } else if (drawMode === "free") {
+        freePointsRef.current.push(cur);
+        if (drawShapeRef.current) drawShapeRef.current.setLatLngs(freePointsRef.current.map(p => [p.lat, p.lng]));
+        else drawShapeRef.current = L.polyline(freePointsRef.current.map(p => [p.lat, p.lng]), { ...shapeStyle, fill: true }).addTo(map);
+      }
+    };
+
+    const onUp = (e: any) => {
+      if (!drawStartRef.current) return;
+      const cur = { lat: e.latlng.lat, lng: e.latlng.lng };
+
+      if (drawMode === "rect") {
+        const s = drawStartRef.current;
+        const pts = [
+          { lat: s.lat, lng: s.lng }, { lat: s.lat, lng: cur.lng },
+          { lat: cur.lat, lng: cur.lng }, { lat: cur.lat, lng: s.lng },
+        ];
+        setDrawnPolygon(pts);
+      } else if (drawMode === "circle") {
+        const dx = cur.lat - drawStartRef.current.lat;
+        const dy = cur.lng - drawStartRef.current.lng;
+        const rLat = Math.sqrt(dx * dx + dy * dy);
+        const rLng = rLat;
+        setDrawnPolygon(circleToPolygon(drawStartRef.current, rLat, rLng));
+      } else if (drawMode === "free") {
+        if (freePointsRef.current.length > 2) {
+          setDrawnPolygon([...freePointsRef.current]);
+          // Close the polygon visually
+          if (drawShapeRef.current) {
+            drawShapeRef.current.setLatLngs([...freePointsRef.current, freePointsRef.current[0]].map(p => [p.lat, p.lng]));
+          }
+        }
+      }
+      drawStartRef.current = null;
+      setDrawMode("off");
+    };
+
+    map.on("mousedown", onDown);
+    map.on("mousemove", onMove);
+    map.on("mouseup", onUp);
+    // Touch
+    map.on("touchstart", (e: any) => { if (e.originalEvent.touches?.length === 1) onDown({ latlng: e.latlng }); });
+    map.on("touchmove", (e: any) => { if (e.originalEvent.touches?.length === 1) onMove({ latlng: e.latlng }); });
+    map.on("touchend", (e: any) => { if (drawStartRef.current) onUp({ latlng: e.latlng || drawStartRef.current }); });
+
+    return () => {
+      map.off("mousedown", onDown); map.off("mousemove", onMove); map.off("mouseup", onUp);
+      map.off("touchstart"); map.off("touchmove"); map.off("touchend");
+      map.dragging.enable();
+      map.getContainer().style.cursor = "";
+    };
+  }, [drawMode, mapReady]);
 
   // Update markers
   useEffect(() => {
@@ -339,15 +362,15 @@ export default function CartePage() {
     }
   }, [propsWithCoords, spotsWithCoords, mapReady, activeLayer]);
 
-  const activeFilterCount = Object.values(filters).filter(Boolean).length + (drawnBounds ? 1 : 0);
-  const selectClass = "h-9 rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-stone-700 dark:bg-[#1a1a1f] dark:text-stone-200";
-  const inputClass = "h-9 w-full rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-stone-700 dark:bg-[#1a1a1f] dark:text-stone-200 dark:placeholder:text-stone-500";
+  const activeFilterCount = Object.values(filters).filter(Boolean).length + (drawnPolygon ? 1 : 0);
+  const selectClass = "h-9 rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-anthracite-700 dark:bg-anthracite-900 dark:text-stone-200";
+  const inputClass = "h-9 w-full rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-anthracite-700 dark:bg-anthracite-900 dark:text-stone-200 dark:placeholder:text-stone-500";
 
   function clearDrawnZone() {
-    setDrawnBounds(null);
-    if (drawRectRef.current) {
-      drawRectRef.current.remove();
-      drawRectRef.current = null;
+    setDrawnPolygon(null);
+    if (drawShapeRef.current) {
+      drawShapeRef.current.remove();
+      drawShapeRef.current = null;
     }
   }
 
@@ -362,7 +385,7 @@ export default function CartePage() {
                 {(activeLayer === "biens" || activeLayer === "tous") && `${propsWithCoords.length} bien${propsWithCoords.length !== 1 ? "s" : ""}`}
                 {activeLayer === "tous" && " · "}
                 {(activeLayer === "terrain" || activeLayer === "tous") && `${spotsWithCoords.length} repérage${spotsWithCoords.length !== 1 ? "s" : ""}`}
-                {drawnBounds && " (zone filtrée)"}
+                {drawnPolygon && " (zone filtrée)"}
               </>
             )}
           </p>
@@ -385,26 +408,35 @@ export default function CartePage() {
             ))}
           </div>
 
-          {/* Draw zone button */}
-          <Button
-            variant={isDrawing ? "primary" : "outline"}
-            size="sm"
-            onClick={() => {
-              if (isDrawing) {
-                setIsDrawing(false);
-              } else {
-                clearDrawnZone();
-                setIsDrawing(true);
-              }
-            }}
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
-            </svg>
-            {isDrawing ? "Dessiner..." : "Zone"}
-          </Button>
+          {/* Draw zone buttons */}
+          <div className="flex rounded-lg border border-stone-200 dark:border-anthracite-800 overflow-hidden">
+            {([
+              { mode: "rect" as DrawMode, label: "Rectangle", icon: "M4 5h16v14H4z" },
+              { mode: "circle" as DrawMode, label: "Cercle", icon: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" },
+              { mode: "free" as DrawMode, label: "Libre", icon: "M3 17c3-3 5-8 9-8s5 5 9 2" },
+            ]).map(({ mode, label, icon }) => (
+              <button
+                key={mode}
+                onClick={() => {
+                  if (drawMode === mode) { setDrawMode("off"); }
+                  else { clearDrawnZone(); setDrawMode(mode); }
+                }}
+                className={`px-2.5 py-1.5 text-[11px] font-medium transition-colors flex items-center gap-1 ${
+                  drawMode === mode
+                    ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
+                    : "bg-white text-stone-600 hover:bg-stone-50 dark:bg-anthracite-900 dark:text-stone-400"
+                }`}
+                title={label}
+              >
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={icon} />
+                </svg>
+                <span className="hidden sm:inline">{label}</span>
+              </button>
+            ))}
+          </div>
 
-          {drawnBounds && (
+          {drawnPolygon && (
             <Button variant="ghost" size="sm" onClick={clearDrawnZone}>
               Effacer zone
             </Button>
@@ -477,9 +509,11 @@ export default function CartePage() {
         </Card>
       )}
 
-      {isDrawing && (
+      {drawMode !== "off" && (
         <div className="rounded-lg border-2 border-dashed border-brand-400 bg-brand-50 dark:bg-brand-950/20 p-3 text-center text-sm text-brand-700 dark:text-brand-400">
-          Dessinez un rectangle sur la carte avec la souris ou le doigt pour filtrer les biens dans cette zone
+          {drawMode === "rect" && "Dessinez un rectangle sur la carte avec la souris ou le doigt"}
+          {drawMode === "circle" && "Dessinez un cercle : cliquez au centre puis glissez pour le rayon"}
+          {drawMode === "free" && "Dessinez librement une zone sur la carte avec le doigt ou la souris"}
         </div>
       )}
 
