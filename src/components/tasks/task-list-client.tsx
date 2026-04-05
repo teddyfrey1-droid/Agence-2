@@ -6,6 +6,7 @@ import { TaskSheet, type SheetTask } from './task-sheet';
 import { Badge, getStatusBadgeVariant } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { TASK_STATUS_LABELS, TASK_PRIORITY_LABELS } from '@/lib/constants';
+// Card is used for the desktop table wrapper only
 import { formatDateShort } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 
@@ -56,10 +57,10 @@ export function TaskListClient({ items: initialItems }: TaskListClientProps) {
           const isCancelled = task.status === 'ANNULEE';
 
           return (
-            <Card
+            <div
               key={task.id}
               className={[
-                'cursor-pointer p-4 transition-all active:scale-[0.99] hover:shadow-md',
+                'cursor-pointer rounded-xl border border-stone-200/80 bg-white p-4 shadow-sm transition-all active:scale-[0.99] hover:shadow-md dark:border-stone-700/50 dark:bg-anthracite-900',
                 isCancelled ? 'opacity-60' : '',
               ].join(' ')}
               onClick={() => setSelected(task)}
@@ -122,7 +123,7 @@ export function TaskListClient({ items: initialItems }: TaskListClientProps) {
                   )}
                 </div>
               </div>
-            </Card>
+            </div>
           );
         })}
       </div>
