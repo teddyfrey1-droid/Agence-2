@@ -92,7 +92,10 @@ export async function PATCH(
         },
       });
 
-      await sendInvitationEmail(user.email, user.firstName, token);
+      const emailSent = await sendInvitationEmail(user.email, user.firstName, token);
+      if (!emailSent) {
+        return NextResponse.json({ error: "Erreur lors de l'envoi de l'email. Vérifiez la configuration Brevo." }, { status: 500 });
+      }
 
       await prisma.auditLog.create({
         data: {
@@ -119,7 +122,10 @@ export async function PATCH(
         },
       });
 
-      await sendPasswordResetEmail(user.email, user.firstName, token);
+      const emailSent = await sendPasswordResetEmail(user.email, user.firstName, token);
+      if (!emailSent) {
+        return NextResponse.json({ error: "Erreur lors de l'envoi de l'email. Vérifiez la configuration Brevo." }, { status: 500 });
+      }
 
       await prisma.auditLog.create({
         data: {

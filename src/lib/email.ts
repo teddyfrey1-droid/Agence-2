@@ -8,7 +8,16 @@
  */
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
-const EMAIL_FROM = process.env.EMAIL_FROM || "noreply@laplace.immo";
+const EMAIL_FROM_RAW = process.env.EMAIL_FROM || "noreply@laplace.immo";
+
+// Parse EMAIL_FROM: supports "Name <email>" or just "email"
+function parseSender(): { email: string; name: string } {
+  const match = EMAIL_FROM_RAW.match(/^(.+?)\s*<(.+?)>$/);
+  if (match) {
+    return { name: match[1].trim(), email: match[2].trim() };
+  }
+  return { email: EMAIL_FROM_RAW.trim(), name: "La Place" };
+}
 
 interface EmailOptions {
   to: string;
@@ -20,10 +29,21 @@ async function sendEmail(options: EmailOptions): Promise<boolean> {
   const apiKey = process.env.BREVO_API_KEY;
 
   if (!apiKey) {
-    console.warn("BREVO_API_KEY non configurée — email loggé en console uniquement");
-    console.log(`📧 [DEV] To: ${options.to} | Subject: ${options.subject}`);
+    console.warn("[EMAIL] BREVO_API_KEY non configurée — email non envoyé");
+    console.log(`[EMAIL] To: ${options.to} | Subject: ${options.subject}`);
     return true;
   }
+
+  const sender = parseSender();
+
+  const payload = {
+    sender,
+    to: [{ email: options.to }],
+    subject: options.subject,
+    htmlContent: options.html,
+  };
+
+  console.log(`[EMAIL] Envoi via Brevo → ${options.to} | Sender: ${sender.email} | Subject: ${options.subject}`);
 
   try {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -33,23 +53,20 @@ async function sendEmail(options: EmailOptions): Promise<boolean> {
         "content-type": "application/json",
         "api-key": apiKey,
       },
-      body: JSON.stringify({
-        sender: { email: EMAIL_FROM, name: "La Place" },
-        to: [{ email: options.to }],
-        subject: options.subject,
-        htmlContent: options.html,
-      }),
+      body: JSON.stringify(payload),
     });
 
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const error = await response.text();
-      console.error("Brevo email error:", response.status, error);
+      console.error(`[EMAIL] Brevo error ${response.status}:`, responseText);
       return false;
     }
 
+    console.log(`[EMAIL] Envoyé avec succès à ${options.to}`);
     return true;
   } catch (err) {
-    console.error("Brevo email send failed:", err);
+    console.error("[EMAIL] Erreur réseau Brevo:", err);
     return false;
   }
 }
