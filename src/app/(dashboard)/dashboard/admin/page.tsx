@@ -1,16 +1,24 @@
 import Link from "next/link";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 
 const adminSections = [
   {
     title: "Utilisateurs",
-    description: "Gérer les utilisateurs, rôles et accès.",
+    description: "Créer, modifier, inviter et gérer les comptes utilisateurs.",
     href: "/dashboard/admin/utilisateurs",
+    icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
+  },
+  {
+    title: "Gestion des accès",
+    description: "Permissions par rôle et personnalisation par utilisateur.",
+    href: "/dashboard/admin/acces",
+    icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
   },
   {
     title: "Journal d'activité",
-    description: "Consulter l'historique des actions.",
+    description: "Consulter l'historique des actions et audit.",
     href: "/dashboard/admin/journal",
+    icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
   },
 ];
 
@@ -26,8 +34,17 @@ export default function AdminPage() {
         {adminSections.map((section) => (
           <Link key={section.href} href={section.href}>
             <Card hover className="p-6">
-              <h3 className="font-semibold text-anthracite-900">{section.title}</h3>
-              <p className="mt-1 text-sm text-stone-500">{section.description}</p>
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 flex-shrink-0">
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={section.icon} />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-anthracite-900">{section.title}</h3>
+                  <p className="mt-1 text-sm text-stone-500">{section.description}</p>
+                </div>
+              </div>
             </Card>
           </Link>
         ))}

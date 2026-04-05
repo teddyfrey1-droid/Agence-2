@@ -13,5 +13,19 @@ export default async function UtilisateursPage() {
     orderBy: [{ role: "asc" }, { lastName: "asc" }],
   });
 
-  return <UsersManagement users={JSON.parse(JSON.stringify(users))} />;
+  const serialized = users.map((u) => ({
+    id: u.id,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    email: u.email,
+    phone: u.phone,
+    role: u.role,
+    isActive: u.isActive,
+    isActivated: u.isActivated,
+    invitedAt: u.invitedAt?.toISOString() || null,
+    lastLoginAt: u.lastLoginAt?.toISOString() || null,
+    team: u.team ? { id: u.team.id, name: u.team.name } : null,
+  }));
+
+  return <UsersManagement users={serialized} />;
 }

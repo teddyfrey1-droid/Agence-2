@@ -135,6 +135,12 @@ export default function LoginPage() {
               autoComplete="current-password"
             />
 
+            <div className="flex justify-end">
+              <a href="/mot-de-passe-oublie" className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400">
+                Mot de passe oublié ?
+              </a>
+            </div>
+
             <Button
               type="submit"
               size="lg"

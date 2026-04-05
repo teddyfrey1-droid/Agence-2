@@ -15,12 +15,18 @@ const publicPaths = [
   "/proposer-bien",
   "/login",
   "/inscription",
+  "/activation",
+  "/mot-de-passe-oublie",
+  "/reinitialisation-mot-de-passe",
 ];
 
 const publicApiPaths = [
   "/api/auth/login",
   "/api/auth/logout",
   "/api/auth/register",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+  "/api/auth/activate",
   "/api/contacts/public",
   "/api/search-requests/public",
   "/api/properties/public",

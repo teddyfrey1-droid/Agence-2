@@ -220,6 +220,20 @@ model User {
   agencyId     String?
   teamId       String?
   lastLoginAt  DateTime?
+
+  // Invitation & activation
+  invitationToken     String?   @unique
+  invitationExpiresAt DateTime?
+  invitedAt           DateTime?
+  isActivated         Boolean   @default(false)
+
+  // Password reset
+  passwordResetToken     String?   @unique
+  passwordResetExpiresAt DateTime?
+
+  // Custom permissions (JSON override per user)
+  customPermissions Json?
+
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
