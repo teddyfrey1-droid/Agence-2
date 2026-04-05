@@ -8,7 +8,7 @@
  */
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
-const EMAIL_FROM_RAW = process.env.EMAIL_FROM || "noreply@laplace.immo";
+const EMAIL_FROM_RAW = process.env.EMAIL_FROM || "noreply@retailplace.immo";
 
 // Parse EMAIL_FROM: supports "Name <email>" or just "email"
 function parseSender(): { email: string; name: string } {
@@ -16,7 +16,7 @@ function parseSender(): { email: string; name: string } {
   if (match) {
     return { name: match[1].trim(), email: match[2].trim() };
   }
-  return { email: EMAIL_FROM_RAW.trim(), name: "La Place" };
+  return { email: EMAIL_FROM_RAW.trim(), name: "Retail Place" };
 }
 
 interface EmailOptions {
@@ -82,15 +82,15 @@ export async function sendInvitationEmail(
 
   return sendEmail({
     to,
-    subject: "Vous êtes invité à rejoindre La Place",
+    subject: "Vous êtes invité à rejoindre Retail Place",
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue sur La Place</h1>
+        <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue sur Retail Place</h1>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
           Bonjour ${firstName},
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Vous avez été invité(e) à rejoindre la plateforme La Place.
+          Vous avez été invité(e) à rejoindre la plateforme Retail Place.
           Cliquez sur le bouton ci-dessous pour activer votre compte et définir votre mot de passe.
         </p>
         <div style="text-align: center; margin: 32px 0;">
@@ -119,7 +119,7 @@ export async function sendPasswordResetEmail(
 
   return sendEmail({
     to,
-    subject: "Réinitialisation de votre mot de passe - La Place",
+    subject: "Réinitialisation de votre mot de passe - Retail Place",
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Réinitialisation du mot de passe</h1>
@@ -155,7 +155,7 @@ export async function sendWelcomeEmail(
 
   return sendEmail({
     to,
-    subject: "Votre compte La Place est activé",
+    subject: "Votre compte Retail Place est activé",
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue !</h1>

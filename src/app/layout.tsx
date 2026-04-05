@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "La Place",
+    title: "Retail Place",
   },
   formatDetection: {
     telephone: true,
@@ -45,7 +45,7 @@ export default function RootLayout({
         }} />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-title" content="La Place" />
+        <meta name="apple-mobile-web-app-title" content="Retail Place" />
       </head>
       <body className="overscroll-none">
         <ThemeProvider>

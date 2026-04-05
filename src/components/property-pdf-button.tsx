@@ -102,7 +102,7 @@ export function PropertyPdfButton({ propertyId }: { propertyId: string }) {
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(9);
       doc.setFont("helvetica", "normal");
-      doc.text("LA PLACE — Immobilier commercial", margin, 12);
+      doc.text("RETAIL PLACE — Immobilier commercial", margin, 12);
 
       // Title
       doc.setFontSize(18);
@@ -285,7 +285,7 @@ export function PropertyPdfButton({ propertyId }: { propertyId: string }) {
       doc.setFontSize(7.5);
       doc.setFont("helvetica", "normal");
       doc.text(
-        "LA PLACE — Immobilier commercial & professionnel à Paris",
+        "RETAIL PLACE — Immobilier commercial & professionnel à Paris",
         pageWidth / 2, pageHeight - 11,
         { align: "center" }
       );

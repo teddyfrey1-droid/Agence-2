@@ -312,7 +312,7 @@ export default async function HomePage() {
               Nos engagements
             </p>
             <h2 className="heading-section mt-3">
-              Pourquoi choisir La Place ?
+              Pourquoi choisir Retail Place ?
             </h2>
             <div className="mt-12 grid gap-8 sm:grid-cols-3">
               {[
