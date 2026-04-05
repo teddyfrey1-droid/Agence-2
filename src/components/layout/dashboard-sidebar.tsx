@@ -115,8 +115,9 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        {/* Logo + close on mobile */}
-        <div className="flex h-16 items-center justify-between border-b border-stone-100 px-4 dark:border-anthracite-800">
+        {/* Logo + close on mobile — safe area pushes content below notch */}
+        <div className="border-b border-stone-100 px-4 pt-safe dark:border-anthracite-800">
+        <div className="flex h-16 items-center justify-between">
           <Logo size="sm" />
           <button
             onClick={close}
@@ -126,6 +127,7 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+        </div>
         </div>
 
         {/* Nav */}
@@ -183,8 +185,8 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
           ))}
         </nav>
 
-        {/* Bottom */}
-        <div className="border-t border-stone-100 p-4 dark:border-anthracite-800">
+        {/* Bottom — safe area for home indicator */}
+        <div className="border-t border-stone-100 p-4 pb-safe dark:border-anthracite-800">
           <Link
             href="/"
             onClick={close}

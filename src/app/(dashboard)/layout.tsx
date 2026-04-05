@@ -54,7 +54,7 @@ export default async function DashboardLayout({
           />
           <ActivityTracker />
           <PushNotifications />
-          <main className="p-4 sm:p-6">{children}</main>
+          <main className="px-4 pt-4 pb-safe-or-4 sm:px-6 sm:pt-6 sm:pb-safe-or-6">{children}</main>
         </div>
       </div>
     </SidebarProvider>
