@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
+import { PWARegister } from "@/components/pwa-register";
+import { IOSInstallPrompt } from "@/components/ios-install-prompt";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -41,14 +43,17 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{
           __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}})()`,
         }} />
-        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="La Place" />
       </head>
       <body className="overscroll-none">
         <ThemeProvider>
           <ToastProvider>
             {children}
           </ToastProvider>
+          <PWARegister />
+          <IOSInstallPrompt />
         </ThemeProvider>
       </body>
     </html>
