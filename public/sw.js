@@ -68,3 +68,51 @@ self.addEventListener('fetch', (event) => {
       .catch(() => caches.match(request))
   );
 });
+
+// Push notification received
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    data = { title: 'La Place', body: event.data.text(), data: { link: '/dashboard' } };
+  }
+
+  const options = {
+    body: data.body || '',
+    icon: data.icon || '/icons/icon-192.png',
+    badge: data.badge || '/icons/icon-192.png',
+    data: data.data || {},
+    vibrate: [100, 50, 100],
+    requireInteraction: false,
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'La Place', options)
+  );
+});
+
+// Notification click: open or focus the relevant page
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  const link = event.notification.data?.link || '/dashboard';
+  const targetUrl = new URL(link, self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // If a window is already open on the target URL, focus it
+      for (const client of windowClients) {
+        if (client.url === targetUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise open a new window
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
