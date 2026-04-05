@@ -5,6 +5,7 @@ import { DashboardSidebar, SidebarProvider } from "@/components/layout/dashboard
 import { DashboardHeader } from "@/components/layout/dashboard-header";
 import { USER_ROLE_LABELS } from "@/lib/constants";
 import { ActivityTracker } from "@/components/activity-tracker";
+import { PushNotifications } from "@/components/push-notifications";
 
 export default async function DashboardLayout({
   children,
@@ -52,6 +53,7 @@ export default async function DashboardLayout({
             }}
           />
           <ActivityTracker />
+          <PushNotifications />
           <main className="p-4 sm:p-6">{children}</main>
         </div>
       </div>

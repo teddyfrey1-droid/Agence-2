@@ -236,9 +236,10 @@ model User {
   fieldSpottings FieldSpotting[]
   auditLogs      AuditLog[]
   assignedTasks  Task[]          @relation("TaskAssignee")
-  activities     UserActivity[]
-  notifications  Notification[]
-  events         Event[]
+  activities        UserActivity[]
+  notifications     Notification[]
+  events            Event[]
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -737,4 +738,18 @@ model Event {
   @@index([userId])
   @@index([startAt])
   @@map("events")
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

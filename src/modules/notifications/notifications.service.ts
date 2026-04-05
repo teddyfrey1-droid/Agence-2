@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { sendPushToUser } from "@/lib/push";
 
 type NotificationType = "MATCH_NEW" | "MATCH_HIGH" | "PROPERTY_NEW" | "DEAL_UPDATE" | "TASK_DUE" | "SYSTEM";
 
@@ -9,7 +10,16 @@ export async function createNotification(data: {
   message: string;
   link?: string;
 }) {
-  return prisma.notification.create({ data });
+  const notification = await prisma.notification.create({ data });
+
+  // Fire-and-forget push notification (non-blocking)
+  sendPushToUser(data.userId, {
+    title: data.title,
+    message: data.message,
+    link: data.link,
+  }).catch(() => {/* ignore push errors */});
+
+  return notification;
 }
 
 export async function notifyMatchFound(params: {
