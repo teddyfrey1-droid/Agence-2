@@ -1,16 +1,10 @@
 /**
- * Email utility for sending transactional emails.
+ * Email utility — powered by Brevo (ex-Sendinblue).
  *
- * CONFIGURATION REQUISE EN PRODUCTION :
- * ─────────────────────────────────────
- * 1. Installer un provider d'email : npm install resend (ou nodemailer)
- * 2. Ajouter dans .env :
- *    RESEND_API_KEY=re_xxxxxxxxxxxxxxx
- *    APP_URL=https://votre-domaine.com
- *    EMAIL_FROM=noreply@votre-domaine.com
- * 3. Remplacer les fonctions sendEmail ci-dessous par l'implémentation Resend/Nodemailer
- *
- * Pour l'instant, les emails sont loggés en console (mode développement).
+ * Variables d'environnement requises :
+ *   BREVO_API_KEY=xkeysib-xxxxxxxxx
+ *   APP_URL=https://votre-domaine.com
+ *   EMAIL_FROM=contact@votre-domaine.com
  */
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
@@ -23,30 +17,41 @@ interface EmailOptions {
 }
 
 async function sendEmail(options: EmailOptions): Promise<boolean> {
-  // ──────────────────────────────────────────────────────────────
-  // MODE PRODUCTION : Décommenter et configurer Resend :
-  //
-  // import { Resend } from 'resend';
-  // const resend = new Resend(process.env.RESEND_API_KEY);
-  // const { error } = await resend.emails.send({
-  //   from: EMAIL_FROM,
-  //   to: options.to,
-  //   subject: options.subject,
-  //   html: options.html,
-  // });
-  // return !error;
-  // ──────────────────────────────────────────────────────────────
+  const apiKey = process.env.BREVO_API_KEY;
 
-  // Mode développement : log en console
-  console.log("═══════════════════════════════════════");
-  console.log("📧 EMAIL (dev mode - pas envoyé)");
-  console.log(`   To: ${options.to}`);
-  console.log(`   Subject: ${options.subject}`);
-  console.log(`   From: ${EMAIL_FROM}`);
-  console.log("───────────────────────────────────────");
-  console.log(options.html.replace(/<[^>]*>/g, "").trim().substring(0, 500));
-  console.log("═══════════════════════════════════════");
-  return true;
+  if (!apiKey) {
+    console.warn("BREVO_API_KEY non configurée — email loggé en console uniquement");
+    console.log(`📧 [DEV] To: ${options.to} | Subject: ${options.subject}`);
+    return true;
+  }
+
+  try {
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify({
+        sender: { email: EMAIL_FROM, name: "La Place" },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent: options.html,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error("Brevo email error:", response.status, error);
+      return false;
+    }
+
+    return true;
+  } catch (err) {
+    console.error("Brevo email send failed:", err);
+    return false;
+  }
 }
 
 // ─── Email templates ────────────────────────────────────────────────
