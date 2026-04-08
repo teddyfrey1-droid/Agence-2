@@ -2,12 +2,19 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { findContactById } from "@/modules/contacts";
 import { formatDate, formatDateShort } from "@/lib/utils";
-import { CONTACT_TYPE_LABELS, INTERACTION_TYPE_LABELS, SEARCH_REQUEST_STATUS_LABELS } from "@/lib/constants";
+import {
+  CONTACT_TYPE_LABELS,
+  INTERACTION_TYPE_LABELS,
+  SEARCH_REQUEST_STATUS_LABELS,
+  DEAL_STAGE_LABELS,
+} from "@/lib/constants";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { QuickInteractionForm } from "@/components/quick-interaction-form";
 import { QuickTaskForm } from "@/components/quick-task-form";
 import { DeleteButton } from "@/components/delete-button";
+import { PropertyShareButton } from "@/components/property-share-button";
+import { ContactAccountActions } from "@/components/contact-account-actions";
 import { prisma } from "@/lib/prisma";
 
 function formatDuration(seconds: number): string {
@@ -27,10 +34,15 @@ export default async function ContactDetailPage({
   const contact = await findContactById(id);
   if (!contact) notFound();
 
-  // Look up linked user account
+  // Look up linked user account (CLIENT role matching email, OR any user with linkedContactId)
   const linkedUser = contact.email
     ? await prisma.user.findFirst({
-        where: { email: contact.email, role: "CLIENT" },
+        where: {
+          OR: [
+            { email: contact.email, role: "CLIENT" },
+            { linkedContactId: id },
+          ],
+        },
         select: {
           id: true,
           isActivated: true,
@@ -43,17 +55,23 @@ export default async function ContactDetailPage({
       })
     : null;
 
-  // Get client tracking data if linked user
+  // Get client tracking + user activity data
   let clientStats = null;
-  let recentActivity: Array<{ id: string; action: string; entityId: string | null; details: string | null; duration: number | null; createdAt: Date }> = [];
-  let propertyShares: Array<{ id: string; propertyId: string; recipientEmail: string; sentAt: Date; openedAt: Date | null; viewCount: number; totalViewDuration: number; property: { title: string; reference: string } }> = [];
+  let recentActivity: Array<{
+    id: string;
+    type: string;
+    label: string;
+    details: string | null;
+    duration: number | null;
+    createdAt: Date;
+  }> = [];
 
   if (linkedUser) {
-    const [tracking, trackingStats, shares] = await Promise.all([
+    const [tracking, trackingStats, userActivities] = await Promise.all([
       prisma.clientTracking.findMany({
         where: { userId: linkedUser.id },
         orderBy: { createdAt: "desc" },
-        take: 20,
+        take: 30,
       }),
       prisma.clientTracking.groupBy({
         by: ["action"],
@@ -61,36 +79,80 @@ export default async function ContactDetailPage({
         _count: true,
         _sum: { duration: true },
       }),
-      prisma.propertyShare.findMany({
-        where: { contactId: id },
-        include: { property: { select: { title: true, reference: true } } },
-        orderBy: { sentAt: "desc" },
-        take: 20,
+      // Also pull from UserActivity table (existing login/page view tracking)
+      prisma.userActivity.findMany({
+        where: { userId: linkedUser.id },
+        orderBy: { createdAt: "desc" },
+        take: 30,
       }),
     ]);
 
-    recentActivity = tracking;
-    propertyShares = shares;
+    // Merge both activity sources into a unified timeline
+    const trackingItems = tracking.map((t) => ({
+      id: t.id,
+      type: t.action,
+      label: ACTION_LABELS[t.action] || t.action,
+      details: t.details,
+      duration: t.duration,
+      createdAt: t.createdAt,
+    }));
 
-    const totalLogins = trackingStats.find((s) => s.action === "LOGIN")?._count ?? 0;
-    const totalPageViews = trackingStats.find((s) => s.action === "PAGE_VIEW")?._count ?? 0;
+    const activityItems = userActivities.map((a) => ({
+      id: a.id,
+      type: a.type,
+      label: USER_ACTIVITY_LABELS[a.type] || a.type,
+      details: a.path || a.details,
+      duration: a.duration,
+      createdAt: a.createdAt,
+    }));
+
+    // Deduplicate by timestamp proximity (within 2s) and merge
+    const allItems = [...trackingItems, ...activityItems]
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .filter((item, index, arr) => {
+        if (index === 0) return true;
+        const prev = arr[index - 1];
+        // Skip duplicates (same type within 2s)
+        return !(item.type === prev.type && Math.abs(item.createdAt.getTime() - prev.createdAt.getTime()) < 2000);
+      });
+
+    recentActivity = allItems.slice(0, 40);
+
+    const totalLogins = (trackingStats.find((s) => s.action === "LOGIN")?._count ?? 0)
+      + userActivities.filter((a) => a.type === "LOGIN").length;
+    const totalPageViews = (trackingStats.find((s) => s.action === "PAGE_VIEW")?._count ?? 0)
+      + userActivities.filter((a) => a.type === "PAGE_VIEW").length;
     const totalPropertyViews = trackingStats.find((s) => s.action === "PROPERTY_VIEW")?._count ?? 0;
-    const totalTime = trackingStats.reduce((acc, s) => acc + (s._sum.duration ?? 0), 0);
+    const totalTime = trackingStats.reduce((acc, s) => acc + (s._sum.duration ?? 0), 0)
+      + userActivities.reduce((acc, a) => acc + (a.duration ?? 0), 0);
 
-    clientStats = { totalLogins, totalPageViews, totalPropertyViews, totalTime };
+    clientStats = {
+      totalLogins: Math.ceil(totalLogins / 2), // deduplicate rough estimate
+      totalPageViews: Math.ceil(totalPageViews / 2),
+      totalPropertyViews,
+      totalTime,
+    };
   }
 
-  // Also get shares sent to this contact even without a linked user
-  if (!linkedUser && contact.email) {
-    propertyShares = await prisma.propertyShare.findMany({
-      where: { OR: [{ contactId: id }, { recipientEmail: contact.email }] },
+  // Get property shares for this contact (works even without linked user)
+  const propertyShares = contact.propertyShares ?? [];
+
+  // Also get shares by email if not already captured
+  let emailShares: typeof propertyShares = [];
+  if (contact.email) {
+    emailShares = await prisma.propertyShare.findMany({
+      where: {
+        recipientEmail: contact.email,
+        contactId: { not: id }, // exclude already-linked shares
+      },
       include: { property: { select: { title: true, reference: true } } },
       orderBy: { sentAt: "desc" },
       take: 20,
     });
   }
+  const allShares = [...propertyShares, ...emailShares];
 
-  const accountStatus = !linkedUser
+  const accountStatus: "no_account" | "pending_activation" | "active" | "blocked" = !linkedUser
     ? "no_account"
     : !linkedUser.isActive
       ? "blocked"
@@ -107,29 +169,19 @@ export default async function ContactDetailPage({
 
   const statusInfo = accountStatusConfig[accountStatus];
 
-  const ACTION_LABELS: Record<string, string> = {
-    LOGIN: "Connexion",
-    PAGE_VIEW: "Page consultée",
-    PROPERTY_VIEW: "Bien consulté",
-    PROPOSAL_OPEN: "Proposition ouverte",
-    PROPOSAL_TIME: "Temps sur proposition",
-    SEARCH: "Recherche effectuée",
-  };
-
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <Link href="/dashboard/contacts" className="text-sm text-stone-400 hover:text-anthracite-700 dark:hover:text-stone-200">Contacts</Link>
           <h1 className="mt-2 text-2xl font-semibold text-anthracite-900 dark:text-stone-100">
             {contact.firstName} {contact.lastName}
           </h1>
-          <div className="mt-1 flex items-center gap-2">
+          <div className="mt-1 flex items-center gap-2 flex-wrap">
             <Badge>{CONTACT_TYPE_LABELS[contact.type] || contact.type}</Badge>
             {contact.company && <span className="text-sm text-stone-500 dark:text-stone-400">{contact.company}</span>}
-            <Badge variant={statusInfo.variant}>
-              {statusInfo.label}
-            </Badge>
+            <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -142,8 +194,10 @@ export default async function ContactDetailPage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* ══════════════ Main Column ══════════════ */}
         <div className="space-y-6 lg:col-span-2">
-          {/* Client Activity Stats */}
+
+          {/* Client Activity Stats — always shown if linked user */}
           {clientStats && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Card className="p-4 text-center">
@@ -165,15 +219,19 @@ export default async function ContactDetailPage({
             </div>
           )}
 
-          {/* Property Shares (Proposals sent) */}
-          {propertyShares.length > 0 && (
-            <Card>
-              <CardHeader>
-                <h2 className="heading-card">Propositions envoyées ({propertyShares.length})</h2>
-              </CardHeader>
-              <CardContent className="p-0">
+          {/* Property Shares / Propositions — always shown */}
+          <Card>
+            <CardHeader>
+              <h2 className="heading-card">Propositions envoyées ({allShares.length})</h2>
+            </CardHeader>
+            <CardContent className="p-0">
+              {allShares.length === 0 ? (
+                <p className="px-6 py-8 text-center text-sm text-stone-400 dark:text-stone-500">
+                  Aucune proposition envoyée. Utilisez le bouton &ldquo;Envoyer un bien&rdquo; pour proposer un bien à ce contact.
+                </p>
+              ) : (
                 <div className="divide-y divide-stone-100 dark:divide-stone-800">
-                  {propertyShares.map((share) => (
+                  {allShares.map((share) => (
                     <div key={share.id} className="flex items-center justify-between px-6 py-3">
                       <div className="min-w-0 flex-1">
                         <Link href={`/dashboard/biens/${share.propertyId}`} className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
@@ -188,7 +246,7 @@ export default async function ContactDetailPage({
                           <div className="text-right">
                             <Badge variant="success">Ouvert</Badge>
                             <p className="mt-0.5 text-[10px] text-stone-400">
-                              {share.viewCount} vue{share.viewCount > 1 ? "s" : ""} - {formatDuration(share.totalViewDuration)}
+                              {share.viewCount} vue{share.viewCount > 1 ? "s" : ""} — {formatDuration(share.totalViewDuration)}
                             </p>
                           </div>
                         ) : (
@@ -198,58 +256,99 @@ export default async function ContactDetailPage({
                     </div>
                   ))}
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Client Activity — always shown if linked user */}
+          {linkedUser && (
+            <Card>
+              <CardHeader>
+                <h2 className="heading-card">Activité récente du client ({recentActivity.length})</h2>
+              </CardHeader>
+              <CardContent className="p-0">
+                {recentActivity.length === 0 ? (
+                  <p className="px-6 py-8 text-center text-sm text-stone-400 dark:text-stone-500">
+                    {accountStatus === "pending_activation"
+                      ? "Le client n'a pas encore activé son compte."
+                      : "Aucune activité enregistrée pour le moment."}
+                  </p>
+                ) : (
+                  <div className="divide-y divide-stone-100 dark:divide-stone-800">
+                    {recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-center justify-between px-6 py-2.5">
+                        <div className="flex items-center gap-3">
+                          <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${
+                            activity.type === "LOGIN" ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400" :
+                            activity.type === "PROPERTY_VIEW" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400" :
+                            activity.type === "PROPOSAL_OPEN" ? "bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400" :
+                            activity.type === "SEARCH" ? "bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400" :
+                            "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400"
+                          }`}>
+                            {activity.type === "LOGIN" ? (
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                            ) : activity.type === "PROPERTY_VIEW" ? (
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            ) : activity.type === "LOGOUT" ? (
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                            ) : (
+                              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm text-anthracite-800 dark:text-stone-200">{activity.label}</p>
+                            {activity.details && (
+                              <p className="text-xs text-stone-400 dark:text-stone-500 truncate max-w-[300px]">{activity.details}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <span className="text-xs text-stone-400 dark:text-stone-500">{formatDateShort(activity.createdAt)}</span>
+                          {activity.duration != null && activity.duration > 0 && (
+                            <p className="text-[10px] text-stone-400">{formatDuration(activity.duration)}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
 
-          {/* Recent Client Activity */}
-          {recentActivity.length > 0 && (
-            <Card>
-              <CardHeader>
-                <h2 className="heading-card">Activité récente du client</h2>
-              </CardHeader>
-              <CardContent className="p-0">
+          {/* Dossiers */}
+          <Card>
+            <CardHeader><h2 className="heading-card">Dossiers ({contact.deals.length})</h2></CardHeader>
+            <CardContent className="p-0">
+              {contact.deals.length === 0 ? (
+                <p className="px-6 py-8 text-center text-sm text-stone-400 dark:text-stone-500">Aucun dossier</p>
+              ) : (
                 <div className="divide-y divide-stone-100 dark:divide-stone-800">
-                  {recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-center justify-between px-6 py-2.5">
-                      <div className="flex items-center gap-3">
-                        <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs ${
-                          activity.action === "LOGIN" ? "bg-blue-50 text-blue-600" :
-                          activity.action === "PROPERTY_VIEW" ? "bg-emerald-50 text-emerald-600" :
-                          activity.action === "PROPOSAL_OPEN" ? "bg-purple-50 text-purple-600" :
-                          "bg-stone-100 text-stone-500"
-                        }`}>
-                          {activity.action === "LOGIN" ? (
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
-                          ) : activity.action === "PROPERTY_VIEW" ? (
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                          ) : (
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm text-anthracite-800 dark:text-stone-200">
-                            {ACTION_LABELS[activity.action] || activity.action}
+                  {contact.deals.map((deal) => (
+                    <div key={deal.id} className="flex items-center justify-between px-6 py-3">
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/dashboard/dossiers/${deal.id}`} className="text-sm font-medium text-brand-600 hover:underline dark:text-brand-400">
+                          {deal.reference} — {deal.title}
+                        </Link>
+                        {"property" in deal && deal.property && (
+                          <p className="text-xs text-stone-400 dark:text-stone-500">
+                            {(deal.property as { reference: string; title: string }).reference} — {(deal.property as { reference: string; title: string }).title}
                           </p>
-                          {activity.details && (
-                            <p className="text-xs text-stone-400 dark:text-stone-500">{activity.details}</p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <span className="text-xs text-stone-400 dark:text-stone-500">{formatDateShort(activity.createdAt)}</span>
-                        {activity.duration && activity.duration > 0 && (
-                          <p className="text-[10px] text-stone-400">{formatDuration(activity.duration)}</p>
                         )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getStatusBadgeVariant(deal.stage)}>
+                          {DEAL_STAGE_LABELS[deal.stage] || deal.stage}
+                        </Badge>
                       </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Timeline */}
+          {/* Timeline interactions */}
           <Card>
             <CardHeader><h2 className="heading-card">Historique des interactions ({contact.interactions.length})</h2></CardHeader>
             <CardContent className="p-0">
@@ -299,9 +398,10 @@ export default async function ContactDetailPage({
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* ══════════════ Sidebar ══════════════ */}
         <div className="space-y-6">
-          {/* Account Status Card */}
+
+          {/* Account Status + Actions */}
           <Card>
             <CardHeader>
               <h2 className="heading-card">Compte client</h2>
@@ -318,7 +418,7 @@ export default async function ContactDetailPage({
                     <path strokeLinecap="round" strokeLinejoin="round" d={statusInfo.icon} />
                   </svg>
                 </div>
-                <div>
+                <div className="flex-1">
                   <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">{statusInfo.label}</p>
                   {linkedUser && (
                     <dl className="mt-2 space-y-1.5 text-xs">
@@ -340,18 +440,52 @@ export default async function ContactDetailPage({
                           <dd className="font-medium text-anthracite-700 dark:text-stone-300">{formatDate(linkedUser.lastLoginAt)}</dd>
                         </div>
                       )}
+                      <div>
+                        <dt className="text-stone-400">Compte créé le</dt>
+                        <dd className="font-medium text-anthracite-700 dark:text-stone-300">{formatDate(linkedUser.createdAt)}</dd>
+                      </div>
                     </dl>
                   )}
-                  {accountStatus === "no_account" && (
+                  {accountStatus === "no_account" && !contact.email && (
+                    <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">
+                      Ajoutez un email pour créer un compte client.
+                    </p>
+                  )}
+                  {accountStatus === "no_account" && contact.email && (
                     <p className="mt-1 text-xs text-stone-400 dark:text-stone-500">
                       Ce contact n&apos;a pas encore de compte sur le portail client.
                     </p>
                   )}
                 </div>
               </div>
+
+              {/* Action Buttons */}
+              <div className="mt-4 border-t border-stone-100 dark:border-stone-800 pt-4">
+                <ContactAccountActions
+                  userId={linkedUser?.id || ""}
+                  contactEmail={contact.email || ""}
+                  contactFirstName={contact.firstName}
+                  accountStatus={accountStatus}
+                />
+              </div>
             </CardContent>
           </Card>
 
+          {/* Send Property */}
+          <Card>
+            <CardHeader><h2 className="heading-card">Envoyer un bien</h2></CardHeader>
+            <CardContent>
+              <PropertyShareButton propertyId="" contactId={id} contactName={`${contact.firstName} ${contact.lastName}`} contactEmail={contact.email || ""} />
+            </CardContent>
+          </Card>
+
+          {/* Quick interaction */}
+          <QuickInteractionForm contactId={id} />
+
+          {/* Quick task */}
+          <QuickTaskForm contactId={id} />
+
+          {/* Coordonnees */}
           <Card>
             <CardHeader><h2 className="heading-card">Coordonnées</h2></CardHeader>
             <CardContent>
@@ -374,12 +508,6 @@ export default async function ContactDetailPage({
               </CardContent>
             </Card>
           )}
-
-          {/* Quick interaction */}
-          <QuickInteractionForm contactId={id} />
-
-          {/* Quick task */}
-          <QuickTaskForm contactId={id} />
 
           {/* Pending tasks */}
           <Card>
@@ -404,3 +532,23 @@ export default async function ContactDetailPage({
     </div>
   );
 }
+
+// ── Label maps ──────────────────────────────────────────────────
+
+const ACTION_LABELS: Record<string, string> = {
+  LOGIN: "Connexion",
+  LOGOUT: "Déconnexion",
+  PAGE_VIEW: "Page consultée",
+  PROPERTY_VIEW: "Bien consulté",
+  PROPOSAL_OPEN: "Proposition ouverte",
+  PROPOSAL_TIME: "Temps sur proposition",
+  SEARCH: "Recherche effectuée",
+  ACTION: "Action",
+};
+
+const USER_ACTIVITY_LABELS: Record<string, string> = {
+  LOGIN: "Connexion",
+  LOGOUT: "Déconnexion",
+  PAGE_VIEW: "Page consultée",
+  ACTION: "Action effectuée",
+};

@@ -55,10 +55,15 @@ export async function findContactById(id: string) {
     where: { id },
     include: {
       organizations: { include: { organization: true } },
-      searchRequests: { orderBy: { createdAt: "desc" }, take: 5 },
-      deals: { orderBy: { createdAt: "desc" }, take: 5 },
-      interactions: { orderBy: { date: "desc" }, take: 10 },
-      tasks: { where: { status: { in: ["A_FAIRE", "EN_COURS"] } }, take: 5 },
+      searchRequests: { orderBy: { createdAt: "desc" }, take: 20 },
+      deals: { orderBy: { createdAt: "desc" }, take: 20, include: { property: { select: { title: true, reference: true } } } },
+      interactions: { orderBy: { date: "desc" }, take: 30 },
+      tasks: { where: { status: { in: ["A_FAIRE", "EN_COURS"] } }, take: 10 },
+      propertyShares: {
+        orderBy: { sentAt: "desc" },
+        take: 20,
+        include: { property: { select: { title: true, reference: true } } },
+      },
     },
   });
 }
