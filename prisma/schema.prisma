@@ -254,6 +254,12 @@ model User {
   notifications     Notification[]
   events            Event[]
   pushSubscriptions PushSubscription[]
+  clientTracking    ClientTracking[]
+  propertySharesSent PropertyShare[] @relation("PropertySharesSent")
+
+  // Client portal — link to contact record
+  linkedContactId   String?   @unique
+  accountActivatedAt DateTime?
 
   @@map("users")
 }
@@ -284,6 +290,7 @@ model Contact {
   interactions       Interaction[]
   propertiesAsOwner  Property[]           @relation("PropertyOwner")
   events             Event[]
+  propertyShares     PropertyShare[]
 
   @@map("contacts")
 }
@@ -392,6 +399,7 @@ model Property {
   documents   Document[]
   statusHistory StatusHistory[]
   events        Event[]
+  shares        PropertyShare[]
 
   @@index([assignedToId])
   @@index([status])
@@ -766,4 +774,90 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+// ============================================================
+// NOTIFICATION SETTINGS (Admin-configurable)
+// ============================================================
+
+model NotificationSetting {
+  id        String   @id @default(cuid())
+
+  // Event identification
+  eventType String   // e.g. PROPERTY_NEW, MATCH_FOUND, DEAL_ASSIGNED, TASK_DUE, CLIENT_REQUEST, ACCOUNT_ACTIVATED...
+  category  String   // COLLABORATEUR or CLIENT
+
+  // Channels
+  pushEnabled  Boolean @default(true)
+  emailEnabled Boolean @default(false)
+
+  // Role-based targeting (null = all roles)
+  targetRoles  String[] // e.g. ["AGENT", "MANAGER"] — empty = all
+
+  // Description for the UI
+  label       String
+  description String?
+
+  // Client-specific: auto follow-up delay in days (0 = disabled)
+  followUpDelayDays Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventType, category])
+  @@map("notification_settings")
+}
+
+// ============================================================
+// CLIENT TRACKING (proposal views, session activity)
+// ============================================================
+
+model ClientTracking {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // PROPERTY_VIEW, PROPOSAL_OPEN, PROPOSAL_TIME, SEARCH, LOGIN, PAGE_VIEW
+  entityId  String?  // propertyId, proposalId, etc.
+  details   String?  // JSON metadata (time spent, page, etc.)
+  duration  Int?     // seconds spent
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("client_tracking")
+}
+
+// ============================================================
+// PROPERTY SHARE (send a property to a specific user/contact)
+// ============================================================
+
+model PropertyShare {
+  id          String    @id @default(cuid())
+  propertyId  String
+  sentById    String    // agent who sent
+  recipientEmail String
+  recipientName  String?
+  contactId   String?   // linked contact if exists
+  message     String?   // personal message
+  shareToken  String    @unique @default(cuid())
+
+  // Tracking
+  sentAt      DateTime  @default(now())
+  openedAt    DateTime?
+  viewCount   Int       @default(0)
+  lastViewedAt DateTime?
+  totalViewDuration Int @default(0) // seconds
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  sentBy   User     @relation("PropertySharesSent", fields: [sentById], references: [id])
+  contact  Contact? @relation(fields: [contactId], references: [id])
+
+  @@index([propertyId])
+  @@index([sentById])
+  @@index([shareToken])
+  @@map("property_shares")
 }

@@ -8,11 +8,39 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
+import { prisma } from "@/lib/prisma";
+
+// Map contact emails to user accounts for activation status
+async function getLinkedUsers(contactEmails: (string | null)[]) {
+  const emails = contactEmails.filter(Boolean) as string[];
+  if (emails.length === 0) return {};
+  const users = await prisma.user.findMany({
+    where: { email: { in: emails }, role: "CLIENT" },
+    select: { email: true, isActivated: true, isActive: true, lastLoginAt: true, accountActivatedAt: true, createdAt: true },
+  });
+  return Object.fromEntries(users.map((u) => [u.email, u]));
+}
+
+type AccountStatus = "no_account" | "pending_activation" | "active" | "blocked";
+
+function getAccountStatus(linkedUser: { isActivated: boolean; isActive: boolean } | undefined): AccountStatus {
+  if (!linkedUser) return "no_account";
+  if (!linkedUser.isActive) return "blocked";
+  if (!linkedUser.isActivated) return "pending_activation";
+  return "active";
+}
+
+const accountStatusConfig: Record<AccountStatus, { label: string; variant: "neutral" | "warning" | "success" | "danger" }> = {
+  no_account: { label: "Pas de compte", variant: "neutral" },
+  pending_activation: { label: "En attente", variant: "warning" },
+  active: { label: "Compte actif", variant: "success" },
+  blocked: { label: "Bloqué", variant: "danger" },
+};
 
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; type?: string; search?: string }>;
+  searchParams: Promise<{ page?: string; type?: string; search?: string; account?: string }>;
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
@@ -21,14 +49,27 @@ export default async function ContactsPage({
     page
   );
 
-  const hasFilters = !!(params.type || params.search);
+  const linkedUsers = await getLinkedUsers(items.map((c) => c.email));
+  const hasFilters = !!(params.type || params.search || params.account);
+
+  // Count pending activations
+  const pendingCount = await prisma.user.count({
+    where: { role: "CLIENT", isActivated: false, isActive: true },
+  });
 
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Contacts</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">{total} contact(s)</p>
+          <p className="text-sm text-stone-500 dark:text-stone-400">
+            {total} contact(s)
+            {pendingCount > 0 && (
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                {pendingCount} en attente d&apos;activation
+              </span>
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <a href="/api/export?type=contacts" download>
@@ -65,37 +106,57 @@ export default async function ContactsPage({
         <>
           {/* Mobile: card view */}
           <div className="space-y-3 lg:hidden">
-            {items.map((contact) => (
-              <Link key={contact.id} href={`/dashboard/contacts/${contact.id}`}>
-                <Card className="p-4 active:bg-stone-50 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
-                          {contact.firstName?.[0]}{contact.lastName?.[0]}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-anthracite-800 dark:text-stone-200">
-                            {contact.firstName} {contact.lastName}
-                          </p>
-                          {contact.company && (
-                            <p className="text-xs text-stone-400 dark:text-stone-500">{contact.company}</p>
-                          )}
+            {items.map((contact) => {
+              const linkedUser = contact.email ? linkedUsers[contact.email] : undefined;
+              const status = getAccountStatus(linkedUser);
+              const statusConfig = accountStatusConfig[status];
+
+              return (
+                <Link key={contact.id} href={`/dashboard/contacts/${contact.id}`}>
+                  <Card className="p-4 active:bg-stone-50 transition-colors">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex h-8 w-8 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400">
+                            {contact.firstName?.[0]}{contact.lastName?.[0]}
+                            {status === "pending_activation" && (
+                              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-amber-400" />
+                            )}
+                            {status === "active" && (
+                              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-400" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-anthracite-800 dark:text-stone-200">
+                              {contact.firstName} {contact.lastName}
+                            </p>
+                            {contact.company && (
+                              <p className="text-xs text-stone-400 dark:text-stone-500">{contact.company}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <Badge>{CONTACT_TYPE_LABELS[contact.type] || contact.type}</Badge>
+                        {status !== "no_account" && (
+                          <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+                        )}
+                      </div>
                     </div>
-                    <Badge>{CONTACT_TYPE_LABELS[contact.type] || contact.type}</Badge>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
-                    {contact.email && <span>{contact.email}</span>}
-                    {(contact.phone || contact.mobile) && <span>{contact.phone || contact.mobile}</span>}
-                    <span>{contact._count.searchRequests} demande(s)</span>
-                    <span>{contact._count.deals} dossier(s)</span>
-                    <span className="ml-auto">{formatDateShort(contact.updatedAt)}</span>
-                  </div>
-                </Card>
-              </Link>
-            ))}
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-stone-500 dark:text-stone-400">
+                      {contact.email && <span>{contact.email}</span>}
+                      {(contact.phone || contact.mobile) && <span>{contact.phone || contact.mobile}</span>}
+                      <span>{contact._count.searchRequests} demande(s)</span>
+                      <span>{contact._count.deals} dossier(s)</span>
+                      {linkedUser?.lastLoginAt && (
+                        <span>Vu le {formatDateShort(linkedUser.lastLoginAt)}</span>
+                      )}
+                      <span className="ml-auto">{formatDateShort(contact.updatedAt)}</span>
+                    </div>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
 
           {/* Desktop: table */}
@@ -107,30 +168,55 @@ export default async function ContactsPage({
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Nom</th>
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Société</th>
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Type</th>
+                    <th className="px-4 py-3 text-center font-medium text-stone-500 dark:text-stone-400">Compte</th>
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Email</th>
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Téléphone</th>
                     <th className="px-4 py-3 text-center font-medium text-stone-500 dark:text-stone-400">Demandes</th>
                     <th className="px-4 py-3 text-center font-medium text-stone-500 dark:text-stone-400">Dossiers</th>
+                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Dernière connexion</th>
                     <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Modifié</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 dark:divide-stone-700/50">
-                  {items.map((contact) => (
-                    <tr key={contact.id} className="hover:bg-stone-50 dark:hover:bg-anthracite-800/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <Link href={`/dashboard/contacts/${contact.id}`} className="font-medium text-anthracite-800 hover:text-brand-700 dark:text-stone-200 dark:hover:text-brand-400">
-                          {contact.firstName} {contact.lastName}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{contact.company || "—"}</td>
-                      <td className="px-4 py-3"><Badge>{CONTACT_TYPE_LABELS[contact.type] || contact.type}</Badge></td>
-                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{contact.email || "—"}</td>
-                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{contact.phone || contact.mobile || "—"}</td>
-                      <td className="px-4 py-3 text-center text-stone-500 dark:text-stone-400">{contact._count.searchRequests}</td>
-                      <td className="px-4 py-3 text-center text-stone-500 dark:text-stone-400">{contact._count.deals}</td>
-                      <td className="px-4 py-3 text-stone-400 dark:text-stone-500">{formatDateShort(contact.updatedAt)}</td>
-                    </tr>
-                  ))}
+                  {items.map((contact) => {
+                    const linkedUser = contact.email ? linkedUsers[contact.email] : undefined;
+                    const status = getAccountStatus(linkedUser);
+                    const statusConfig = accountStatusConfig[status];
+
+                    return (
+                      <tr key={contact.id} className="hover:bg-stone-50 dark:hover:bg-anthracite-800/50 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="relative flex h-7 w-7 items-center justify-center rounded-full bg-brand-50 text-[10px] font-bold text-brand-600 dark:bg-brand-900/30 dark:text-brand-400 flex-shrink-0">
+                              {contact.firstName?.[0]}{contact.lastName?.[0]}
+                              {status === "pending_activation" && (
+                                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-400 dark:border-anthracite-900" />
+                              )}
+                              {status === "active" && (
+                                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-400 dark:border-anthracite-900" />
+                              )}
+                            </div>
+                            <Link href={`/dashboard/contacts/${contact.id}`} className="font-medium text-anthracite-800 hover:text-brand-700 dark:text-stone-200 dark:hover:text-brand-400">
+                              {contact.firstName} {contact.lastName}
+                            </Link>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{contact.company || "—"}</td>
+                        <td className="px-4 py-3"><Badge>{CONTACT_TYPE_LABELS[contact.type] || contact.type}</Badge></td>
+                        <td className="px-4 py-3 text-center">
+                          <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
+                        </td>
+                        <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{contact.email || "—"}</td>
+                        <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{contact.phone || contact.mobile || "—"}</td>
+                        <td className="px-4 py-3 text-center text-stone-500 dark:text-stone-400">{contact._count.searchRequests}</td>
+                        <td className="px-4 py-3 text-center text-stone-500 dark:text-stone-400">{contact._count.deals}</td>
+                        <td className="px-4 py-3 text-stone-400 dark:text-stone-500">
+                          {linkedUser?.lastLoginAt ? formatDateShort(linkedUser.lastLoginAt) : "—"}
+                        </td>
+                        <td className="px-4 py-3 text-stone-400 dark:text-stone-500">{formatDateShort(contact.updatedAt)}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

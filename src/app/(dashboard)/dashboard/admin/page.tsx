@@ -9,6 +9,12 @@ const adminSections = [
     icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
   },
   {
+    title: "Notifications & Emails",
+    description: "Configurer les notifications push et emails par événement, rôle et type de destinataire.",
+    href: "/dashboard/admin/notifications",
+    icon: "M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0",
+  },
+  {
     title: "Gestion des accès",
     description: "Permissions par rôle et personnalisation par utilisateur.",
     href: "/dashboard/admin/acces",

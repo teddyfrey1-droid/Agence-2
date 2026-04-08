@@ -14,6 +14,7 @@ import { PropertyPdfButton } from "@/components/property-pdf-button";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { DeleteButton } from "@/components/delete-button";
 import { PublishButton } from "@/components/publish-button";
+import { PropertyShareButton } from "@/components/property-share-button";
 import { prisma } from "@/lib/prisma";
 
 export default async function PropertyDetailPage({
@@ -302,6 +303,7 @@ export default async function PropertyDetailPage({
                 </Button>
               </Link>
               <PublishButton propertyId={id} isPublished={property.isPublished} />
+              <PropertyShareButton propertyId={id} />
               <Button variant="outline" className="w-full justify-start">
                 Lancer le matching
               </Button>
