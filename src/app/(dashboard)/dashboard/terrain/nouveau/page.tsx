@@ -4,15 +4,73 @@ import { useState, useRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { InlinePhotoPicker } from "@/components/photo-uploader";
-import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast";
 
-const typeOptions = Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({ value, label }));
+// ── Transaction type squares ──
+const TERRAIN_TYPES = [
+  {
+    value: "LOCATION",
+    label: "Location",
+    icon: "M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25",
+    color: "emerald",
+  },
+  {
+    value: "VENTE",
+    label: "Vente mur",
+    icon: "M3 3h12M3 7.5h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12",
+    color: "blue",
+  },
+  {
+    value: "CESSION_BAIL",
+    label: "Bail à céder",
+    icon: "M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5",
+    color: "violet",
+  },
+  {
+    value: "FOND_DE_COMMERCE",
+    label: "Fonds",
+    icon: "M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z",
+    color: "amber",
+  },
+  {
+    value: "",
+    label: "Autres",
+    icon: "M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+    color: "stone",
+  },
+] as const;
+
+const COLOR_MAP: Record<string, { active: string; idle: string; icon: string }> = {
+  emerald: {
+    active: "border-emerald-500 bg-emerald-500 text-white",
+    idle: "border-stone-100 bg-white hover:border-emerald-200 hover:bg-emerald-50 dark:border-stone-700 dark:bg-anthracite-800",
+    icon: "text-emerald-500",
+  },
+  blue: {
+    active: "border-blue-500 bg-blue-500 text-white",
+    idle: "border-stone-100 bg-white hover:border-blue-200 hover:bg-blue-50 dark:border-stone-700 dark:bg-anthracite-800",
+    icon: "text-blue-500",
+  },
+  violet: {
+    active: "border-violet-500 bg-violet-500 text-white",
+    idle: "border-stone-100 bg-white hover:border-violet-200 hover:bg-violet-50 dark:border-stone-700 dark:bg-anthracite-800",
+    icon: "text-violet-500",
+  },
+  amber: {
+    active: "border-amber-500 bg-amber-500 text-white",
+    idle: "border-stone-100 bg-white hover:border-amber-200 hover:bg-amber-50 dark:border-stone-700 dark:bg-anthracite-800",
+    icon: "text-amber-500",
+  },
+  stone: {
+    active: "border-stone-500 bg-stone-500 text-white",
+    idle: "border-stone-100 bg-white hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700 dark:bg-anthracite-800",
+    icon: "text-stone-400",
+  },
+};
 
 async function compressAndUpload(file: File, entityId: string): Promise<string> {
   // Client-side compression via Canvas
@@ -59,6 +117,7 @@ export default function NouveauTerrainPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [transactionType, setTransactionType] = useState<string>("");
   const [addressData, setAddressData] = useState({ city: "Paris", zipCode: "", district: "", address: "" });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
@@ -119,7 +178,7 @@ export default function NouveauTerrainPage() {
           city: formData.get("city") || "Paris",
           zipCode: formData.get("zipCode") || undefined,
           district: formData.get("district") || undefined,
-          propertyType: formData.get("propertyType") || undefined,
+          transactionType: transactionType || undefined,
           surface: formData.get("surface") ? Number(formData.get("surface")) : undefined,
           notes: formData.get("notes") || undefined,
           latitude: coords?.lat || undefined,
@@ -235,14 +294,47 @@ export default function NouveauTerrainPage() {
           </CardContent>
         </Card>
 
+        {/* Type — carrés tactiles */}
+        <Card>
+          <CardHeader><h2 className="heading-card">Type</h2></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-5 gap-2">
+              {TERRAIN_TYPES.map((t) => {
+                const active = transactionType === t.value;
+                const c = COLOR_MAP[t.color];
+                return (
+                  <button
+                    key={t.value || "autres"}
+                    type="button"
+                    onClick={() => setTransactionType(active ? "" : t.value)}
+                    className={`flex flex-col items-center gap-1.5 rounded-2xl border-2 px-1 py-3 text-center transition-all active:scale-95 ${
+                      active ? c.active : c.idle
+                    }`}
+                  >
+                    <svg
+                      className={`h-6 w-6 flex-shrink-0 ${active ? "text-white" : c.icon}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d={t.icon} />
+                    </svg>
+                    <span className={`text-[10px] font-semibold leading-tight ${active ? "text-white" : "text-anthracite-700 dark:text-stone-300"}`}>
+                      {t.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Détails */}
         <Card>
           <CardHeader><h2 className="heading-card">Détails</h2></CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Select id="propertyType" name="propertyType" label="Type estimé" options={typeOptions} placeholder="Sélectionnez..." />
-              <Input id="surface" name="surface" type="number" label="Surface estimée (m²)" min={0} />
-            </div>
+            <Input id="surface" name="surface" type="number" label="Surface estimée (m²)" min={0} />
             <Textarea id="notes" name="notes" label="Notes / observations" rows={3} placeholder="État de la vitrine, local vide, enseigne présente..." />
           </CardContent>
         </Card>

@@ -52,6 +52,7 @@ export async function POST(request: NextRequest) {
       photoUrl: data.photoUrl ?? null,
       notes: data.notes ?? null,
       propertyType: (data.propertyType as never) ?? null,
+      transactionType: (data.transactionType as never) ?? null,
       surface: data.surface ?? null,
       status: "REPERE",
       ...(data.assignedToId

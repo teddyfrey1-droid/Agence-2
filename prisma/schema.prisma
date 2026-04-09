@@ -503,8 +503,9 @@ model FieldSpotting {
   photos       String[]
   notes        String?
   status       FieldSpottingStatus @default(REPERE)
-  propertyType PropertyType?
-  surface      Float?
+  propertyType     PropertyType?
+  transactionType  TransactionType?
+  surface          Float?
   assignedToId String?
   convertedPropertyId String?
   createdAt    DateTime            @default(now())

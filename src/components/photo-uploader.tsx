@@ -20,10 +20,70 @@ interface PhotoUploaderProps {
   onUploadComplete?: () => void;
 }
 
-// ── Client-side image compression ──
+// ── Read EXIF orientation from JPEG bytes (no external lib) ──
+async function readExifOrientation(file: File): Promise<number> {
+  try {
+    const buf = await file.slice(0, 65536).arrayBuffer();
+    const view = new DataView(buf);
+    if (view.getUint16(0) !== 0xffd8) return 1; // not JPEG
+    let offset = 2;
+    while (offset < view.byteLength - 1) {
+      const marker = view.getUint16(offset);
+      offset += 2;
+      if (marker === 0xffe1) {
+        // APP1 — may contain EXIF
+        const segLen = view.getUint16(offset);
+        const exifHeader = view.getUint32(offset + 2);
+        if (exifHeader !== 0x45786966) break; // not "Exif"
+        const tiffStart = offset + 8;
+        const byteOrder = view.getUint16(tiffStart);
+        const le = byteOrder === 0x4949;
+        const readUint16 = (o: number) => le ? view.getUint16(o, true) : view.getUint16(o, false);
+        const readUint32 = (o: number) => le ? view.getUint32(o, true) : view.getUint32(o, false);
+        const ifdOffset = tiffStart + readUint32(tiffStart + 4);
+        const entries = readUint16(ifdOffset);
+        for (let i = 0; i < entries; i++) {
+          const entryOffset = ifdOffset + 2 + i * 12;
+          if (readUint16(entryOffset) === 0x0112) {
+            return readUint16(entryOffset + 8);
+          }
+        }
+        break;
+      }
+      if ((marker & 0xff00) !== 0xff00) break;
+      offset += view.getUint16(offset);
+    }
+  } catch { /* ignore */ }
+  return 1;
+}
+
+// ── Apply EXIF rotation to canvas context ──
+function applyExifRotation(
+  ctx: CanvasRenderingContext2D,
+  orientation: number,
+  width: number,
+  height: number
+) {
+  switch (orientation) {
+    case 2: ctx.transform(-1, 0, 0, 1, width, 0); break;
+    case 3: ctx.transform(-1, 0, 0, -1, width, height); break;
+    case 4: ctx.transform(1, 0, 0, -1, 0, height); break;
+    case 5: ctx.transform(0, 1, 1, 0, 0, 0); break;
+    case 6: ctx.transform(0, 1, -1, 0, height, 0); break;
+    case 7: ctx.transform(0, -1, -1, 0, height, width); break;
+    case 8: ctx.transform(0, -1, 1, 0, 0, width); break;
+    default: break;
+  }
+}
+
+// ── Client-side image compression with EXIF orientation fix ──
 async function compressImage(file: File, maxWidthPx = 1920, qualityJpeg = 0.82): Promise<File> {
   // For HEIC we can't use Canvas directly — send as-is and let server handle
   if (file.type === "image/heic" || file.type === "image/heif") return file;
+
+  const orientation = await readExifOrientation(file);
+  // Orientations 5-8 swap width/height
+  const swapped = orientation >= 5 && orientation <= 8;
 
   return new Promise((resolve) => {
     const img = new Image();
@@ -31,19 +91,27 @@ async function compressImage(file: File, maxWidthPx = 1920, qualityJpeg = 0.82):
 
     img.onload = () => {
       URL.revokeObjectURL(url);
-      let { width, height } = img;
+      let imgW = img.naturalWidth;
+      let imgH = img.naturalHeight;
 
-      if (width > maxWidthPx) {
-        height = Math.round((height * maxWidthPx) / width);
-        width = maxWidthPx;
+      // Scale down if needed (use intrinsic dimensions before swap)
+      if (imgW > maxWidthPx) {
+        imgH = Math.round((imgH * maxWidthPx) / imgW);
+        imgW = maxWidthPx;
       }
 
+      // Canvas dimensions account for rotation swap
+      const canvasW = swapped ? imgH : imgW;
+      const canvasH = swapped ? imgW : imgH;
+
       const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = canvasW;
+      canvas.height = canvasH;
       const ctx = canvas.getContext("2d");
       if (!ctx) { resolve(file); return; }
-      ctx.drawImage(img, 0, 0, width, height);
+
+      applyExifRotation(ctx, orientation, canvasW, canvasH);
+      ctx.drawImage(img, 0, 0, imgW, imgH);
 
       canvas.toBlob(
         (blob) => {
@@ -52,7 +120,6 @@ async function compressImage(file: File, maxWidthPx = 1920, qualityJpeg = 0.82):
             type: "image/jpeg",
             lastModified: Date.now(),
           });
-          // Only use compressed if it's actually smaller
           resolve(compressed.size < file.size ? compressed : file);
         },
         "image/jpeg",

@@ -14,6 +14,7 @@ export const createFieldSpottingSchema = z.object({
     "RESTAURANT", "HOTEL", "ENTREPOT", "PARKING", "TERRAIN", "IMMEUBLE", "AUTRE",
   ]).optional(),
   surface: z.number().positive().optional(),
+  transactionType: z.enum(["VENTE", "LOCATION", "CESSION_BAIL", "FOND_DE_COMMERCE"]).optional(),
   assignedToId: z.string().optional(),
 });
 
