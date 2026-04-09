@@ -290,30 +290,28 @@ export default async function HomePage() {
       )}
 
       {/* ══════════════════ SERVICES ══════════════════ */}
-      <section className="section-padding bg-brand-50/50 dark:bg-anthracite-900">
+      <section className="py-14 sm:py-20 md:py-24 bg-white dark:bg-anthracite-950">
         <div className="container-page">
           <div className="text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400">
               Nos services
             </p>
-            <h2 className="heading-section mt-3">
+            <h2 className="heading-section mt-2">
               Un accompagnement complet
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-stone-500 dark:text-stone-400">
-              De la recherche à la signature, nous vous guidons à chaque étape de
-              votre projet immobilier commercial.
-            </p>
           </div>
 
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {services.map((service) => (
+          {/* Mobile: compact horizontal cards / Desktop: 4-col grid */}
+          <div className="mt-8 sm:mt-12 grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {services.map((service, i) => (
               <div
                 key={service.title}
-                className="group rounded-2xl border border-stone-200/80 bg-white p-6 transition-all hover:border-brand-200 hover:shadow-card-hover hover:-translate-y-1 dark:border-stone-800 dark:bg-anthracite-950 dark:hover:border-brand-800"
+                className="group flex items-start gap-4 rounded-2xl bg-brand-50/60 p-4 transition-all sm:flex-col sm:gap-0 sm:p-6 sm:hover:shadow-card-hover sm:hover:-translate-y-1 dark:bg-anthracite-900"
               >
-                <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-brand-100 to-champagne-100 text-brand-700 transition-colors group-hover:from-brand-200 group-hover:to-champagne-200 dark:from-brand-900/30 dark:to-champagne-900/30 dark:text-brand-400">
+                {/* Icon */}
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-brand-600 shadow-sm sm:mb-4 sm:h-12 sm:w-12 dark:bg-anthracite-800 dark:text-brand-400">
                   <svg
-                    className="h-6 w-6"
+                    className="h-5 w-5 sm:h-6 sm:w-6"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -326,12 +324,15 @@ export default async function HomePage() {
                     />
                   </svg>
                 </div>
-                <h3 className="font-serif text-lg font-semibold text-anthracite-900 dark:text-stone-100">
-                  {service.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-stone-500 dark:text-stone-400">
-                  {service.description}
-                </p>
+                {/* Text */}
+                <div className="min-w-0">
+                  <h3 className="text-[15px] font-semibold text-anthracite-900 sm:font-serif sm:text-lg dark:text-stone-100">
+                    {service.title}
+                  </h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-stone-500 sm:mt-2 sm:text-sm dark:text-stone-400">
+                    {service.description}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
