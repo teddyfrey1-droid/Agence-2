@@ -70,58 +70,60 @@ export default async function HomePage() {
   return (
     <>
       {/* ══════════════════ HERO ══════════════════ */}
-      <section className="relative min-h-[600px] flex items-center overflow-hidden">
-        {/* Background gradient simulating warm Parisian atmosphere */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#3a2617] via-[#5b4837] to-[#886a4b]" />
-        {/* Decorative pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.08]"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23d4b87a' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h22v20.5h18V22H22v18h-2V22H2v-1.5h18z'/%3E%3C/g%3E%3C/svg%3E\")",
-          }}
+      <section className="relative min-h-[520px] sm:min-h-[600px] flex items-end overflow-hidden">
+        {/* Background photo */}
+        <Image
+          src="/hero-paris.jpg"
+          alt="Rue commerçante parisienne"
+          fill
+          className="object-cover object-center"
+          priority
+          quality={85}
         />
-        {/* Warm light gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20" />
+        {/* Gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-black/10" />
 
-        <div className="container-page relative z-10 py-20 sm:py-28 md:py-36">
+        <div className="container-page relative z-10 w-full pb-14 pt-32 sm:pb-20 sm:pt-40">
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-6xl leading-tight">
-              L&apos;Immobilier Commercial
+            <h1 className="font-serif text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl leading-tight drop-shadow-lg">
+              L&apos;Immobilier Commercial de Qualité
               <br />
-              de Qualité à Paris
-              <br />
-              <span className="text-champagne-300">&amp; Île-de-France</span>
+              à Paris &amp; Île-de-France
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-stone-300 sm:text-lg">
-              Votre expert pour la Location, la Vente de Murs et Fonds de
-              Commerce de Proximité
-            </p>
-            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+
+            {/* Search bar */}
+            <form
+              action="/biens"
+              method="GET"
+              className="mx-auto mt-8 flex max-w-xl overflow-hidden rounded-xl bg-white/95 shadow-xl backdrop-blur-sm"
+            >
+              <input
+                type="text"
+                name="q"
+                placeholder="Rechercher un Bien / Location En Proximité..."
+                className="flex-1 border-0 bg-transparent px-5 py-4 text-sm text-anthracite-800 placeholder:text-stone-400 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="m-1.5 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
+              >
+                Rechercher
+              </button>
+            </form>
+
+            {/* CTA buttons */}
+            <div className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/recherche-local"
-                className="inline-flex items-center gap-2.5 rounded-xl bg-white px-8 py-4 text-sm font-semibold text-anthracite-900 shadow-lg transition-all hover:bg-stone-50 hover:shadow-xl hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-brand-700 hover:shadow-xl hover:-translate-y-0.5"
               >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                  />
-                </svg>
-                Rechercher un bien
+                Rechercher un Bien
               </Link>
               <Link
                 href="/proposer-bien"
-                className="inline-flex items-center gap-2.5 rounded-xl border-2 border-white/30 bg-white/10 px-8 py-4 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:border-white/50"
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-7 py-3.5 text-sm font-semibold text-white shadow-lg transition-all hover:bg-brand-700 hover:shadow-xl hover:-translate-y-0.5"
               >
-                Proposer un bien
+                Proposer un Bien
               </Link>
             </div>
           </div>
