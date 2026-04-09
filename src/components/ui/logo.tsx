@@ -14,10 +14,10 @@ function LogoMark({
   size?: "sm" | "md" | "lg" | "xl";
 }) {
   const dimensions = {
-    sm: { className: "h-12 w-32", px: 128 },
-    md: { className: "h-16 w-48", px: 192 }, 
-    lg: { className: "h-20 w-64", px: 256 }, 
-    xl: { className: "h-24 w-80", px: 320 },
+    sm: { className: "h-7 w-36", px: 144 },
+    md: { className: "h-8 w-44", px: 176 },
+    lg: { className: "h-10 w-56", px: 224 },
+    xl: { className: "h-12 w-64", px: 256 },
   };
 
   const { className, px } = dimensions[size];
