@@ -105,12 +105,23 @@ export async function POST(request: NextRequest) {
     }
 
     if (entityType === "fieldSpotting") {
+      // Fetch existing photos array
+      const existing = await prisma.fieldSpotting.findUnique({
+        where: { id: entityId },
+        select: { photos: true },
+      });
+      const currentPhotos = existing?.photos ?? [];
+      const updatedPhotos = [...currentPhotos, publicUrl];
+
       const spot = await prisma.fieldSpotting.update({
         where: { id: entityId },
-        data: { photoUrl: publicUrl },
+        data: {
+          photoUrl: updatedPhotos[0], // keep first as primary for backward compat
+          photos: updatedPhotos,
+        },
       });
 
-      return NextResponse.json({ url: publicUrl, spotId: spot.id });
+      return NextResponse.json({ url: publicUrl, spotId: spot.id, photos: spot.photos });
     }
 
     return NextResponse.json({ error: "Type d'entité non supporté" }, { status: 400 });

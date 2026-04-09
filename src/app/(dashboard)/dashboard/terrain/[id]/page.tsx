@@ -6,7 +6,7 @@ import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { SinglePhotoUploader } from "@/components/photo-uploader";
+import { TerrainPhotoUploader } from "@/components/photo-uploader";
 import { StatusSelector } from "@/components/status-selector";
 import { ConvertToPropertyButton } from "@/components/convert-to-property-button";
 import { FIELD_SPOTTING_STATUS_LABELS } from "@/lib/constants";
@@ -19,6 +19,13 @@ export default async function TerrainDetailPage({
   const { id } = await params;
   const spot = await findFieldSpottingById(id);
   if (!spot) notFound();
+
+  // Merge legacy photoUrl into photos array
+  const photos: string[] = spot.photos?.length
+    ? spot.photos
+    : spot.photoUrl
+    ? [spot.photoUrl]
+    : [];
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -33,9 +40,7 @@ export default async function TerrainDetailPage({
               Terrain
             </Link>
             <span className="text-stone-300 dark:text-stone-600">/</span>
-            <span className="text-sm text-anthracite-700 dark:text-stone-300">
-              Détail
-            </span>
+            <span className="text-sm text-anthracite-700 dark:text-stone-300">Détail</span>
           </div>
           <h1 className="mt-2 text-2xl font-semibold text-anthracite-900 dark:text-stone-100">
             {spot.address}
@@ -50,20 +55,20 @@ export default async function TerrainDetailPage({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Photo */}
+        {/* Photos */}
         <Card>
           <CardHeader>
-            <h2 className="heading-card">Photo</h2>
+            <h2 className="heading-card">Photos</h2>
+            <p className="text-xs text-stone-400 dark:text-stone-500">
+              {photos.length}/10 · compressées automatiquement
+            </p>
           </CardHeader>
           <CardContent>
-            <SinglePhotoUploader
-              entityId={id}
-              currentPhotoUrl={spot.photoUrl}
-            />
+            <TerrainPhotoUploader entityId={id} initialPhotos={photos} />
           </CardContent>
         </Card>
 
-        {/* Details */}
+        {/* Informations */}
         <Card>
           <CardHeader>
             <h2 className="heading-card">Informations</h2>
@@ -105,7 +110,7 @@ export default async function TerrainDetailPage({
         </Card>
       </div>
 
-      {/* Pipeline de suivi */}
+      {/* Suivi */}
       <Card>
         <CardHeader>
           <h2 className="heading-card">Suivi</h2>
@@ -151,7 +156,7 @@ export default async function TerrainDetailPage({
             />
           )}
           {spot.status === "CONVERTI" && (
-            <p className="text-center text-sm text-emerald-600 dark:text-emerald-400 font-medium py-2">
+            <p className="py-2 text-center text-sm font-medium text-emerald-600 dark:text-emerald-400">
               Ce repérage a été converti en bien
             </p>
           )}

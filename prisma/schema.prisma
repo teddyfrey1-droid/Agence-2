@@ -500,6 +500,7 @@ model FieldSpotting {
   latitude     Float?
   longitude    Float?
   photoUrl     String?
+  photos       String[]
   notes        String?
   status       FieldSpottingStatus @default(REPERE)
   propertyType PropertyType?

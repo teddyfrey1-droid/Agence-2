@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,10 +8,50 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { InlinePhotoPicker } from "@/components/photo-uploader";
 import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast";
 
 const typeOptions = Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => ({ value, label }));
+
+async function compressAndUpload(file: File, entityId: string): Promise<string> {
+  // Client-side compression via Canvas
+  const compressed = await new Promise<File>((resolve) => {
+    if (file.type === "image/heic" || file.type === "image/heif") { resolve(file); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      const MAX = 1920;
+      if (width > MAX) { height = Math.round((height * MAX) / width); width = MAX; }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(file); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        if (!blob) { resolve(file); return; }
+        const c = new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" });
+        resolve(c.size < file.size ? c : file);
+      }, "image/jpeg", 0.82);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+
+  const formData = new FormData();
+  formData.append("file", compressed);
+  formData.append("entityType", "fieldSpotting");
+  formData.append("entityId", entityId);
+  const res = await fetch("/api/upload", { method: "POST", body: formData });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || "Erreur upload");
+  }
+  const data = await res.json();
+  return data.url as string;
+}
 
 export default function NouveauTerrainPage() {
   const router = useRouter();
@@ -21,20 +61,18 @@ export default function NouveauTerrainPage() {
   const [error, setError] = useState<string | null>(null);
   const [addressData, setAddressData] = useState({ city: "Paris", zipCode: "", district: "", address: "" });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
 
   async function handleGeolocate() {
     if (!navigator.geolocation) {
       addToast("Géolocalisation non supportée par votre navigateur", "error");
       return;
     }
-
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
         setCoords({ lat: latitude, lng: longitude });
-
-        // Reverse geocode via French government API
         try {
           const res = await fetch(
             `https://api-adresse.data.gouv.fr/reverse/?lon=${longitude}&lat=${latitude}`
@@ -58,11 +96,8 @@ export default function NouveauTerrainPage() {
       },
       (err) => {
         setIsLocating(false);
-        if (err.code === 1) {
-          addToast("Accès à la localisation refusé. Activez la géolocalisation.", "error");
-        } else {
-          addToast("Impossible de déterminer votre position", "error");
-        }
+        if (err.code === 1) addToast("Accès à la localisation refusé. Activez la géolocalisation.", "error");
+        else addToast("Impossible de déterminer votre position", "error");
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
@@ -75,6 +110,7 @@ export default function NouveauTerrainPage() {
     const formData = new FormData(e.currentTarget);
 
     try {
+      // 1 — Create the field spotting record
       const res = await fetch("/api/field-spotting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,8 +131,17 @@ export default function NouveauTerrainPage() {
         throw new Error(data.error || "Erreur");
       }
       const spot = await res.json();
-      addToast("Repérage enregistré ! Ajoutez une photo.", "success");
-      router.push(`/dashboard/terrain/${spot.id}`);
+
+      // 2 — Upload photos if any (in parallel for speed)
+      if (pendingPhotos.length > 0) {
+        addToast("Upload des photos en cours…", "info");
+        await Promise.allSettled(
+          pendingPhotos.map((file) => compressAndUpload(file, spot.id))
+        );
+      }
+
+      addToast("Repérage enregistré !", "success");
+      router.push("/dashboard/terrain");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
       addToast("Erreur lors de la création", "error");
@@ -106,13 +151,13 @@ export default function NouveauTerrainPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-5">
       <div>
         <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Nouveau repérage</h1>
         <p className="text-sm text-stone-500 dark:text-stone-400">Repérez un local directement depuis le terrain.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {error && (
           <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-900/20 dark:text-red-400">
             <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -122,9 +167,9 @@ export default function NouveauTerrainPage() {
           </div>
         )}
 
-        {/* Geolocation Button */}
+        {/* GPS */}
         <Card>
-          <CardContent className="py-5">
+          <CardContent className="py-4">
             <button
               type="button"
               onClick={handleGeolocate}
@@ -137,7 +182,7 @@ export default function NouveauTerrainPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  <span className="text-sm font-medium">Localisation en cours...</span>
+                  <span className="text-sm font-medium">Localisation en cours…</span>
                 </>
               ) : (
                 <>
@@ -154,13 +199,13 @@ export default function NouveauTerrainPage() {
             </button>
             {coords && (
               <p className="mt-2 text-center text-xs text-stone-400 dark:text-stone-500">
-                GPS: {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+                GPS : {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
               </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Address */}
+        {/* Adresse */}
         <Card>
           <CardHeader><h2 className="heading-card">Localisation</h2></CardHeader>
           <CardContent className="space-y-4">
@@ -179,9 +224,7 @@ export default function NouveauTerrainPage() {
                   zipCode: result.postcode,
                   district: arrNum ? `${parseInt(arrNum)}${parseInt(arrNum) === 1 ? "er" : "e"} arrondissement` : "",
                 });
-                if (result.x && result.y) {
-                  setCoords({ lat: result.y, lng: result.x });
-                }
+                if (result.x && result.y) setCoords({ lat: result.y, lng: result.x });
               }}
             />
             <div className="grid gap-4 sm:grid-cols-3">
@@ -192,7 +235,7 @@ export default function NouveauTerrainPage() {
           </CardContent>
         </Card>
 
-        {/* Details */}
+        {/* Détails */}
         <Card>
           <CardHeader><h2 className="heading-card">Détails</h2></CardHeader>
           <CardContent className="space-y-4">
@@ -204,8 +247,21 @@ export default function NouveauTerrainPage() {
           </CardContent>
         </Card>
 
+        {/* Photos — directement dans le formulaire */}
+        <Card>
+          <CardHeader>
+            <h2 className="heading-card">Photos</h2>
+            <p className="text-xs text-stone-400 dark:text-stone-500">Ajoutez jusqu&apos;à 10 photos, compressées automatiquement.</p>
+          </CardHeader>
+          <CardContent>
+            <InlinePhotoPicker onFilesChange={setPendingPhotos} />
+          </CardContent>
+        </Card>
+
         <div className="flex items-center gap-3">
-          <Button type="submit" isLoading={isSubmitting}>Enregistrer et ajouter photo</Button>
+          <Button type="submit" isLoading={isSubmitting}>
+            {isSubmitting ? "Enregistrement…" : "Enregistrer"}
+          </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>Annuler</Button>
         </div>
       </form>
