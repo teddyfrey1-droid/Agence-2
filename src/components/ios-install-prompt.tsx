@@ -52,11 +52,11 @@ export function IOSInstallPrompt() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/icons/apple-touch-icon.png"
-          alt="Retail Place"
+          alt="Retail Avenue"
           className="w-12 h-12 rounded-xl"
         />
         <div>
-          <p className="font-semibold text-sm">Installer Retail Place</p>
+          <p className="font-semibold text-sm">Installer Retail Avenue</p>
           <p className="text-xs text-[#D4C7B0]/70">Accès en 1 clic depuis votre écran d'accueil</p>
         </div>
       </div>

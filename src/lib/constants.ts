@@ -1,4 +1,4 @@
-export const APP_NAME = "Retail Place";
+export const APP_NAME = "Retail Avenue";
 export const APP_DESCRIPTION =
   "Immobilier commercial & professionnel à Paris — Expertise, conseil et accompagnement sur-mesure.";
 

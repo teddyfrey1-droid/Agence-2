@@ -77,7 +77,7 @@ self.addEventListener('push', (event) => {
   try {
     data = event.data.json();
   } catch {
-    data = { title: 'Retail Place', body: event.data.text(), data: { link: '/dashboard' } };
+    data = { title: 'Retail Avenue', body: event.data.text(), data: { link: '/dashboard' } };
   }
 
   const options = {
@@ -90,7 +90,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Retail Place', options)
+    self.registration.showNotification(data.title || 'Retail Avenue', options)
   );
 });
 

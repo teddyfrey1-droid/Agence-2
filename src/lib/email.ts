@@ -16,7 +16,7 @@ function parseSender(): { email: string; name: string } {
   if (match) {
     return { name: match[1].trim(), email: match[2].trim() };
   }
-  return { email: EMAIL_FROM_RAW.trim(), name: "Retail Place" };
+  return { email: EMAIL_FROM_RAW.trim(), name: "Retail Avenue" };
 }
 
 interface EmailOptions {
@@ -82,15 +82,15 @@ export async function sendInvitationEmail(
 
   return sendEmail({
     to,
-    subject: "Vous êtes invité à rejoindre Retail Place",
+    subject: "Vous êtes invité à rejoindre Retail Avenue",
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue sur Retail Place</h1>
+        <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue sur Retail Avenue</h1>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
           Bonjour ${firstName},
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Vous avez été invité(e) à rejoindre la plateforme Retail Place.
+          Vous avez été invité(e) à rejoindre la plateforme Retail Avenue.
           Cliquez sur le bouton ci-dessous pour activer votre compte et définir votre mot de passe.
         </p>
         <div style="text-align: center; margin: 32px 0;">
@@ -119,7 +119,7 @@ export async function sendPasswordResetEmail(
 
   return sendEmail({
     to,
-    subject: "Réinitialisation de votre mot de passe - Retail Place",
+    subject: "Réinitialisation de votre mot de passe - Retail Avenue",
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Réinitialisation du mot de passe</h1>
@@ -155,7 +155,7 @@ export async function sendWelcomeEmail(
 
   return sendEmail({
     to,
-    subject: "Votre compte Retail Place est activé",
+    subject: "Votre compte Retail Avenue est activé",
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue !</h1>
@@ -222,7 +222,7 @@ export async function sendPropertyShareEmail(params: {
           </a>
         </div>
         <p style="color: #888; font-size: 13px; text-align: center;">
-          Proposé par ${params.senderName} — Retail Place
+          Proposé par ${params.senderName} — Retail Avenue
         </p>
       </div>
     `,
@@ -240,7 +240,7 @@ export async function sendFollowUpEmail(
 
   return sendEmail({
     to,
-    subject: "Êtes-vous toujours en recherche ? — Retail Place",
+    subject: "Êtes-vous toujours en recherche ? — Retail Avenue",
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Comment avance votre recherche ?</h1>
@@ -323,7 +323,7 @@ export async function sendNotificationEmail(
 
   return sendEmail({
     to,
-    subject: `${title} — Retail Place`,
+    subject: `${title} — Retail Avenue`,
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">${title}</h1>
