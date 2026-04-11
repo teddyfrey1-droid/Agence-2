@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { PWARegister } from "@/components/pwa-register";
 import { IOSInstallPrompt } from "@/components/ios-install-prompt";
+import { CookieConsentProvider } from "@/components/cookie-consent";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -49,11 +50,13 @@ export default function RootLayout({
       </head>
       <body className="overscroll-none">
         <ThemeProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
-          <PWARegister />
-          <IOSInstallPrompt />
+          <CookieConsentProvider>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+            <PWARegister />
+            <IOSInstallPrompt />
+          </CookieConsentProvider>
         </ThemeProvider>
       </body>
     </html>

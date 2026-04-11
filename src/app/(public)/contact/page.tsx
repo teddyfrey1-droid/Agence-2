@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,10 +10,10 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setIsSubmitting(true);
     setError(null);
 
     const form = e.currentTarget;
@@ -20,9 +21,17 @@ export default function ContactPage() {
 
     // Honeypot check
     if (formData.get("website")) {
-      setIsSubmitting(false);
       return;
     }
+
+    if (!consent) {
+      setError(
+        "Merci d'accepter la politique de confidentialité avant d'envoyer votre message."
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       const res = await fetch("/api/contacts/public", {
@@ -151,6 +160,29 @@ export default function ContactPage() {
                 <div className="hidden" aria-hidden="true">
                   <input type="text" name="website" tabIndex={-1} autoComplete="off" />
                 </div>
+
+                <label className="flex items-start gap-3 text-sm text-anthracite-600 dark:text-stone-300">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500 dark:border-stone-600 dark:bg-anthracite-800"
+                    required
+                  />
+                  <span>
+                    J&apos;accepte que les informations saisies soient utilisées
+                    pour traiter ma demande, conformément à la{" "}
+                    <Link
+                      href="/politique-confidentialite"
+                      className="text-brand-600 underline hover:text-brand-700"
+                    >
+                      politique de confidentialité
+                    </Link>
+                    . Les données marquées d&apos;un astérisque sont
+                    obligatoires. Vous disposez d&apos;un droit d&apos;accès, de
+                    rectification et de suppression de vos données.
+                  </span>
+                </label>
 
                 <Button type="submit" size="lg" isLoading={isSubmitting} className="w-full sm:w-auto">
                   Envoyer le message

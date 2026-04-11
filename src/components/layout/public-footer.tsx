@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
 import { Logo } from "@/components/ui/logo";
+import { FooterCookieLink } from "@/components/footer-cookie-link";
 
 export function PublicFooter() {
   return (
@@ -97,13 +98,20 @@ export function PublicFooter() {
           <p className="text-xs text-stone-500">
             &copy; {new Date().getFullYear()} {APP_NAME}. Tous droits réservés.
           </p>
-          <div className="flex items-center gap-6 text-xs text-stone-500">
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-stone-500">
             <Link href="/mentions-legales" className="transition-colors hover:text-stone-300">
               Mentions légales
+            </Link>
+            <Link href="/cgv" className="transition-colors hover:text-stone-300">
+              CGV
             </Link>
             <Link href="/politique-confidentialite" className="transition-colors hover:text-stone-300">
               Politique de confidentialité
             </Link>
+            <Link href="/politique-cookies" className="transition-colors hover:text-stone-300">
+              Cookies
+            </Link>
+            <FooterCookieLink />
           </div>
         </div>
       </div>
