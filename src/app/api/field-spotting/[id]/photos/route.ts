@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-import { supabase, STORAGE_BUCKET } from "@/lib/supabase";
+import { requireSupabase, STORAGE_BUCKET } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
 
 export async function DELETE(
@@ -31,7 +31,7 @@ export async function DELETE(
       const url = new URL(photoUrl);
       const pathParts = url.pathname.split(`/storage/v1/object/public/${STORAGE_BUCKET}/`);
       if (pathParts.length > 1) {
-        await supabase.storage.from(STORAGE_BUCKET).remove([pathParts[1]]);
+        await requireSupabase().storage.from(STORAGE_BUCKET).remove([pathParts[1]]);
       }
     } catch {
       // continue even if storage removal fails

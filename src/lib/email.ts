@@ -10,6 +10,20 @@
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 const EMAIL_FROM_RAW = process.env.EMAIL_FROM || "noreply@retailplace.immo";
 
+/**
+ * Escape HTML special characters to prevent HTML injection in email templates.
+ * All user-provided strings MUST be passed through this before interpolation.
+ */
+function escapeHtml(unsafe: string | number | null | undefined): string {
+  if (unsafe == null) return "";
+  return String(unsafe)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // Parse EMAIL_FROM: supports "Name <email>" or just "email"
 function parseSender(): { email: string; name: string } {
   const match = EMAIL_FROM_RAW.match(/^(.+?)\s*<(.+?)>$/);
@@ -87,14 +101,14 @@ export async function sendInvitationEmail(
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue sur Retail Avenue</h1>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${firstName},
+          Bonjour ${escapeHtml(firstName)},
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
           Vous avez été invité(e) à rejoindre la plateforme Retail Avenue.
           Cliquez sur le bouton ci-dessous pour activer votre compte et définir votre mot de passe.
         </p>
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${activationUrl}"
+          <a href="${escapeHtml(activationUrl)}"
              style="background: #8B6914; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
             Activer mon compte
           </a>
@@ -103,7 +117,7 @@ export async function sendInvitationEmail(
           Ce lien expire dans 48 heures. Si vous n'avez pas demandé cette invitation, ignorez cet email.
         </p>
         <p style="color: #888; font-size: 14px;">
-          Lien direct : <a href="${activationUrl}">${activationUrl}</a>
+          Lien direct : <a href="${escapeHtml(activationUrl)}">${escapeHtml(activationUrl)}</a>
         </p>
       </div>
     `,
@@ -124,14 +138,14 @@ export async function sendPasswordResetEmail(
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Réinitialisation du mot de passe</h1>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${firstName},
+          Bonjour ${escapeHtml(firstName)},
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
           Vous avez demandé la réinitialisation de votre mot de passe.
           Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
         </p>
         <div style="text-align: center; margin: 32px 0;">
-          <a href="${resetUrl}"
+          <a href="${escapeHtml(resetUrl)}"
              style="background: #8B6914; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
             Réinitialiser mon mot de passe
           </a>
@@ -140,7 +154,7 @@ export async function sendPasswordResetEmail(
           Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, ignorez cet email.
         </p>
         <p style="color: #888; font-size: 14px;">
-          Lien direct : <a href="${resetUrl}">${resetUrl}</a>
+          Lien direct : <a href="${escapeHtml(resetUrl)}">${escapeHtml(resetUrl)}</a>
         </p>
       </div>
     `,
@@ -160,7 +174,7 @@ export async function sendWelcomeEmail(
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue !</h1>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${firstName},
+          Bonjour ${escapeHtml(firstName)},
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
           Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter.
@@ -203,16 +217,16 @@ export async function sendPropertyShareEmail(params: {
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Proposition de bien</h1>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour${params.recipientName ? ` ${params.recipientName}` : ""},
+          Bonjour${params.recipientName ? ` ${escapeHtml(params.recipientName)}` : ""},
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          ${params.senderName} vous propose un bien qui pourrait vous intéresser :
+          ${escapeHtml(params.senderName)} vous propose un bien qui pourrait vous intéresser :
         </p>
-        ${params.message ? `<div style="background: #f5f5f0; border-left: 3px solid #8B6914; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0;"><p style="color: #555; font-size: 14px; line-height: 1.5; margin: 0; font-style: italic;">${params.message}</p></div>` : ""}
+        ${params.message ? `<div style="background: #f5f5f0; border-left: 3px solid #8B6914; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0;"><p style="color: #555; font-size: 14px; line-height: 1.5; margin: 0; font-style: italic;">${escapeHtml(params.message)}</p></div>` : ""}
         <div style="background: #fafaf8; border: 1px solid #e5e5e0; border-radius: 12px; padding: 24px; margin: 24px 0;">
-          <h2 style="color: #1a1a2e; font-size: 18px; margin: 0 0 8px 0;">${params.propertyTitle}</h2>
-          <p style="color: #8B6914; font-size: 14px; margin: 0 0 4px 0;">${params.propertyReference}</p>
-          <p style="color: #666; font-size: 14px; margin: 0 0 12px 0;">${params.propertyCity}</p>
+          <h2 style="color: #1a1a2e; font-size: 18px; margin: 0 0 8px 0;">${escapeHtml(params.propertyTitle)}</h2>
+          <p style="color: #8B6914; font-size: 14px; margin: 0 0 4px 0;">${escapeHtml(params.propertyReference)}</p>
+          <p style="color: #666; font-size: 14px; margin: 0 0 12px 0;">${escapeHtml(params.propertyCity)}</p>
           <p style="color: #1a1a2e; font-size: 20px; font-weight: 700; margin: 0;">${priceDisplay}</p>
         </div>
         <div style="text-align: center; margin: 32px 0;">
@@ -222,7 +236,7 @@ export async function sendPropertyShareEmail(params: {
           </a>
         </div>
         <p style="color: #888; font-size: 13px; text-align: center;">
-          Proposé par ${params.senderName} — Retail Avenue
+          Proposé par ${escapeHtml(params.senderName)} — Retail Avenue
         </p>
       </div>
     `,
@@ -245,10 +259,10 @@ export async function sendFollowUpEmail(
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Comment avance votre recherche ?</h1>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${firstName},
+          Bonjour ${escapeHtml(firstName)},
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Nous n'avons pas eu de nouvelles depuis ${daysSinceLastActivity} jours.
+          Nous n'avons pas eu de nouvelles depuis ${escapeHtml(daysSinceLastActivity)} jours.
           De nouveaux biens ont été ajoutés et pourraient correspondre à vos critères.
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
@@ -287,14 +301,14 @@ export async function sendMatchingPropertyEmail(
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
         <h1 style="color: #1a1a2e; font-size: 24px;">Un bien correspond à votre recherche</h1>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${firstName},
+          Bonjour ${escapeHtml(firstName)},
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Nous avons identifié un bien qui correspond à vos critères avec un score de compatibilité de <strong>${score}%</strong>.
+          Nous avons identifié un bien qui correspond à vos critères avec un score de compatibilité de <strong>${escapeHtml(score)}%</strong>.
         </p>
         <div style="background: #fafaf8; border: 1px solid #e5e5e0; border-radius: 12px; padding: 24px; margin: 24px 0;">
-          <h2 style="color: #1a1a2e; font-size: 18px; margin: 0 0 8px 0;">${propertyTitle}</h2>
-          <p style="color: #666; font-size: 14px; margin: 0 0 12px 0;">${propertyCity}</p>
+          <h2 style="color: #1a1a2e; font-size: 18px; margin: 0 0 8px 0;">${escapeHtml(propertyTitle)}</h2>
+          <p style="color: #666; font-size: 14px; margin: 0 0 12px 0;">${escapeHtml(propertyCity)}</p>
           <div style="display: inline-block; background: ${score >= 70 ? "#ecfdf5" : "#fffbeb"}; color: ${score >= 70 ? "#059669" : "#d97706"}; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600;">
             Score : ${score}%
           </div>
@@ -326,12 +340,12 @@ export async function sendNotificationEmail(
     subject: `${title} — Retail Avenue`,
     html: `
       <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">${title}</h1>
+        <h1 style="color: #1a1a2e; font-size: 24px;">${escapeHtml(title)}</h1>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${firstName},
+          Bonjour ${escapeHtml(firstName)},
         </p>
         <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          ${message}
+          ${escapeHtml(message)}
         </p>
         <div style="text-align: center; margin: 32px 0;">
           <a href="${actionUrl}"

@@ -30,17 +30,37 @@ const publicApiPaths = [
   "/api/contacts/public",
   "/api/search-requests/public",
   "/api/properties/public",
+  "/api/setup",
 ];
 
 function isPublicPath(pathname: string): boolean {
-  // Exact match or starts with public path + /
+  // Exact match on known public pages
   if (publicPaths.includes(pathname)) return true;
+
+  // Property detail pages are public
   if (pathname.startsWith("/biens/")) return true;
+
+  // Next.js internals
   if (pathname.startsWith("/_next")) return true;
-  if (pathname.startsWith("/api/properties") && pathname.includes("published")) return true;
+
+  // Static files
+  if (/\.(ico|png|jpg|jpeg|svg|css|js|woff|woff2|webmanifest)$/.test(pathname)) return true;
+
+  // Public API paths (exact prefix match)
   if (publicApiPaths.some((p) => pathname.startsWith(p))) return true;
-  if (/\.(ico|png|jpg|jpeg|svg|css|js|woff|woff2)$/.test(pathname)) return true;
+
   return false;
+}
+
+/**
+ * Check if a properties API request is for the published properties endpoint.
+ * Only allows GET requests with query parameter published=true on exact path.
+ */
+function isPublishedPropertiesRequest(request: NextRequest): boolean {
+  const { pathname } = request.nextUrl;
+  if (pathname !== "/api/properties") return false;
+  if (request.method !== "GET") return false;
+  return request.nextUrl.searchParams.get("published") === "true";
 }
 
 export async function middleware(request: NextRequest) {
@@ -48,6 +68,11 @@ export async function middleware(request: NextRequest) {
 
   // Allow public paths
   if (isPublicPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  // Allow published properties listing (public map data)
+  if (isPublishedPropertiesRequest(request)) {
     return NextResponse.next();
   }
 

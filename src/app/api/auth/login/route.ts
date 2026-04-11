@@ -3,6 +3,7 @@ import { z } from "zod";
 import { findUserByEmail, verifyPassword, updateUserLastLogin } from "@/modules/users";
 import { createSessionToken, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { applyRateLimit, LOGIN_RATE_LIMIT } from "@/lib/rate-limit";
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -11,6 +12,10 @@ const loginSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 5 attempts per 15 minutes per IP
+    const rateLimited = applyRateLimit("auth-login", request.headers, LOGIN_RATE_LIMIT);
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
     const parsed = loginSchema.safeParse(body);
 

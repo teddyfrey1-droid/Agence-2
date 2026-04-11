@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { publicSearchRequestSchema } from "@/modules/search-requests/search-requests.schema";
 import { handlePublicSearchRequestForm } from "@/modules/contacts";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
-
-const RATE_LIMIT = { maxRequests: 5, windowSeconds: 60 };
+import { applyRateLimit, PUBLIC_FORM_RATE_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting
-    const ip = getClientIp(request.headers);
-    const limit = checkRateLimit(`search-requests-public:${ip}`, RATE_LIMIT);
-    if (!limit.allowed) {
-      return NextResponse.json(
-        { error: "Trop de requêtes. Réessayez dans quelques minutes." },
-        { status: 429, headers: { "Retry-After": String(Math.ceil((limit.resetAt - Date.now()) / 1000)) } }
-      );
-    }
+    // Rate limiting: 5 submissions per minute per IP
+    const rateLimited = applyRateLimit("search-requests-public", request.headers, PUBLIC_FORM_RATE_LIMIT);
+    if (rateLimited) return rateLimited;
 
     const body = await request.json();
     const parsed = publicSearchRequestSchema.safeParse(body);

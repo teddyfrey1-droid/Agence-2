@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { hasMinimumRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 function escapeCsv(val: string | number | null | undefined): string {
   if (val == null) return "";
@@ -19,6 +21,15 @@ function toCsv(headers: string[], rows: (string | number | null | undefined)[][]
   return bom + [headerLine, ...dataLines].join("\n");
 }
 
+function csvResponse(csv: string, filename: string): NextResponse {
+  return new NextResponse(csv, {
+    headers: {
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": `attachment; filename="${filename}_${new Date().toISOString().split("T")[0]}.csv"`,
+    },
+  });
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
@@ -28,11 +39,27 @@ export async function GET(request: NextRequest) {
 
     const type = request.nextUrl.searchParams.get("type");
 
+    // Only users with MANAGER+ role can export (prevents AGENT/ASSISTANT/CLIENT from bulk export)
+    const canExportAll = hasMinimumRole(session.role, "MANAGER");
+
     if (type === "contacts") {
-      if (!hasPermission(session.role, "contact", "read")) {
-        return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+      if (!hasPermission(session.role, "contact", "export")) {
+        return NextResponse.json({ error: "Permission refusée. L'export nécessite le droit 'export' sur les contacts." }, { status: 403 });
       }
+
+      // Non-managers only see contacts linked to their own search requests or deals
+      const where: Prisma.ContactWhereInput = canExportAll
+        ? {}
+        : {
+            OR: [
+              { searchRequests: { some: { assignedToId: session.userId } } },
+              { deals: { some: { assignedToId: session.userId } } },
+              { interactions: { some: { userId: session.userId } } },
+            ],
+          };
+
       const contacts = await prisma.contact.findMany({
+        where,
         orderBy: { createdAt: "desc" },
       });
       const csv = toCsv(
@@ -43,19 +70,26 @@ export async function GET(request: NextRequest) {
           c.createdAt.toISOString().split("T")[0],
         ])
       );
-      return new NextResponse(csv, {
-        headers: {
-          "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="contacts_${new Date().toISOString().split("T")[0]}.csv"`,
-        },
-      });
+      return csvResponse(csv, "contacts");
     }
 
     if (type === "properties") {
-      if (!hasPermission(session.role, "property", "read")) {
-        return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+      if (!hasPermission(session.role, "property", "export")) {
+        return NextResponse.json({ error: "Permission refusée. L'export nécessite le droit 'export' sur les biens." }, { status: 403 });
       }
+
+      // Non-managers only see their assigned properties, never confidential ones
+      const where: Prisma.PropertyWhereInput = canExportAll
+        ? {}
+        : {
+            AND: [
+              { assignedToId: session.userId },
+              { confidentiality: { not: "CONFIDENTIEL" } },
+            ],
+          };
+
       const properties = await prisma.property.findMany({
+        where,
         orderBy: { createdAt: "desc" },
       });
       const csv = toCsv(
@@ -67,19 +101,27 @@ export async function GET(request: NextRequest) {
           p.createdAt.toISOString().split("T")[0],
         ])
       );
-      return new NextResponse(csv, {
-        headers: {
-          "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="biens_${new Date().toISOString().split("T")[0]}.csv"`,
-        },
-      });
+      return csvResponse(csv, "biens");
     }
 
     if (type === "deals") {
-      if (!hasPermission(session.role, "deal", "read")) {
-        return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+      if (!hasPermission(session.role, "deal", "export")) {
+        return NextResponse.json({ error: "Permission refusée. L'export nécessite le droit 'export' sur les dossiers." }, { status: 403 });
       }
+
+      // Non-managers only see deals they're assigned to, found, or closed
+      const where: Prisma.DealWhereInput = canExportAll
+        ? {}
+        : {
+            OR: [
+              { assignedToId: session.userId },
+              { propertyFoundById: session.userId },
+              { dealClosedById: session.userId },
+            ],
+          };
+
       const deals = await prisma.deal.findMany({
+        where,
         include: {
           property: { select: { title: true, reference: true } },
           contact: { select: { firstName: true, lastName: true } },
@@ -98,12 +140,7 @@ export async function GET(request: NextRequest) {
           d.createdAt.toISOString().split("T")[0],
         ])
       );
-      return new NextResponse(csv, {
-        headers: {
-          "Content-Type": "text/csv; charset=utf-8",
-          "Content-Disposition": `attachment; filename="dossiers_${new Date().toISOString().split("T")[0]}.csv"`,
-        },
-      });
+      return csvResponse(csv, "dossiers");
     }
 
     return NextResponse.json({ error: "Type d'export invalide. Utilisez: contacts, properties, deals" }, { status: 400 });

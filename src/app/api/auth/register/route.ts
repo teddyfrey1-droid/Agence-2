@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { createSessionToken, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { applyRateLimit, REGISTER_RATE_LIMIT } from "@/lib/rate-limit";
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "Prénom requis (2 car. min)"),
@@ -15,6 +16,10 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 3 registrations per hour per IP
+    const rateLimited = applyRateLimit("auth-register", request.headers, REGISTER_RATE_LIMIT);
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
     const parsed = registerSchema.safeParse(body);
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-import { supabase, STORAGE_BUCKET } from "@/lib/supabase";
+import { requireSupabase, STORAGE_BUCKET } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: NextRequest) {
@@ -59,8 +59,9 @@ export async function POST(request: NextRequest) {
     const path = `${entityType}/${entityId}/${timestamp}.${ext}`;
 
     // Upload to Supabase Storage
+    const storage = requireSupabase();
     const buffer = Buffer.from(await file.arrayBuffer());
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await storage.storage
       .from(STORAGE_BUCKET)
       .upload(path, buffer, {
         contentType: file.type,
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get public URL
-    const { data: urlData } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+    const { data: urlData } = storage.storage.from(STORAGE_BUCKET).getPublicUrl(path);
     const publicUrl = urlData.publicUrl;
 
     if (entityType === "property") {

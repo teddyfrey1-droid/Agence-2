@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { randomBytes } from "crypto";
 import { sendPasswordResetEmail } from "@/lib/email";
+import { applyRateLimit, PASSWORD_RESET_RATE_LIMIT } from "@/lib/rate-limit";
 
 const schema = z.object({
   email: z.string().email("Email invalide"),
@@ -10,6 +11,10 @@ const schema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: 3 password reset requests per 15 minutes per IP
+    const rateLimited = applyRateLimit("auth-forgot-password", request.headers, PASSWORD_RESET_RATE_LIMIT);
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {
