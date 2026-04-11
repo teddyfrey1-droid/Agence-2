@@ -2,6 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
+
+// Pre-validated query shape so TypeScript can derive a concrete payload type
+// for the paginated batches below without having to unify two findMany call
+// sites through a ternary.
+const searchRequestScoreInclude = Prisma.validator<Prisma.SearchRequestInclude>()({
+  contact: { select: { company: true, phone: true, mobile: true, email: true } },
+  matches: { select: { id: true }, take: 1 },
+  interactions: { select: { id: true }, take: 10 },
+});
+
+type SearchRequestForScoring = Prisma.SearchRequestGetPayload<{
+  include: typeof searchRequestScoreInclude;
+}>;
 
 function calculateQualificationScore(searchRequest: {
   budgetMin: number | null;
@@ -68,13 +82,9 @@ export async function POST(request: NextRequest) {
     let cursor: string | undefined = undefined;
 
     while (true) {
-      const batch = await prisma.searchRequest.findMany({
+      const batch: SearchRequestForScoring[] = await prisma.searchRequest.findMany({
         where: { status: { in: ["NOUVELLE", "QUALIFIEE", "EN_COURS"] } },
-        include: {
-          contact: { select: { company: true, phone: true, mobile: true, email: true } },
-          matches: { select: { id: true }, take: 1 },
-          interactions: { select: { id: true }, take: 10 },
-        },
+        include: searchRequestScoreInclude,
         orderBy: { id: "asc" },
         take: batchSize,
         ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
