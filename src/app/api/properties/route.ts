@@ -11,10 +11,18 @@ export async function GET(request: NextRequest) {
     const published = searchParams.get("published");
 
     if (published === "true") {
-      // Public endpoint for map
+      // Public endpoint for map + homepage
       const { findPublishedProperties } = await import("@/modules/properties");
       const result = await findPublishedProperties(page, 100);
-      return NextResponse.json(result);
+      const res = NextResponse.json(result);
+      // Short-lived edge cache + longer SWR window. Published listings don't
+      // change often; CDN can serve them for a minute and revalidate in the
+      // background for up to 5 minutes.
+      res.headers.set(
+        "Cache-Control",
+        "public, s-maxage=60, stale-while-revalidate=300"
+      );
+      return res;
     }
 
     const session = await getSession();

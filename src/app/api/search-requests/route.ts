@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/permissions";
 import { createSearchRequestSchema } from "@/modules/search-requests/search-requests.schema";
 import { createSearchRequest } from "@/modules/search-requests";
 import { generateReference } from "@/lib/utils";
+import { runMatchingForSearchRequest } from "@/modules/matching";
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,8 +48,16 @@ export async function POST(request: NextRequest) {
       ...(data.assignedToId ? { assignedTo: { connect: { id: data.assignedToId } } } : {}),
     });
 
+    // Trigger initial matching in the background. We don't await it so the
+    // request doesn't block on what can be a heavy job, but we catch errors
+    // so a matcher crash doesn't surface as a failed POST.
+    runMatchingForSearchRequest(sr.id).catch((err) =>
+      console.error("[search-requests POST] initial matching failed", err)
+    );
+
     return NextResponse.json(sr, { status: 201 });
   } catch (err) {
+    console.error("[search-requests POST] error", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Erreur interne" },
       { status: 500 }

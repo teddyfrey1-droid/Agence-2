@@ -4,7 +4,10 @@ import { hasPermission } from "@/lib/permissions";
 import { createFieldSpottingSchema } from "@/modules/field-spotting/field-spotting.schema";
 import { createFieldSpotting, findFieldSpottings } from "@/modules/field-spotting";
 
-export async function GET() {
+const DEFAULT_PER_PAGE = 50;
+const MAX_PER_PAGE = 200;
+
+export async function GET(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
@@ -13,9 +16,16 @@ export async function GET() {
     if (!hasPermission(session.role, "field_spotting", "read")) {
       return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
     }
-    const { items } = await findFieldSpottings({}, 1, 500);
-    return NextResponse.json({ items });
-  } catch {
+
+    const url = request.nextUrl;
+    const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+    const perPageRaw = Number(url.searchParams.get("perPage")) || DEFAULT_PER_PAGE;
+    const perPage = Math.min(Math.max(perPageRaw, 1), MAX_PER_PAGE);
+
+    const result = await findFieldSpottings({}, page, perPage);
+    return NextResponse.json(result);
+  } catch (err) {
+    console.error("[field-spotting GET] error", err);
     return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }
 }

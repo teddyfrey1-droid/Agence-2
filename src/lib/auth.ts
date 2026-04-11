@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { UserRole } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET environment variable is required");
@@ -8,7 +9,10 @@ if (!process.env.JWT_SECRET) {
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 const COOKIE_NAME = "session";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
+// 1 day — short-lived session to limit the window where a revoked account
+// (isActive=false) can still use a pre-existing token. Clients refresh by
+// re-authenticating.
+const COOKIE_MAX_AGE = 60 * 60 * 24;
 
 export interface SessionPayload {
   userId: string;
@@ -54,6 +58,33 @@ export async function getSession(): Promise<SessionPayload | null> {
   } catch {
     return null;
   }
+}
+
+/**
+ * Session + live "isActive" check. Use this on sensitive endpoints (admin,
+ * write actions) to immediately reject users whose accounts have been
+ * deactivated, even if their JWT is still valid.
+ *
+ * Returns null if:
+ *   - no cookie / invalid JWT
+ *   - user no longer exists
+ *   - user.isActive is false
+ */
+export async function getActiveSession(): Promise<SessionPayload | null> {
+  const session = await getSession();
+  if (!session) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { isActive: true, role: true },
+  });
+  if (!user || !user.isActive) return null;
+
+  // If the role changed in DB, honour the DB value (defence-in-depth)
+  if (user.role !== session.role) {
+    return { ...session, role: user.role };
+  }
+  return session;
 }
 
 export async function destroySession(): Promise<void> {

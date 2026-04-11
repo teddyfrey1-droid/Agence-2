@@ -54,9 +54,9 @@ export async function findDealById(id: string) {
       assignedTo: true,
       propertyFoundBy: { select: { id: true, firstName: true, lastName: true } },
       dealClosedBy: { select: { id: true, firstName: true, lastName: true } },
-      tasks: { orderBy: { dueDate: "asc" } },
-      interactions: { orderBy: { date: "desc" } },
-      documents: { orderBy: { createdAt: "desc" } },
+      tasks: { orderBy: { dueDate: "asc" }, take: 50 },
+      interactions: { orderBy: { date: "desc" }, take: 50 },
+      documents: { orderBy: { createdAt: "desc" }, take: 50 },
     },
   });
 }

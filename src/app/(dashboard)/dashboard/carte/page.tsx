@@ -101,7 +101,7 @@ export default function CartePage() {
       try {
         const [propRes, spotRes] = await Promise.all([
           fetch("/api/properties?published=true"),
-          fetch("/api/field-spotting"),
+          fetch("/api/field-spotting?perPage=200"),
         ]);
         if (propRes.ok) {
           const data = await propRes.json();

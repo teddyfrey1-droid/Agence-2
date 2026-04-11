@@ -292,6 +292,9 @@ model Contact {
   events             Event[]
   propertyShares     PropertyShare[]
 
+  @@index([email])
+  @@index([type])
+  @@index([isActive])
   @@map("contacts")
 }
 
@@ -488,6 +491,9 @@ model SearchRequest {
   tasks      Task[]
   interactions Interaction[]
 
+  @@index([status])
+  @@index([assignedToId])
+  @@index([contactId])
   @@map("search_requests")
 }
 
@@ -643,6 +649,11 @@ model Match {
   searchRequest SearchRequest @relation(fields: [searchRequestId], references: [id], onDelete: Cascade)
 
   @@unique([propertyId, searchRequestId])
+  @@index([searchRequestId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([score])
+  @@index([searchRequestId, score])
   @@map("matches")
 }
 

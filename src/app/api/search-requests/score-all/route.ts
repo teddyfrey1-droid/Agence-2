@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 function calculateQualificationScore(searchRequest: {
@@ -38,34 +39,68 @@ function calculateQualificationScore(searchRequest: {
   return Math.min(score, 100);
 }
 
-export async function POST() {
+const DEFAULT_BATCH_SIZE = 100;
+const MAX_BATCH_SIZE = 500;
+
+export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const requests = await prisma.searchRequest.findMany({
+    if (!hasPermission(session.role, "search_request", "update")) {
+      return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+    }
+
+    // Optional pagination — loop over pages until done (or client-specified slice).
+    const body = await request.json().catch(() => ({}));
+    const rawBatch = Number(body?.batchSize);
+    const batchSize = Number.isFinite(rawBatch)
+      ? Math.min(Math.max(rawBatch, 1), MAX_BATCH_SIZE)
+      : DEFAULT_BATCH_SIZE;
+
+    const totalCount = await prisma.searchRequest.count({
       where: { status: { in: ["NOUVELLE", "QUALIFIEE", "EN_COURS"] } },
-      include: {
-        contact: { select: { company: true, phone: true, mobile: true, email: true } },
-        matches: { select: { id: true } },
-        interactions: { select: { id: true } },
-      },
     });
 
     let updated = 0;
-    for (const sr of requests) {
-      const score = calculateQualificationScore(sr);
-      await prisma.searchRequest.update({
-        where: { id: sr.id },
-        data: { qualificationScore: score },
+    let cursor: string | undefined = undefined;
+
+    while (true) {
+      const batch = await prisma.searchRequest.findMany({
+        where: { status: { in: ["NOUVELLE", "QUALIFIEE", "EN_COURS"] } },
+        include: {
+          contact: { select: { company: true, phone: true, mobile: true, email: true } },
+          matches: { select: { id: true }, take: 1 },
+          interactions: { select: { id: true }, take: 10 },
+        },
+        orderBy: { id: "asc" },
+        take: batchSize,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
       });
-      updated++;
+
+      if (batch.length === 0) break;
+
+      // Batch the updates in a single transaction per page
+      await prisma.$transaction(
+        batch.map((sr) =>
+          prisma.searchRequest.update({
+            where: { id: sr.id },
+            data: { qualificationScore: calculateQualificationScore(sr) },
+          })
+        )
+      );
+
+      updated += batch.length;
+      cursor = batch[batch.length - 1].id;
+
+      if (batch.length < batchSize) break;
     }
 
-    return NextResponse.json({ updated, total: requests.length });
-  } catch {
+    return NextResponse.json({ updated, total: totalCount });
+  } catch (err) {
+    console.error("[score-all] error:", err);
     return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }
 }

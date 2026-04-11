@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { publicSearchRequestSchema } from "@/modules/search-requests/search-requests.schema";
 import { handlePublicSearchRequestForm } from "@/modules/contacts";
 import { applyRateLimit, PUBLIC_FORM_RATE_LIMIT } from "@/lib/rate-limit";
+import { runMatchingForSearchRequest } from "@/modules/matching";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,11 +32,17 @@ export async function POST(request: NextRequest) {
       surfaceMax: parsed.data.surfaceMax ?? undefined,
     });
 
+    // Kick off matching for the fresh request (fire-and-forget)
+    runMatchingForSearchRequest(result.searchRequest.id).catch((err) =>
+      console.error("[search-requests/public] initial matching failed", err)
+    );
+
     return NextResponse.json(
       { success: true, requestId: result.searchRequest.id },
       { status: 201 }
     );
-  } catch {
+  } catch (err) {
+    console.error("[search-requests/public] error", err);
     return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }
 }

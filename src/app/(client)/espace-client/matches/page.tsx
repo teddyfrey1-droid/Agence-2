@@ -3,13 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatPrice, formatSurface, formatDate } from "@/lib/utils";
+import { formatPrice, formatSurface } from "@/lib/utils";
 import {
   PROPERTY_TYPE_LABELS,
   TRANSACTION_TYPE_LABELS,
   SEARCH_REQUEST_STATUS_LABELS,
 } from "@/lib/constants";
 import Link from "next/link";
+
+// Cap per search request so a user with a poorly-scoped request can't trigger
+// a page that renders hundreds of cards.
+const MATCHES_PER_REQUEST = 30;
 
 const MATCH_STATUS_LABELS: Record<string, string> = {
   SUGGERE: "Suggéré",
@@ -80,9 +84,12 @@ export default async function ClientMatchesPage() {
   const searchRequests = await prisma.searchRequest.findMany({
     where: {
       contact: { email: session.email },
+      status: { notIn: ["ABANDONNEE", "ARCHIVEE"] },
     },
     include: {
       matches: {
+        // Hide matches the user rejected / that the agent rejected
+        where: { status: { notIn: ["REJETE"] } },
         include: {
           property: {
             include: {
@@ -91,9 +98,12 @@ export default async function ClientMatchesPage() {
           },
         },
         orderBy: { score: "desc" },
+        take: MATCHES_PER_REQUEST,
       },
+      _count: { select: { matches: true } },
     },
     orderBy: { createdAt: "desc" },
+    take: 20,
   });
 
   const allMatches = searchRequests.flatMap((sr) =>

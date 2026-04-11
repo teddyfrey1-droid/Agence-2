@@ -223,7 +223,17 @@ export function getEffectivePermissions(
 }
 
 export function canAccessDashboard(role: UserRole): boolean {
-  return true;
+  // CLIENT role has a dedicated /espace-client portal and must not be able
+  // to reach the staff dashboard. Every other role can.
+  const dashboardRoles: UserRole[] = [
+    "SUPER_ADMIN",
+    "DIRIGEANT",
+    "ASSOCIE",
+    "MANAGER",
+    "AGENT",
+    "ASSISTANT",
+  ];
+  return dashboardRoles.includes(role);
 }
 
 export function canAccessAdmin(role: UserRole): boolean {

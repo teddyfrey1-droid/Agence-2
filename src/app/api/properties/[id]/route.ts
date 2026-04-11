@@ -3,6 +3,40 @@ import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { findPropertyById, updateProperty, deleteProperty } from "@/modules/properties";
 import { updatePropertySchema } from "@/modules/properties/properties.schema";
+import {
+  runMatchingForProperty,
+  cleanupMatchesForInactiveProperty,
+} from "@/modules/matching";
+
+// Property statuses that should NOT surface active matches.
+const NON_MATCHABLE_STATUSES = new Set([
+  "ARCHIVE",
+  "RETIRE",
+  "VENDU",
+  "LOUE",
+  "PRENEUR_TROUVE",
+  "SOUS_COMPROMIS",
+]);
+
+// Fields whose change should invalidate existing matches.
+const MATCH_RELEVANT_FIELDS = [
+  "type",
+  "transactionType",
+  "city",
+  "district",
+  "quarter",
+  "surfaceTotal",
+  "surfaceMin",
+  "surfaceMax",
+  "price",
+  "rentMonthly",
+  "rentYearly",
+  "hasExtraction",
+  "hasTerrace",
+  "hasParking",
+  "hasLoadingDock",
+  "status",
+] as const;
 
 export async function GET(
   _request: NextRequest,
@@ -48,9 +82,32 @@ export async function PATCH(
         { status: 400 }
       );
     }
+
+    // Did any matching-relevant field change? If so, we must re-run the matcher.
+    const shouldRematch = MATCH_RELEVANT_FIELDS.some(
+      (f) => (parsed.data as Record<string, unknown>)[f] !== undefined
+    );
+
     const property = await updateProperty(id, parsed.data as never);
+
+    if (shouldRematch) {
+      // Fire-and-forget: don't block the response, but catch errors so a
+      // failing matcher doesn't poison the API response.
+      const newStatus = (parsed.data as { status?: string }).status;
+      if (newStatus && NON_MATCHABLE_STATUSES.has(newStatus)) {
+        cleanupMatchesForInactiveProperty(id).catch((err) =>
+          console.error("[properties/:id] cleanup matches failed", err)
+        );
+      } else {
+        runMatchingForProperty(id).catch((err) =>
+          console.error("[properties/:id] re-matching failed", err)
+        );
+      }
+    }
+
     return NextResponse.json(property);
-  } catch {
+  } catch (err) {
+    console.error("[properties/:id] PATCH error", err);
     return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }
 }

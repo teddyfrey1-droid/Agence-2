@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { requireSupabase, STORAGE_BUCKET } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
+import { validateImageFile } from "@/lib/file-validation";
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -42,21 +43,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Type d'entité non supporté" }, { status: 400 });
     }
 
-    // Validate file type
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/heic"];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: "Type de fichier non supporté. Utilisez JPG, PNG ou WebP." }, { status: 400 });
-    }
-
     // Max 10MB
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json({ error: "Fichier trop volumineux (max 10 Mo)" }, { status: 400 });
     }
 
-    // Generate unique path
-    const ext = file.name.split(".").pop() || "jpg";
+    // Validate file type AND content (magic bytes) — prevents spoofed MIME types
+    const validation = await validateImageFile(file, ["jpeg", "png", "webp", "heic"]);
+    if (!validation.ok) {
+      return NextResponse.json({ error: validation.error }, { status: 400 });
+    }
+
+    // Generate unique path using the detected kind (not the user-supplied name)
+    const extByKind: Record<string, string> = {
+      jpeg: "jpg",
+      png: "png",
+      webp: "webp",
+      heic: "heic",
+      gif: "gif",
+    };
+    const ext = extByKind[validation.kind] || "bin";
     const timestamp = Date.now();
-    const path = `${entityType}/${entityId}/${timestamp}.${ext}`;
+    const random = Math.random().toString(36).slice(2, 10);
+    const path = `${entityType}/${entityId}/${timestamp}-${random}.${ext}`;
 
     // Upload to Supabase Storage
     const storage = requireSupabase();

@@ -46,7 +46,7 @@ export default function PipelinePage() {
         const res = await fetch("/api/deals/kanban");
         if (res.ok) {
           const data = await res.json();
-          setDeals(data);
+          setDeals(Array.isArray(data) ? data : data.deals ?? []);
         }
       } catch { /* */ }
       finally { setLoading(false); }
@@ -66,7 +66,10 @@ export default function PipelinePage() {
     } catch {
       // Revert on error - refetch
       const res = await fetch("/api/deals/kanban");
-      if (res.ok) setDeals(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        setDeals(Array.isArray(data) ? data : data.deals ?? []);
+      }
     }
   }
 
