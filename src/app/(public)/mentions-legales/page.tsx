@@ -1,13 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
+import { getAgencyInfo, orPlaceholder } from "@/lib/agency";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
   description: "Mentions légales du site " + APP_NAME + ".",
 };
 
-export default function MentionsLegalesPage() {
+export default async function MentionsLegalesPage() {
+  const agency = await getAgencyInfo();
+  const displayName = agency.name || APP_NAME;
+  const addressLine = [agency.address, agency.zipCode, agency.city]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <section className="section-padding bg-white dark:bg-anthracite-950">
       <div className="container-page max-w-4xl">
@@ -25,45 +34,82 @@ export default function MentionsLegalesPage() {
           <article>
             <h2 className="heading-section">Éditeur du site</h2>
             <p className="mt-4 leading-relaxed">
-              Le présent site est édité par {APP_NAME}, société dont les
+              Le présent site est édité par {displayName}, société dont les
               coordonnées sont les suivantes&nbsp;:
             </p>
             <ul className="mt-4 list-none space-y-2">
               <li>
-                <strong>Dénomination sociale&nbsp;:</strong> {APP_NAME}
+                <strong>Dénomination sociale&nbsp;:</strong>{" "}
+                {orPlaceholder(agency.legalName ?? agency.name)}
               </li>
               <li>
-                <strong>Forme juridique&nbsp;:</strong> SAS
+                <strong>Forme juridique&nbsp;:</strong>{" "}
+                {orPlaceholder(agency.legalForm)}
               </li>
               <li>
-                <strong>Siège social&nbsp;:</strong> Paris, France
+                <strong>Siège social&nbsp;:</strong>{" "}
+                {addressLine.length > 0 ? addressLine : "à compléter"}
               </li>
               <li>
-                <strong>Capital social&nbsp;:</strong> à compléter
+                <strong>Capital social&nbsp;:</strong>{" "}
+                {orPlaceholder(agency.capitalSocial)}
               </li>
               <li>
-                <strong>RCS&nbsp;:</strong> à compléter
+                <strong>RCS&nbsp;:</strong> {orPlaceholder(agency.rcs)}
               </li>
               <li>
-                <strong>SIRET&nbsp;:</strong> à compléter
+                <strong>SIRET&nbsp;:</strong> {orPlaceholder(agency.siret)}
               </li>
               <li>
-                <strong>N° TVA intracommunautaire&nbsp;:</strong> à compléter
+                <strong>Code APE / NAF&nbsp;:</strong>{" "}
+                {orPlaceholder(agency.apeCode)}
               </li>
               <li>
-                <strong>Téléphone&nbsp;:</strong> 01 00 00 00 00
+                <strong>N° TVA intracommunautaire&nbsp;:</strong>{" "}
+                {orPlaceholder(agency.tvaNumber)}
+              </li>
+              <li>
+                <strong>Téléphone&nbsp;:</strong>{" "}
+                {agency.phone ? (
+                  <a
+                    href={"tel:" + agency.phone.replace(/\s+/g, "")}
+                    className="text-brand-600 underline hover:text-brand-700"
+                  >
+                    {agency.phone}
+                  </a>
+                ) : (
+                  "à compléter"
+                )}
               </li>
               <li>
                 <strong>Courriel&nbsp;:</strong>{" "}
-                <a
-                  href="mailto:contact@retailavenue.fr"
-                  className="text-brand-600 underline hover:text-brand-700"
-                >
-                  contact@retailavenue.fr
-                </a>
+                {agency.email ? (
+                  <a
+                    href={"mailto:" + agency.email}
+                    className="text-brand-600 underline hover:text-brand-700"
+                  >
+                    {agency.email}
+                  </a>
+                ) : (
+                  "à compléter"
+                )}
               </li>
+              {agency.website && (
+                <li>
+                  <strong>Site web&nbsp;:</strong>{" "}
+                  <a
+                    href={agency.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-brand-600 underline hover:text-brand-700"
+                  >
+                    {agency.website}
+                  </a>
+                </li>
+              )}
               <li>
-                <strong>Directeur de la publication&nbsp;:</strong> à compléter
+                <strong>Directeur de la publication&nbsp;:</strong>{" "}
+                {orPlaceholder(agency.publicationDirector)}
               </li>
             </ul>
           </article>
@@ -73,23 +119,30 @@ export default function MentionsLegalesPage() {
               Carte professionnelle et activité réglementée
             </h2>
             <p className="mt-4 leading-relaxed">
-              {APP_NAME} exerce l&apos;activité de transaction sur immeubles et
-              fonds de commerce en application de la loi n° 70-9 du 2 janvier
+              {displayName} exerce l&apos;activité de transaction sur immeubles
+              et fonds de commerce en application de la loi n° 70-9 du 2 janvier
               1970 (loi Hoguet) et de son décret d&apos;application n° 72-678 du
               20 juillet 1972.
             </p>
             <ul className="mt-4 list-none space-y-2">
               <li>
-                <strong>Carte professionnelle n°&nbsp;:</strong> à compléter
+                <strong>Carte professionnelle n°&nbsp;:</strong>{" "}
+                {orPlaceholder(agency.professionalCardNumber)}
               </li>
               <li>
-                <strong>Délivrée par&nbsp;:</strong> CCI de Paris Île-de-France
+                <strong>Délivrée par&nbsp;:</strong>{" "}
+                {orPlaceholder(
+                  agency.professionalCardAuthority ??
+                    "CCI de Paris Île-de-France"
+                )}
               </li>
               <li>
-                <strong>Garantie financière&nbsp;:</strong> à compléter
+                <strong>Garantie financière&nbsp;:</strong>{" "}
+                {orPlaceholder(agency.financialGuarantee)}
               </li>
               <li>
-                <strong>Assurance RC professionnelle&nbsp;:</strong> à compléter
+                <strong>Assurance RC professionnelle&nbsp;:</strong>{" "}
+                {orPlaceholder(agency.professionalInsurance)}
               </li>
             </ul>
           </article>
@@ -127,26 +180,27 @@ export default function MentionsLegalesPage() {
               L&apos;ensemble des éléments du site (textes, photographies,
               illustrations, graphismes, logos, marques, structure, code) est
               protégé par le droit de la propriété intellectuelle et est la
-              propriété exclusive de {APP_NAME} ou de ses partenaires.
+              propriété exclusive de {displayName} ou de ses partenaires.
             </p>
             <p className="mt-4 leading-relaxed">
               Toute reproduction, représentation, modification, publication ou
-              adaptation de tout ou partie des éléments du site, quel que soit le
-              moyen ou le procédé utilisé, est interdite sans autorisation écrite
-              préalable de {APP_NAME}.
+              adaptation de tout ou partie des éléments du site, quel que soit
+              le moyen ou le procédé utilisé, est interdite sans autorisation
+              écrite préalable de {displayName}.
             </p>
           </article>
 
           <article>
             <h2 className="heading-section">Responsabilité</h2>
             <p className="mt-4 leading-relaxed">
-              {APP_NAME} s&apos;efforce d&apos;assurer au mieux de ses possibilités
-              l&apos;exactitude et la mise à jour des informations diffusées sur
-              le site. Toutefois, {APP_NAME} ne peut garantir l&apos;exactitude,
-              la précision ou l&apos;exhaustivité des informations mises à
-              disposition. En conséquence, {APP_NAME} décline toute responsabilité
-              pour toute imprécision, inexactitude ou omission portant sur des
-              informations disponibles sur le site.
+              {displayName} s&apos;efforce d&apos;assurer au mieux de ses
+              possibilités l&apos;exactitude et la mise à jour des informations
+              diffusées sur le site. Toutefois, {displayName} ne peut garantir
+              l&apos;exactitude, la précision ou l&apos;exhaustivité des
+              informations mises à disposition. En conséquence, {displayName}
+              {" "}décline toute responsabilité pour toute imprécision,
+              inexactitude ou omission portant sur des informations disponibles
+              sur le site.
             </p>
           </article>
 
@@ -154,7 +208,7 @@ export default function MentionsLegalesPage() {
             <h2 className="heading-section">Liens hypertextes</h2>
             <p className="mt-4 leading-relaxed">
               Le site peut contenir des liens hypertextes vers d&apos;autres
-              sites. {APP_NAME} n&apos;exerce aucun contrôle sur ces sites et
+              sites. {displayName} n&apos;exerce aucun contrôle sur ces sites et
               décline toute responsabilité quant à leur contenu.
             </p>
           </article>

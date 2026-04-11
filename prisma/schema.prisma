@@ -185,6 +185,21 @@ model Agency {
   website     String?
   logo        String?
   description String?
+
+  // Legal / publication information
+  legalForm            String?
+  capitalSocial        String?
+  rcs                  String?
+  tvaNumber            String?
+  apeCode              String?
+  professionalCardNumber String?
+  professionalCardAuthority String?
+  financialGuarantee   String?
+  professionalInsurance String?
+  publicationDirector  String?
+  mediator             String?
+  dpoContact           String?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

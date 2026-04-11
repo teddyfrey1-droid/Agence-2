@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
+import { getAgencyInfo } from "@/lib/agency";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
@@ -8,7 +11,15 @@ export const metadata: Metadata = {
     "Politique de protection des données personnelles de " + APP_NAME + ".",
 };
 
-export default function PolitiqueConfidentialitePage() {
+export default async function PolitiqueConfidentialitePage() {
+  const agency = await getAgencyInfo();
+  const displayName = agency.name || APP_NAME;
+  const addressLine = [agency.address, agency.zipCode, agency.city]
+    .filter(Boolean)
+    .join(" ");
+  const contactEmail =
+    agency.dpoContact || agency.email || "contact@retailavenue.fr";
+
   return (
     <section className="section-padding bg-white dark:bg-anthracite-950">
       <div className="container-page max-w-4xl">
@@ -28,7 +39,7 @@ export default function PolitiqueConfidentialitePage() {
           <article>
             <h2 className="heading-section">1. Introduction</h2>
             <p className="mt-4 leading-relaxed">
-              {APP_NAME} attache une importance particulière à la protection de
+              {displayName} attache une importance particulière à la protection de
               vos données personnelles et au respect de votre vie privée. La
               présente politique de confidentialité a pour objet de vous
               informer, de manière claire et transparente, sur la manière dont
@@ -46,18 +57,22 @@ export default function PolitiqueConfidentialitePage() {
             </p>
             <ul className="mt-4 list-none space-y-2">
               <li>
-                <strong>{APP_NAME}</strong>
+                <strong>{displayName}</strong>
               </li>
-              <li>Adresse&nbsp;: Paris, France</li>
+              <li>
+                Adresse&nbsp;:{" "}
+                {addressLine.length > 0 ? addressLine : "Paris, France"}
+              </li>
               <li>
                 Courriel&nbsp;:{" "}
                 <a
-                  href="mailto:contact@retailavenue.fr"
+                  href={"mailto:" + contactEmail}
                   className="text-brand-600 underline hover:text-brand-700"
                 >
-                  contact@retailavenue.fr
+                  {contactEmail}
                 </a>
               </li>
+              {agency.phone && <li>Téléphone&nbsp;: {agency.phone}</li>}
             </ul>
           </article>
 
@@ -159,7 +174,7 @@ export default function PolitiqueConfidentialitePage() {
           <article>
             <h2 className="heading-section">5. Destinataires des données</h2>
             <p className="mt-4 leading-relaxed">
-              Vos données sont destinées au personnel habilité de {APP_NAME}
+              Vos données sont destinées au personnel habilité de {displayName}
               chargé de traiter votre demande. Elles peuvent également être
               transmises à&nbsp;:
             </p>
@@ -188,7 +203,7 @@ export default function PolitiqueConfidentialitePage() {
             <h2 className="heading-section">6. Transfert hors de l&apos;Union européenne</h2>
             <p className="mt-4 leading-relaxed">
               Certains de nos prestataires peuvent être situés en dehors de
-              l&apos;Espace économique européen. Dans ce cas, {APP_NAME}
+              l&apos;Espace économique européen. Dans ce cas, {displayName}
               s&apos;assure que le transfert est encadré par des garanties
               appropriées&nbsp;: décision d&apos;adéquation de la Commission
               européenne ou clauses contractuelles types.
@@ -198,7 +213,7 @@ export default function PolitiqueConfidentialitePage() {
           <article>
             <h2 className="heading-section">7. Sécurité</h2>
             <p className="mt-4 leading-relaxed">
-              {APP_NAME} met en œuvre des mesures techniques et organisationnelles
+              {displayName} met en œuvre des mesures techniques et organisationnelles
               appropriées afin de protéger vos données contre toute destruction,
               perte, altération, divulgation ou accès non autorisé&nbsp;:
               chiffrement des communications (HTTPS), contrôle des accès,
@@ -254,10 +269,10 @@ export default function PolitiqueConfidentialitePage() {
             <p className="mt-4 leading-relaxed">
               Vous pouvez exercer ces droits en adressant un courriel à{" "}
               <a
-                href="mailto:contact@retailavenue.fr"
+                href={"mailto:" + contactEmail}
                 className="text-brand-600 underline hover:text-brand-700"
               >
-                contact@retailavenue.fr
+                {contactEmail}
               </a>{" "}
               ou un courrier postal à notre adresse. Une preuve d&apos;identité
               pourra vous être demandée en cas de doute raisonnable sur votre
@@ -293,7 +308,7 @@ export default function PolitiqueConfidentialitePage() {
           <article>
             <h2 className="heading-section">10. Modification de la politique</h2>
             <p className="mt-4 leading-relaxed">
-              {APP_NAME} se réserve le droit de modifier à tout moment la
+              {displayName} se réserve le droit de modifier à tout moment la
               présente politique de confidentialité afin de l&apos;adapter aux
               évolutions légales, réglementaires, jurisprudentielles et
               techniques. La date de la dernière mise à jour figure en haut de

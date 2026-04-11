@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
 import { CookiePreferencesButton } from "@/components/cookie-preferences-button";
+import { getAgencyInfo } from "@/lib/agency";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Politique cookies",
@@ -11,7 +14,12 @@ export const metadata: Metadata = {
     ".",
 };
 
-export default function PolitiqueCookiesPage() {
+export default async function PolitiqueCookiesPage() {
+  const agency = await getAgencyInfo();
+  const displayName = agency.name || APP_NAME;
+  const contactEmail =
+    agency.dpoContact || agency.email || "contact@retailavenue.fr";
+
   return (
     <section className="section-padding bg-white dark:bg-anthracite-950">
       <div className="container-page max-w-4xl">
@@ -36,7 +44,7 @@ export default function PolitiqueCookiesPage() {
               statistiques de visite, etc.).
             </p>
             <p className="mt-4 leading-relaxed">
-              {APP_NAME} utilise des cookies conformément aux recommandations de
+              {displayName} utilise des cookies conformément aux recommandations de
               la Commission Nationale de l&apos;Informatique et des Libertés
               (CNIL) et à la directive ePrivacy.
             </p>
@@ -207,10 +215,10 @@ export default function PolitiqueCookiesPage() {
               </Link>{" "}
               ou nous contacter à{" "}
               <a
-                href="mailto:contact@retailavenue.fr"
+                href={"mailto:" + contactEmail}
                 className="text-brand-600 underline hover:text-brand-700"
               >
-                contact@retailavenue.fr
+                {contactEmail}
               </a>
               .
             </p>

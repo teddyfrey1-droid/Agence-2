@@ -2,8 +2,17 @@ import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
 import { Logo } from "@/components/ui/logo";
 import { FooterCookieLink } from "@/components/footer-cookie-link";
+import { getAgencyInfo } from "@/lib/agency";
 
-export function PublicFooter() {
+export async function PublicFooter() {
+  const agency = await getAgencyInfo();
+  const displayName = agency.name || APP_NAME;
+  const phone = agency.phone || "01 00 00 00 00";
+  const email = agency.email || "contact@retailavenue.fr";
+  const location =
+    [agency.city, "Île-de-France"].filter(Boolean).join(" & ") ||
+    "Paris & Île-de-France";
+
   return (
     <footer className="border-t border-stone-800 bg-anthracite-950 text-stone-300">
       <div className="mx-auto max-w-7xl px-6 py-16">
@@ -76,19 +85,29 @@ export function PublicFooter() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
                 </svg>
-                <span>Paris &amp; Île-de-France</span>
+                <span>{location}</span>
               </div>
               <div className="flex items-start gap-2.5">
                 <svg className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                 </svg>
-                <span>contact@retailavenue.fr</span>
+                <a
+                  href={"mailto:" + email}
+                  className="hover:text-white transition-colors"
+                >
+                  {email}
+                </a>
               </div>
               <div className="flex items-start gap-2.5">
                 <svg className="mt-0.5 h-4 w-4 shrink-0 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
                 </svg>
-                <span>01 00 00 00 00</span>
+                <a
+                  href={"tel:" + phone.replace(/\s+/g, "")}
+                  className="hover:text-white transition-colors"
+                >
+                  {phone}
+                </a>
               </div>
             </div>
           </div>
@@ -96,7 +115,8 @@ export function PublicFooter() {
 
         <div className="mt-12 flex flex-col items-center gap-4 border-t border-stone-800/80 pt-8 sm:flex-row sm:justify-between">
           <p className="text-xs text-stone-500">
-            &copy; {new Date().getFullYear()} {APP_NAME}. Tous droits réservés.
+            &copy; {new Date().getFullYear()} {displayName}. Tous droits
+            réservés.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-stone-500">
             <Link href="/mentions-legales" className="transition-colors hover:text-stone-300">

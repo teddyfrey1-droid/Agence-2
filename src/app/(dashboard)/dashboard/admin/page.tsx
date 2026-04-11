@@ -3,6 +3,12 @@ import { Card } from "@/components/ui/card";
 
 const adminSections = [
   {
+    title: "Informations de l'agence",
+    description: "SIRET, coordonnées, carte professionnelle, mentions légales et publication.",
+    href: "/dashboard/admin/agence",
+    icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
+  },
+  {
     title: "Utilisateurs",
     description: "Créer, modifier, inviter et gérer les comptes utilisateurs.",
     href: "/dashboard/admin/utilisateurs",

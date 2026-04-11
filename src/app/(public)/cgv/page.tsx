@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
+import { getAgencyInfo } from "@/lib/agency";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Conditions Générales de Vente",
@@ -8,7 +11,11 @@ export const metadata: Metadata = {
     "Conditions Générales de Vente et de Services de " + APP_NAME + ".",
 };
 
-export default function CGVPage() {
+export default async function CGVPage() {
+  const agency = await getAgencyInfo();
+  const displayName = agency.name || APP_NAME;
+  const contactEmail = agency.email || "contact@retailavenue.fr";
+
   return (
     <section className="section-padding bg-white dark:bg-anthracite-950">
       <div className="container-page max-w-4xl">
@@ -30,7 +37,7 @@ export default function CGVPage() {
             <p className="mt-4 leading-relaxed">
               Les présentes Conditions Générales de Vente (ci-après «&nbsp;CGV&nbsp;»)
               s&apos;appliquent, sans restriction ni réserve, à l&apos;ensemble des
-              prestations de services proposées par {APP_NAME} (ci-après «&nbsp;l&apos;Agence&nbsp;»)
+              prestations de services proposées par {displayName} (ci-après «&nbsp;l&apos;Agence&nbsp;»)
               dans le cadre de son activité de conseil, d&apos;intermédiation et de
               transaction en immobilier commercial et professionnel à Paris et en
               Île-de-France.
@@ -208,11 +215,19 @@ export default function CGVPage() {
           <article>
             <h2 className="heading-section">Article 12 — Médiation</h2>
             <p className="mt-4 leading-relaxed">
-              Conformément à l&apos;article L.612-1 du Code de la consommation, en
-              cas de litige n&apos;ayant pu être résolu à l&apos;amiable, le Client
-              consommateur peut recourir gratuitement au service de médiation de la
-              consommation. Les coordonnées du médiateur compétent seront
-              communiquées sur simple demande.
+              Conformément à l&apos;article L.612-1 du Code de la consommation,
+              en cas de litige n&apos;ayant pu être résolu à l&apos;amiable, le
+              Client consommateur peut recourir gratuitement au service de
+              médiation de la consommation.
+              {agency.mediator ? (
+                <>
+                  {" "}
+                  Le médiateur compétent est&nbsp;:{" "}
+                  <strong>{agency.mediator}</strong>.
+                </>
+              ) : (
+                <> Les coordonnées du médiateur compétent seront communiquées sur simple demande.</>
+              )}
             </p>
           </article>
 
@@ -235,10 +250,10 @@ export default function CGVPage() {
               Pour toute question relative aux présentes CGV, le Client peut
               adresser un courriel à{" "}
               <a
-                href="mailto:contact@retailavenue.fr"
+                href={"mailto:" + contactEmail}
                 className="text-brand-600 underline hover:text-brand-700"
               >
-                contact@retailavenue.fr
+                {contactEmail}
               </a>{" "}
               ou nous contacter via la page{" "}
               <Link
