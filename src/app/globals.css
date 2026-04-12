@@ -87,6 +87,38 @@
     @apply bg-white/80 backdrop-blur-lg dark:bg-anthracite-900/80;
   }
 
+  /* ── Luxury editorial utilities ── */
+
+  /* Eyebrow label — small caps, letter-spaced, brand color */
+  .label-overline {
+    @apply font-sans text-[10px] font-semibold tracking-[0.45em] uppercase text-brand-600;
+  }
+
+  /* Thin horizontal rule in brand bronze */
+  .rule-brand {
+    @apply block h-px w-8 bg-brand-400;
+  }
+
+  /* Thin horizontal rule in champagne/gold */
+  .rule-gold {
+    @apply block h-px w-12 bg-champagne-400;
+  }
+
+  /* Vertical breathing line (decorative) */
+  .line-vertical {
+    @apply block w-px bg-brand-300 mx-auto;
+  }
+
+  /* Property card — editorial variant (no border-radius, clean lines) */
+  .card-editorial {
+    @apply overflow-hidden bg-white transition-shadow duration-500 hover:shadow-premium;
+  }
+
+  /* Nav link — luxury minimal */
+  .nav-luxury {
+    @apply font-sans text-[11px] tracking-[0.2em] uppercase text-stone-500 transition-colors duration-300 hover:text-anthracite-900 dark:text-stone-400 dark:hover:text-stone-100;
+  }
+
   /* Score ring animation */
   @keyframes score-fill {
     from { stroke-dashoffset: 283; }
@@ -170,4 +202,60 @@
     background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.05) 50%, transparent 75%);
     background-size: 200% 100%;
   }
+
+  /* ── Luxury entrance animations ── */
+
+  /* Slow reveal from below — for hero headlines */
+  @keyframes reveal-up {
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Pure opacity fade — for eyebrow labels & sub-lines */
+  @keyframes reveal-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* Thin line draw — for decorative rules */
+  @keyframes line-draw {
+    from { transform: scaleX(0); transform-origin: left; }
+    to   { transform: scaleX(1); transform-origin: left; }
+  }
+
+  /* Scroll breathing indicator */
+  @keyframes scroll-breath {
+    0%, 100% { opacity: 0.4; transform: translateY(0); }
+    50%       { opacity: 0.9; transform: translateY(6px); }
+  }
+
+  .animate-reveal-up {
+    animation: reveal-up 1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .animate-reveal-fade {
+    animation: reveal-fade 1.4s ease-out both;
+  }
+
+  .animate-line-draw {
+    animation: line-draw 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .animate-scroll-breath {
+    animation: scroll-breath 2.4s ease-in-out infinite;
+  }
+
+  /* Staggered delay helpers */
+  .delay-150  { animation-delay: 150ms; }
+  .delay-300  { animation-delay: 300ms; }
+  .delay-500  { animation-delay: 500ms; }
+  .delay-700  { animation-delay: 700ms; }
+  .delay-900  { animation-delay: 900ms; }
+  .delay-1100 { animation-delay: 1100ms; }
 }
