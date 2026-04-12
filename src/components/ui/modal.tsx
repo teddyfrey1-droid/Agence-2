@@ -54,12 +54,12 @@ export function Modal({
       }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/50 animate-fade-in" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in dark:bg-black/60" />
 
       {/* Content */}
       <div
         className={cn(
-          "relative w-full rounded-2xl bg-white shadow-2xl animate-scale-in dark:bg-anthracite-900",
+          "relative w-full rounded-2xl bg-white shadow-2xl animate-scale-in dark:bg-anthracite-900 dark:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)] dark:ring-1 dark:ring-white/5",
           sizes[size],
           className
         )}

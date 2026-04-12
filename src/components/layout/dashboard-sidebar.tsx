@@ -122,7 +122,7 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
           <Logo size="sm" />
           <button
             onClick={close}
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 lg:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-anthracite-800 dark:hover:text-stone-300 lg:hidden"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
