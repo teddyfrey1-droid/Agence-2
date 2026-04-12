@@ -6,7 +6,7 @@ import { sendWelcomeEmail } from "@/lib/email";
 
 const schema = z.object({
   token: z.string().min(1, "Token requis"),
-  password: z.string().min(6, "6 caractères minimum"),
+  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
 });
 
 export async function POST(request: NextRequest) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { createPropertySchema } from "@/modules/properties/properties.schema";
 import { createNewProperty, findProperties } from "@/modules/properties";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       return res;
     }
 
-    const session = await getSession();
+    const session = await getActiveSession();
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getActiveSession();
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }

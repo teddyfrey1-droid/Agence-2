@@ -116,8 +116,8 @@ function CreateUserModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.sendInvitation && form.password.length < 6) {
-      setError("Mot de passe de 6 caractères minimum requis si pas d'invitation");
+    if (!form.sendInvitation && form.password.length < 8) {
+      setError("Mot de passe de 8 caractères minimum requis si pas d'invitation");
       return;
     }
     setLoading(true);
@@ -226,11 +226,11 @@ function CreateUserModal({
                 <input
                   type="password"
                   required={!form.sendInvitation}
-                  minLength={6}
+                  minLength={8}
                   value={form.password}
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className={inputClass}
-                  placeholder="6 caractères minimum"
+                  placeholder="8 caractères minimum"
                 />
               </div>
             )}
@@ -384,7 +384,7 @@ function EditUserModal({
             <label className="block text-sm font-medium text-anthracite-700 mb-1">
               Nouveau mot de passe <span className="text-stone-400 font-normal">(laisser vide pour ne pas changer)</span>
             </label>
-            <input type="password" minLength={6} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} placeholder="6 caractères minimum" />
+            <input type="password" minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} placeholder="8 caractères minimum" />
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

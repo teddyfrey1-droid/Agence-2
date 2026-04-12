@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/auth";
 
 // Default notification settings seed
 const DEFAULT_SETTINGS = [
@@ -27,7 +27,7 @@ const DEFAULT_SETTINGS = [
 ];
 
 export async function GET() {
-  const session = await getSession();
+  const session = await getActiveSession();
   if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
   let settings = await prisma.notificationSetting.findMany({
@@ -51,7 +51,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-  const session = await getSession();
+  const session = await getActiveSession();
   if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   if (!["SUPER_ADMIN", "DIRIGEANT"].includes(session.role)) {
     return NextResponse.json({ error: "Permissions insuffisantes" }, { status: 403 });

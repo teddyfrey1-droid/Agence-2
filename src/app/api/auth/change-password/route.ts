@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hash, compare } from "bcryptjs";
 
 const schema = z.object({
   currentPassword: z.string().min(1, "Mot de passe actuel requis"),
-  newPassword: z.string().min(6, "6 caractères minimum"),
+  newPassword: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères"),
 });
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getActiveSession();
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }

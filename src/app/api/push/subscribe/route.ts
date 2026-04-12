@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const subscribeSchema = z.object({
@@ -14,7 +14,7 @@ const subscribeSchema = z.object({
 // POST /api/push/subscribe — save a push subscription
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getActiveSession();
     if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
     const body = await request.json();
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 // DELETE /api/push/subscribe — remove a push subscription
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getActiveSession();
     if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
     const body = await request.json();

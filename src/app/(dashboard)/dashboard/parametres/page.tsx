@@ -25,8 +25,8 @@ export default function ParametresPage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères");
+    if (newPassword.length < 8) {
+      setError("Le mot de passe doit contenir au moins 8 caractères");
       return;
     }
 
@@ -104,11 +104,11 @@ export default function ParametresPage() {
             <input
               type="password"
               required
-              minLength={6}
+              minLength={8}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               className={inputClass}
-              placeholder="6 caractères minimum"
+              placeholder="8 caractères minimum"
               autoComplete="new-password"
             />
           </div>
@@ -120,7 +120,7 @@ export default function ParametresPage() {
             <input
               type="password"
               required
-              minLength={6}
+              minLength={8}
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className={inputClass}

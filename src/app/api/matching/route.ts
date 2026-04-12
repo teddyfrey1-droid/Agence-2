@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { runMatchingForProperty, runMatchingForSearchRequest } from "@/modules/matching";
 
@@ -15,7 +15,7 @@ const matchingSchema = z
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getActiveSession();
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }

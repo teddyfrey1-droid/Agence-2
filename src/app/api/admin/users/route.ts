@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
@@ -9,7 +9,7 @@ import { sendInvitationEmail } from "@/lib/email";
 
 const createUserSchema = z.object({
   email: z.string().email("Email invalide"),
-  password: z.string().min(6, "6 caractères minimum").optional(),
+  password: z.string().min(8, "Le mot de passe doit contenir au moins 8 caractères").optional(),
   firstName: z.string().min(1, "Prénom requis"),
   lastName: z.string().min(1, "Nom requis"),
   phone: z.string().optional(),
@@ -20,7 +20,7 @@ const createUserSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getActiveSession();
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }

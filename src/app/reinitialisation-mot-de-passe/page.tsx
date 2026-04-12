@@ -78,8 +78,8 @@ function ResetPasswordForm() {
           type="password"
           label="Nouveau mot de passe"
           required
-          minLength={6}
-          placeholder="6 caractères minimum"
+          minLength={8}
+          placeholder="8 caractères minimum"
           autoComplete="new-password"
         />
         <Input
@@ -88,7 +88,7 @@ function ResetPasswordForm() {
           type="password"
           label="Confirmer le mot de passe"
           required
-          minLength={6}
+          minLength={8}
           placeholder="Répétez le mot de passe"
           autoComplete="new-password"
         />

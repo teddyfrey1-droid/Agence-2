@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { requireSupabase, STORAGE_BUCKET } from "@/lib/supabase";
 import { prisma } from "@/lib/prisma";
@@ -8,7 +8,7 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getSession();
+  const session = await getActiveSession();
   if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   if (!hasPermission(session.role, "field_spotting", "update")) {
     return NextResponse.json({ error: "Permission refusée" }, { status: 403 });

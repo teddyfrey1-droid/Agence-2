@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth";
+import { getActiveSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { createDealSchema } from "@/modules/deals/deals.schema";
 import { createDeal } from "@/modules/deals";
@@ -7,7 +7,7 @@ import { generateReference } from "@/lib/utils";
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession();
+    const session = await getActiveSession();
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
