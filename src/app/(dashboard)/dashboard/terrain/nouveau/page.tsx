@@ -2,6 +2,7 @@
 
 import { useState, useRef, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/hooks";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -117,6 +118,8 @@ export default function NouveauTerrainPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  useUnsavedChanges(isDirty && !isSubmitting);
   const [transactionType, setTransactionType] = useState<string>("");
   const [addressData, setAddressData] = useState({ city: "Paris", zipCode: "", district: "", address: "" });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -216,7 +219,7 @@ export default function NouveauTerrainPage() {
         <p className="text-sm text-stone-500 dark:text-stone-400">Repérez un local directement depuis le terrain.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} onChange={() => setIsDirty(true)} className="space-y-5">
         {error && (
           <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-800/30 dark:bg-red-900/20 dark:text-red-400">
             <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

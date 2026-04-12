@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect, type FormEvent, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useUnsavedChanges } from "@/lib/hooks";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
@@ -349,6 +350,10 @@ export default function NouveauBienPage() {
   const { addToast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
+  // Warn user before leaving page with unsaved data
+  useUnsavedChanges(isDirty && !isSubmitting);
 
   // Form state
   const [propertyType, setPropertyType] = useState("");
@@ -509,7 +514,7 @@ export default function NouveauBienPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} onChange={() => setIsDirty(true)} className="space-y-6">
         {error && (
           <div className="rounded-premium border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}

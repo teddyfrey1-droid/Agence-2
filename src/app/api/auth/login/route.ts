@@ -13,7 +13,7 @@ const loginSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Rate limit: 5 attempts per 15 minutes per IP
-    const rateLimited = applyRateLimit("auth-login", request.headers, LOGIN_RATE_LIMIT);
+    const rateLimited = await applyRateLimit("auth-login", request.headers, LOGIN_RATE_LIMIT);
     if (rateLimited) return rateLimited;
 
     const body = await request.json();

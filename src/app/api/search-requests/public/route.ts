@@ -7,7 +7,7 @@ import { runMatchingForSearchRequest } from "@/modules/matching";
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting: 5 submissions per minute per IP
-    const rateLimited = applyRateLimit("search-requests-public", request.headers, PUBLIC_FORM_RATE_LIMIT);
+    const rateLimited = await applyRateLimit("search-requests-public", request.headers, PUBLIC_FORM_RATE_LIMIT);
     if (rateLimited) return rateLimited;
 
     const body = await request.json();

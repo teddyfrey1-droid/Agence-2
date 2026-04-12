@@ -1,54 +1,33 @@
 /**
- * Rate limiter with LRU-eviction and sliding window.
+ * Rate limiter with pluggable backend.
  *
- * Limitations of in-memory rate limiting (serverless / multi-instance):
- * - State is per-process; a cold start resets all counters.
- * - Multiple instances each have independent stores.
+ * **In production**, set the following environment variables to use Redis
+ * (Upstash) for cross-instance, serverless-safe rate limiting:
  *
- * For production with high-scale requirements, replace the `store` below
- * with a Redis-backed implementation (e.g. Upstash @upstash/ratelimit).
+ *   UPSTASH_REDIS_REST_URL=https://your-instance.upstash.io
+ *   UPSTASH_REDIS_REST_TOKEN=AXxxxxxxxxxxxx
  *
- * This implementation mitigates the worst issues of the previous version:
- * - LRU eviction prevents unbounded memory growth
- * - Failed login tracking with exponential backoff
- * - Helper to create standardized 429 responses
+ * Then install the package:  npm install @upstash/redis
+ *
+ * When the env vars are missing (dev / preview), an in-memory fallback is
+ * used.  The in-memory store is per-process and resets on cold starts, so it
+ * does NOT provide real protection in serverless environments.
+ *
+ * ---
+ * Features:
+ * - LRU eviction prevents unbounded memory growth (in-memory mode)
+ * - Preset configs for login, registration, password reset, public forms
+ * - Standardized 429 response builder with Retry-After headers
  */
 
 import { NextResponse } from "next/server";
 
-// ─── Store ──────────────────────────────────────────────────────────
+// ─── Store interface ──────────────────────────────────────────────
 
 interface RateLimitEntry {
   count: number;
   resetAt: number;
 }
-
-const MAX_STORE_SIZE = 10_000;
-const store = new Map<string, RateLimitEntry>();
-
-// LRU eviction: when store exceeds max, remove the oldest 20%
-function evictIfNeeded() {
-  if (store.size <= MAX_STORE_SIZE) return;
-  const toRemove = Math.floor(MAX_STORE_SIZE * 0.2);
-  const iterator = store.keys();
-  for (let i = 0; i < toRemove; i++) {
-    const { value, done } = iterator.next();
-    if (done) break;
-    store.delete(value);
-  }
-}
-
-// Cleanup expired entries every 60 seconds
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of store) {
-    if (now > entry.resetAt) {
-      store.delete(key);
-    }
-  }
-}, 60_000);
-
-// ─── Public API ────────────────────────────────────────────────────
 
 export interface RateLimitConfig {
   /** Max requests allowed in the window */
@@ -63,7 +42,102 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
-export function checkRateLimit(
+// ─── Redis Store (Upstash) ────────────────────────────────────────
+
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const useRedis = !!(UPSTASH_URL && UPSTASH_TOKEN);
+
+/**
+ * Lightweight Upstash Redis REST client — avoids importing @upstash/redis
+ * so the package is truly optional.  Uses a sliding-window counter stored
+ * as a single key with a TTL equal to the rate-limit window.
+ */
+async function redisCheckRateLimit(
+  identifier: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  const key = `rl:${identifier}`;
+  const now = Date.now();
+
+  // INCR + conditional EXPIRE in a pipeline
+  const pipeline = [
+    ["INCR", key],
+    ["PTTL", key],
+  ];
+
+  const res = await fetch(`${UPSTASH_URL}/pipeline`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${UPSTASH_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(pipeline),
+  });
+
+  if (!res.ok) {
+    // Redis unreachable — fail open (allow the request)
+    console.error("[RATE-LIMIT] Upstash error:", res.status);
+    return { allowed: true, remaining: config.maxRequests - 1, resetAt: now + config.windowSeconds * 1000 };
+  }
+
+  const results = (await res.json()) as { result: number }[];
+  const count = results[0].result;
+  const pttl = results[1].result;
+
+  // If key is new (count === 1) or has no TTL, set the expiry
+  if (count === 1 || pttl < 0) {
+    await fetch(`${UPSTASH_URL}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${UPSTASH_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(["PEXPIRE", key, String(config.windowSeconds * 1000)]),
+    });
+  }
+
+  const resetAt = now + (pttl > 0 ? pttl : config.windowSeconds * 1000);
+  const allowed = count <= config.maxRequests;
+
+  return {
+    allowed,
+    remaining: Math.max(0, config.maxRequests - count),
+    resetAt,
+  };
+}
+
+// ─── In-memory Store (fallback) ───────────────────────────────────
+
+const MAX_STORE_SIZE = 10_000;
+const store = new Map<string, RateLimitEntry>();
+
+function evictIfNeeded() {
+  if (store.size <= MAX_STORE_SIZE) return;
+  const toRemove = Math.floor(MAX_STORE_SIZE * 0.2);
+  const iterator = store.keys();
+  for (let i = 0; i < toRemove; i++) {
+    const { value, done } = iterator.next();
+    if (done) break;
+    store.delete(value);
+  }
+}
+
+// Cleanup expired entries periodically (only in long-lived processes)
+if (typeof globalThis !== "undefined") {
+  const CLEANUP_INTERVAL = 60_000;
+  const globalStore = globalThis as unknown as { __rateLimitCleanup?: ReturnType<typeof setInterval> };
+  if (!globalStore.__rateLimitCleanup) {
+    globalStore.__rateLimitCleanup = setInterval(() => {
+      const now = Date.now();
+      for (const [key, entry] of store) {
+        if (now > entry.resetAt) store.delete(key);
+      }
+    }, CLEANUP_INTERVAL);
+  }
+}
+
+function memoryCheckRateLimit(
   identifier: string,
   config: RateLimitConfig
 ): RateLimitResult {
@@ -71,7 +145,6 @@ export function checkRateLimit(
   const entry = store.get(identifier);
 
   if (!entry || now > entry.resetAt) {
-    // New window
     evictIfNeeded();
     const resetAt = now + config.windowSeconds * 1000;
     store.set(identifier, { count: 1, resetAt });
@@ -88,6 +161,18 @@ export function checkRateLimit(
     remaining: config.maxRequests - entry.count,
     resetAt: entry.resetAt,
   };
+}
+
+// ─── Unified check ────────────────────────────────────────────────
+
+export async function checkRateLimit(
+  identifier: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  if (useRedis) {
+    return redisCheckRateLimit(identifier, config);
+  }
+  return memoryCheckRateLimit(identifier, config);
 }
 
 // ─── Preset configurations ────────────────────────────────────────
@@ -140,13 +225,13 @@ export function getClientIp(headers: Headers): string {
  * Apply rate limiting and return a 429 response if exceeded.
  * Returns null if the request is allowed.
  */
-export function applyRateLimit(
+export async function applyRateLimit(
   prefix: string,
   headers: Headers,
   config: RateLimitConfig
-): NextResponse | null {
+): Promise<NextResponse | null> {
   const ip = getClientIp(headers);
-  const result = checkRateLimit(`${prefix}:${ip}`, config);
+  const result = await checkRateLimit(`${prefix}:${ip}`, config);
 
   if (!result.allowed) {
     const retryAfter = Math.ceil((result.resetAt - Date.now()) / 1000);

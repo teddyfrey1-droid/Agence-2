@@ -6,7 +6,7 @@ import { applyRateLimit, PUBLIC_FORM_RATE_LIMIT } from "@/lib/rate-limit";
 export async function POST(request: NextRequest) {
   try {
     // Rate limiting: 5 submissions per minute per IP
-    const rateLimited = applyRateLimit("contacts-public", request.headers, PUBLIC_FORM_RATE_LIMIT);
+    const rateLimited = await applyRateLimit("contacts-public", request.headers, PUBLIC_FORM_RATE_LIMIT);
     if (rateLimited) return rateLimited;
 
     const body = await request.json();
