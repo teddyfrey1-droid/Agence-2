@@ -3,62 +3,13 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatSurface } from "@/lib/utils";
 import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
-
-/* ─────────────────────────────────────────
-   DATA — static copy arrays
-───────────────────────────────────────── */
-
-const services = [
-  {
-    num: "01",
-    title: "Location Commerciale",
-    description:
-      "Des adresses sélectionnées avec soin, de la boutique de quartier au flagship parisien. Nous identifions le local qui fera l'histoire de votre activité.",
-  },
-  {
-    num: "02",
-    title: "Vente de Murs",
-    description:
-      "Acquérir des murs commerciaux, c'est inscrire son patrimoine dans la durée. Nous guidons chaque investissement avec rigueur et discernement.",
-  },
-  {
-    num: "03",
-    title: "Fonds de Commerce",
-    description:
-      "Restaurants, enseignes, commerces de proximité — nous orchestrons chaque cession et acquisition avec la précision qu'elle mérite.",
-  },
-  {
-    num: "04",
-    title: "Conseil & Expertise",
-    description:
-      "Notre lecture fine du marché parisien, quartier par quartier, vous donne l'avantage décisif pour négocier, valoriser et sécuriser.",
-  },
-];
-
-const stats = [
-  { value: "6+",   line1: "Années",       line2: "d'excellence"    },
-  { value: "120+", line1: "Transactions", line2: "réalisées"       },
-  { value: "20",   line1: "Arrondissements",line2: "couverts"      },
-  { value: "98%",  line1: "Clients",      line2: "satisfaits"      },
-];
-
-const commitments = [
-  {
-    title: "Expertise Locale",
-    description:
-      "Une connaissance fine du marché parisien, quartier par quartier, pour identifier les meilleures opportunités avant qu'elles ne paraissent.",
-  },
-  {
-    title: "Accompagnement Dédié",
-    description:
-      "Un interlocuteur unique, disponible et attentif, qui suit votre projet de A à Z — de la première visite à la signature définitive.",
-  },
-  {
-    title: "Réseau Qualifié",
-    description:
-      "Un portefeuille d'offres exclusives et un réseau de décideurs pour concrétiser rapidement les projets les plus ambitieux.",
-  },
-];
+import {
+  HERO_CONTENT,
+  MANIFESTE_CONTENT,
+  SELECTION_CONTENT,
+  SAVOIR_FAIRE_CONTENT,
+  CONTACT_CONTENT,
+} from "@/lib/homepage-content";
 
 /* ─────────────────────────────────────────
    PAGE
@@ -80,8 +31,8 @@ export default async function HomePage() {
     <>
       {/* ══════════════════════════════════════════════
           § 1 — HERO
-          Full-viewport entrance. Photograph + poetic
-          headline + single refined CTA.
+          Full-viewport entrance. All text must read
+          clearly over the Paris photograph.
       ══════════════════════════════════════════════ */}
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden">
 
@@ -95,48 +46,65 @@ export default async function HomePage() {
           quality={90}
         />
 
-        {/* Gradient veil — top-to-bottom */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/25 to-black/65" />
-        {/* Subtle side vignette for depth */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(0,0,0,0.35)_100%)]" />
+        {/* Primary gradient veil — strengthened for text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/40 to-black/80" />
+        {/* Secondary centre-glow — focuses the eye on content */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_50%_50%,rgba(0,0,0,0.15)_0%,rgba(0,0,0,0.45)_100%)]" />
 
         {/* ── Central content ── */}
         <div className="relative z-10 w-full max-w-4xl px-6 text-center">
 
-          {/* Eyebrow — location marker */}
-          <p className="animate-reveal-fade font-sans text-[10px] tracking-[0.55em] uppercase text-champagne-300">
-            Paris &amp; Île-de-France &nbsp;·&nbsp; Depuis 2018
+          {/* Eyebrow — location / identity marker */}
+          <p
+            className="animate-reveal-fade font-sans text-[10px] tracking-[0.55em] uppercase text-champagne-300"
+            style={{ textShadow: "0 1px 12px rgba(0,0,0,0.9)" }}
+          >
+            {HERO_CONTENT.eyebrow}
           </p>
 
           {/* Main headline */}
-          <h1 className="animate-reveal-up delay-150 mt-7 font-serif text-5xl font-normal italic leading-[1.05] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl">
-            L&apos;immobilier
+          <h1
+            className="animate-reveal-up delay-150 mt-7 font-serif text-5xl font-normal italic leading-[1.05] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl"
+            style={{ textShadow: "0 2px 32px rgba(0,0,0,0.6)" }}
+          >
+            {HERO_CONTENT.headline1}
             <br />
-            <em className="not-italic font-semibold">d&apos;exception</em>
+            <em className="not-italic font-semibold">{HERO_CONTENT.headline2}</em>
           </h1>
 
-          {/* Decorative rule */}
+          {/* Decorative gold rule */}
           <div className="animate-reveal-fade delay-500 mx-auto mt-9 h-px w-14 bg-champagne-400" />
 
-          {/* Sub-line */}
-          <p className="animate-reveal-up delay-500 mx-auto mt-8 max-w-sm font-sans text-sm leading-loose tracking-wide text-stone-300">
-            Des adresses confidentielles, sélectionnées avec discernement<br className="hidden sm:block" />
-            pour une clientèle qui n&apos;accepte pas le compromis.
+          {/* Sub-line — qualitative, not secret */}
+          <p
+            className="animate-reveal-up delay-500 mx-auto mt-8 max-w-sm font-sans text-sm leading-loose tracking-wide text-stone-200"
+            style={{ textShadow: "0 1px 16px rgba(0,0,0,0.85)" }}
+          >
+            {HERO_CONTENT.tagline.split("\n").map((line, i) => (
+              <span key={i}>
+                {line}
+                {i < HERO_CONTENT.tagline.split("\n").length - 1 && (
+                  <br className="hidden sm:block" />
+                )}
+              </span>
+            ))}
           </p>
 
           {/* CTAs */}
           <div className="animate-reveal-up delay-700 mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
               href="/biens"
-              className="inline-flex items-center gap-3 border border-white/50 px-10 py-4 font-sans text-[11px] tracking-[0.3em] uppercase text-white transition-all duration-500 hover:border-white hover:bg-white/10"
+              className="inline-flex items-center gap-3 border border-white/70 bg-white/5 px-10 py-4 font-sans text-[11px] tracking-[0.3em] uppercase text-white backdrop-blur-sm transition-all duration-500 hover:border-white hover:bg-white/15"
+              style={{ textShadow: "none" }}
             >
-              Découvrir la sélection
+              {HERO_CONTENT.cta_primary}
             </Link>
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 font-sans text-[11px] tracking-[0.25em] uppercase text-champagne-300 transition-colors duration-300 hover:text-champagne-200"
+              className="inline-flex items-center gap-2 font-sans text-[11px] tracking-[0.25em] uppercase text-champagne-200 transition-colors duration-300 hover:text-champagne-100"
+              style={{ textShadow: "0 1px 10px rgba(0,0,0,0.8)" }}
             >
-              Prendre contact
+              {HERO_CONTENT.cta_secondary}
               <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                 <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
               </svg>
@@ -145,9 +113,14 @@ export default async function HomePage() {
         </div>
 
         {/* ── Scroll indicator ── */}
-        <div className="animate-scroll-breath absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
-          <span className="font-sans text-[9px] tracking-[0.4em] uppercase text-white/50">Défiler</span>
-          <div className="h-12 w-px bg-gradient-to-b from-white/50 to-transparent" />
+        <div
+          className="animate-scroll-breath absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3"
+          style={{ textShadow: "0 1px 8px rgba(0,0,0,0.9)" }}
+        >
+          <span className="font-sans text-[9px] tracking-[0.4em] uppercase text-white/70">
+            {HERO_CONTENT.scroll_label}
+          </span>
+          <div className="h-12 w-px bg-gradient-to-b from-white/60 to-transparent" />
         </div>
       </section>
 
@@ -155,37 +128,37 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           § 2 — MANIFESTE
           Editorial pull-quote, key figures, trois
-          engagements fondamentaux.
+          piliers d'engagement.
       ══════════════════════════════════════════════ */}
-      <section className="bg-white py-32 sm:py-40">
+      <section className="bg-white py-32 sm:py-40 dark:bg-anthracite-950">
         <div className="mx-auto max-w-6xl px-6">
 
           {/* Pull-quote block */}
           <div className="text-center">
-            {/* Breathing vertical line */}
             <div className="line-vertical mx-auto mb-16 h-20" />
 
-            <p className="font-serif text-4xl font-normal italic leading-tight text-anthracite-900 sm:text-5xl lg:text-6xl dark:text-stone-100">
-              Nous ne cherchons pas<br />
-              l&apos;emplacement idéal.
-            </p>
+            {MANIFESTE_CONTENT.quote_italic.split("\n").map((line, i) => (
+              <p
+                key={i}
+                className="font-serif text-4xl font-normal italic leading-tight text-anthracite-900 sm:text-5xl lg:text-6xl dark:text-stone-100"
+              >
+                {line}
+              </p>
+            ))}
             <p className="mt-4 font-serif text-4xl font-semibold leading-tight text-anthracite-900 sm:text-5xl lg:text-6xl dark:text-stone-100">
-              Nous le révélons.
+              {MANIFESTE_CONTENT.quote_bold}
             </p>
 
             <div className="rule-gold mx-auto mt-10" />
 
             <p className="mx-auto mt-10 max-w-xl font-sans text-sm leading-loose text-stone-500 dark:text-stone-400">
-              Depuis 2018, notre agence accompagne une clientèle d&apos;exception dans
-              ses projets immobiliers commerciaux à Paris et Île-de-France.
-              Chaque mandat reçoit une attention singulière, chaque client
-              mérite une réponse sur-mesure.
+              {MANIFESTE_CONTENT.description}
             </p>
           </div>
 
           {/* Stats row */}
           <div className="mt-28 grid grid-cols-2 border-t border-stone-200 md:grid-cols-4 dark:border-stone-800">
-            {stats.map((stat, i) => (
+            {MANIFESTE_CONTENT.stats.map((stat, i) => (
               <div
                 key={stat.line1}
                 className={`px-4 py-12 text-center ${
@@ -204,9 +177,9 @@ export default async function HomePage() {
             ))}
           </div>
 
-          {/* Commitments */}
+          {/* Commitment pillars */}
           <div className="mt-24 grid grid-cols-1 gap-14 border-t border-stone-200 pt-20 md:grid-cols-3 dark:border-stone-800">
-            {commitments.map((item) => (
+            {MANIFESTE_CONTENT.commitments.map((item) => (
               <div key={item.title}>
                 <h3 className="font-serif text-xl font-semibold text-anthracite-900 dark:text-stone-100">
                   {item.title}
@@ -225,8 +198,8 @@ export default async function HomePage() {
 
       {/* ══════════════════════════════════════════════
           § 3 — SÉLECTION EXCLUSIVE
-          Editorial property grid. Asymmetric layout:
-          one hero card + two secondary + four smaller.
+          Asymmetric editorial grid. Hero card (21:9),
+          two secondaries, four tertiary.
       ══════════════════════════════════════════════ */}
       {featuredProperties.length > 0 && (
         <section className="bg-brand-50 py-24 sm:py-32 dark:bg-anthracite-950">
@@ -237,24 +210,24 @@ export default async function HomePage() {
               <div>
                 <div className="flex items-center gap-4">
                   <span className="rule-brand" />
-                  <p className="label-overline">Sélection Exclusive</p>
+                  <p className="label-overline">{SELECTION_CONTENT.overline}</p>
                 </div>
                 <h2 className="mt-5 font-serif text-4xl font-normal text-anthracite-900 sm:text-5xl dark:text-stone-100">
-                  Biens d&apos;exception
+                  {SELECTION_CONTENT.title}
                 </h2>
               </div>
               <Link
                 href="/biens"
                 className="hidden items-center gap-2 font-sans text-[10px] tracking-[0.25em] uppercase text-brand-600 transition-colors hover:text-brand-800 sm:inline-flex dark:text-brand-400 dark:hover:text-brand-200"
               >
-                Voir tout
+                {SELECTION_CONTENT.cta_label}
                 <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                   <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
                 </svg>
               </Link>
             </div>
 
-            {/* ── Hero card — spans full width ── */}
+            {/* ── Hero card — full width ── */}
             {hero && (
               <Link href={`/biens/${hero.id}`} className="group mb-5 block">
                 <div className="relative overflow-hidden bg-stone-200 dark:bg-anthracite-900" style={{ aspectRatio: "21/9" }}>
@@ -271,9 +244,7 @@ export default async function HomePage() {
                       </svg>
                     </div>
                   )}
-                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
-                  {/* Info overlay */}
                   <div className="absolute bottom-0 left-0 p-8 sm:p-14">
                     <span className="font-sans text-[9px] tracking-[0.4em] uppercase text-champagne-300">
                       {PROPERTY_TYPE_LABELS[hero.type] ?? hero.type}
@@ -282,12 +253,8 @@ export default async function HomePage() {
                       {hero.title}
                     </h3>
                     <div className="mt-4 flex flex-wrap items-center gap-5 font-sans text-xs text-stone-300">
-                      {hero.surfaceTotal && (
-                        <span>{formatSurface(hero.surfaceTotal)}</span>
-                      )}
-                      {(hero.district ?? hero.city) && (
-                        <span>{hero.district ?? hero.city}</span>
-                      )}
+                      {hero.surfaceTotal && <span>{formatSurface(hero.surfaceTotal)}</span>}
+                      {(hero.district ?? hero.city) && <span>{hero.district ?? hero.city}</span>}
                       <span className="font-semibold text-white">
                         {hero.transactionType === "LOCATION"
                           ? `${formatPrice(hero.rentMonthly)} / mois`
@@ -337,7 +304,7 @@ export default async function HomePage() {
               </div>
             )}
 
-            {/* ── Tertiary grid — smaller cards with caption below image ── */}
+            {/* ── Tertiary grid — four small cards with caption below ── */}
             {tertiary.length > 0 && (
               <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
                 {tertiary.map((property) => (
@@ -354,7 +321,6 @@ export default async function HomePage() {
                       )}
                     </div>
                     <div className="mt-3 px-0.5">
-                      {/* Type badge */}
                       <p className="font-sans text-[9px] tracking-[0.3em] uppercase text-brand-500 dark:text-brand-400">
                         {PROPERTY_TYPE_LABELS[property.type] ?? property.type}
                       </p>
@@ -381,10 +347,7 @@ export default async function HomePage() {
 
             {/* Mobile — see all */}
             <div className="mt-10 text-center sm:hidden">
-              <Link
-                href="/biens"
-                className="font-sans text-[10px] tracking-[0.3em] uppercase text-brand-600 dark:text-brand-400"
-              >
+              <Link href="/biens" className="font-sans text-[10px] tracking-[0.3em] uppercase text-brand-600 dark:text-brand-400">
                 Voir toute la sélection →
               </Link>
             </div>
@@ -396,38 +359,34 @@ export default async function HomePage() {
 
       {/* ══════════════════════════════════════════════
           § 4 — SAVOIR-FAIRE
-          Four disciplines, numbered in bronze.
-          No icons — pure typography & hierarchy.
+          Four disciplines, numbered 01–04 in bronze.
+          No icons — pure typographic hierarchy.
       ══════════════════════════════════════════════ */}
       <section className="bg-white py-24 sm:py-32 dark:bg-anthracite-950">
         <div className="mx-auto max-w-7xl px-6">
 
-          {/* Section header */}
           <div className="mb-20">
             <div className="flex items-center gap-4">
               <span className="rule-brand" />
-              <p className="label-overline">Nos Savoir-Faire</p>
+              <p className="label-overline">{SAVOIR_FAIRE_CONTENT.overline}</p>
             </div>
             <h2 className="mt-5 max-w-xl font-serif text-4xl font-normal text-anthracite-900 sm:text-5xl dark:text-stone-100">
-              Un accompagnement<br />
-              de haute précision
+              {SAVOIR_FAIRE_CONTENT.title_line1}
+              <br />
+              {SAVOIR_FAIRE_CONTENT.title_line2}
             </h2>
           </div>
 
-          {/* Four disciplines */}
           <div className="grid grid-cols-1 border-t border-stone-200 sm:grid-cols-2 lg:grid-cols-4 dark:border-stone-800">
-            {services.map((service, i) => (
+            {SAVOIR_FAIRE_CONTENT.services.map((service, i) => (
               <div
                 key={service.title}
                 className={`py-12 pr-6 ${
-                  i > 0
-                    ? "sm:pl-8 sm:border-l border-stone-200 dark:border-stone-800"
-                    : ""
+                  i > 0 ? "sm:pl-8 sm:border-l border-stone-200 dark:border-stone-800" : ""
                 }`}
               >
-                {/* Bronze ordinal */}
-                <p className="font-serif text-6xl font-normal leading-none text-stone-150 dark:text-anthracite-800"
-                   style={{ color: "#e8dfd2" }}>
+                {/* Bronze ordinal number */}
+                <p className="font-serif text-6xl font-normal leading-none" style={{ color: "#e8dfd2" }}>
                   {service.num}
                 </p>
                 <h3 className="mt-7 font-serif text-xl font-semibold text-anthracite-900 dark:text-stone-100">
@@ -441,13 +400,12 @@ export default async function HomePage() {
             ))}
           </div>
 
-          {/* Link to services page */}
           <div className="mt-16 border-t border-stone-200 pt-10 dark:border-stone-800">
             <Link
               href="/agence"
               className="inline-flex items-center gap-3 font-sans text-[10px] tracking-[0.3em] uppercase text-anthracite-700 transition-colors hover:text-brand-600 dark:text-stone-400 dark:hover:text-brand-400"
             >
-              En savoir plus sur nos services
+              {SAVOIR_FAIRE_CONTENT.more_cta}
               <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                 <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
               </svg>
@@ -460,23 +418,21 @@ export default async function HomePage() {
 
       {/* ══════════════════════════════════════════════
           § 5 — PRISE DE CONTACT
-          Dark section. Dramatic typography.
-          A conversation — not a form.
+          Dark section. Large editorial headline.
+          An invitation, not a form.
       ══════════════════════════════════════════════ */}
       <section className="relative overflow-hidden bg-anthracite-950 py-40 sm:py-48">
 
-        {/* Subtle dot grid texture */}
+        {/* Dot grid texture */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.04]"
           style={{
-            backgroundImage:
-              "radial-gradient(circle at 1px 1px, #d4b87a 1px, transparent 0)",
+            backgroundImage: "radial-gradient(circle at 1px 1px, #d4b87a 1px, transparent 0)",
             backgroundSize: "28px 28px",
           }}
         />
-
-        {/* Warm glow, off-center */}
+        {/* Warm radial glow */}
         <div
           aria-hidden
           className="pointer-events-none absolute -top-40 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full blur-3xl"
@@ -486,62 +442,59 @@ export default async function HomePage() {
         <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
 
           <p className="font-sans text-[10px] tracking-[0.55em] uppercase text-champagne-400">
-            Contact Privé
+            {CONTACT_CONTENT.overline}
           </p>
 
-          {/* Headline */}
           <h2 className="mt-10 font-serif text-5xl font-normal italic leading-tight text-white sm:text-6xl lg:text-7xl">
-            Une conversation
+            {CONTACT_CONTENT.headline_italic}
             <br />
             <em className="not-italic font-semibold text-champagne-300">
-              discrète et sur-mesure
+              {CONTACT_CONTENT.headline_bold}
             </em>
           </h2>
 
           <div className="rule-gold mx-auto mt-10" />
 
           <p className="mx-auto mt-10 max-w-lg font-sans text-sm leading-loose text-stone-400">
-            Chaque projet mérite une attention singulière. Notre équipe vous répond
-            avec la discrétion et l&apos;excellence qui vous sont dues — sous 24 heures.
+            {CONTACT_CONTENT.description}
           </p>
 
-          {/* CTAs */}
           <div className="mt-14 flex flex-col items-center justify-center gap-5 sm:flex-row">
             <Link
               href="/contact"
               className="inline-flex items-center bg-champagne-500 px-12 py-4 font-sans text-[11px] tracking-[0.3em] uppercase text-anthracite-900 transition-colors duration-300 hover:bg-champagne-400"
             >
-              Prendre Contact
+              {CONTACT_CONTENT.cta_primary}
             </Link>
             <Link
               href="/biens"
               className="inline-flex items-center gap-2 font-sans text-[11px] tracking-[0.25em] uppercase text-stone-400 transition-colors duration-300 hover:text-white"
             >
-              Parcourir la sélection
+              {CONTACT_CONTENT.cta_secondary}
               <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                 <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
               </svg>
             </Link>
           </div>
 
-          {/* Divider + contact info */}
-          <div className="mt-20 border-t border-white/10 pt-12 text-stone-500">
-            <p className="font-sans text-[10px] tracking-[0.3em] uppercase">
-              Ou contactez-nous directement
+          {/* Direct contact details */}
+          <div className="mt-20 border-t border-white/10 pt-12">
+            <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-stone-500">
+              {CONTACT_CONTENT.contact_overline}
             </p>
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-10">
               <Link
-                href="tel:+33100000000"
+                href={CONTACT_CONTENT.phone_href}
                 className="font-sans text-sm text-stone-400 transition-colors hover:text-white"
               >
-                +33 (0)1 00 00 00 00
+                {CONTACT_CONTENT.phone}
               </Link>
               <span className="hidden h-px w-4 bg-stone-700 sm:block" />
               <Link
-                href="mailto:contact@retailavenue.fr"
+                href={CONTACT_CONTENT.email_href}
                 className="font-sans text-sm text-stone-400 transition-colors hover:text-white"
               >
-                contact@retailavenue.fr
+                {CONTACT_CONTENT.email}
               </Link>
             </div>
           </div>
