@@ -64,6 +64,14 @@ const config: Config = {
         },
       },
       fontFamily: {
+        /* display — luxury editorial headlines (maps to CSS var set by next/font, falls back to Georgia) */
+        display: [
+          "var(--font-display, Georgia)",
+          "Georgia",
+          "Cambria",
+          "Times New Roman",
+          "serif",
+        ],
         serif: ["Georgia", "Cambria", "Times New Roman", "serif"],
         sans: [
           "Inter",
