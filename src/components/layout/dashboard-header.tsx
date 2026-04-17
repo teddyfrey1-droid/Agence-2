@@ -21,7 +21,7 @@ export function DashboardHeader({
         <div className="flex items-center gap-3">
           <button
             onClick={toggle}
-            className="flex h-11 w-11 items-center justify-center rounded-xl text-stone-500 hover:bg-stone-100 hover:text-stone-700 active:bg-stone-200 lg:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-stone-500 hover:bg-stone-100 hover:text-stone-700 active:bg-stone-200 dark:text-stone-400 dark:hover:bg-anthracite-800 dark:hover:text-stone-200 lg:hidden"
             aria-label="Ouvrir le menu"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
