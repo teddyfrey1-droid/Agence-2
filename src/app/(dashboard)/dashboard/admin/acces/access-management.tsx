@@ -214,22 +214,22 @@ function PermissionGrid({
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-stone-200">
-            <th className="px-3 py-2 text-left font-medium text-stone-500 sticky left-0 bg-white min-w-[120px]">Ressource</th>
+          <tr className="border-b border-stone-200 dark:border-anthracite-800">
+            <th className="px-3 py-2 text-left font-medium text-stone-500 sticky left-0 bg-white min-w-[120px] dark:bg-anthracite-900 dark:text-stone-400">Ressource</th>
             {Object.entries(ACTION_LABELS).map(([action, label]) => (
-              <th key={action} className="px-2 py-2 text-center font-medium text-stone-500 min-w-[60px]">
+              <th key={action} className="px-2 py-2 text-center font-medium text-stone-500 min-w-[60px] dark:text-stone-400">
                 <span className="text-[10px] leading-tight">{label}</span>
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-stone-100">
+        <tbody className="divide-y divide-stone-100 dark:divide-anthracite-800">
           {ALL_RESOURCES.map((resource) => {
             const relevantActions = RESOURCE_ACTIONS[resource];
             const resourcePerms = permissions[resource] || [];
             return (
-              <tr key={resource} className="hover:bg-stone-50/50">
-                <td className="px-3 py-2 font-medium text-anthracite-700 sticky left-0 bg-white text-sm">
+              <tr key={resource} className="hover:bg-stone-50/50 dark:hover:bg-anthracite-800/40">
+                <td className="px-3 py-2 font-medium text-anthracite-700 sticky left-0 bg-white text-sm dark:bg-anthracite-900 dark:text-stone-200">
                   {RESOURCE_LABELS[resource]}
                 </td>
                 {(Object.keys(ACTION_LABELS) as Action[]).map((action) => {
@@ -244,8 +244,8 @@ function PermissionGrid({
                           onClick={() => onChange?.(resource, action, !isEnabled)}
                           className={`inline-flex h-6 w-6 items-center justify-center rounded-md transition-all ${
                             isEnabled
-                              ? "bg-emerald-500 text-white shadow-sm"
-                              : "bg-stone-100 text-stone-400 hover:bg-stone-200"
+                              ? "bg-emerald-500 text-white shadow-sm dark:bg-emerald-600"
+                              : "bg-stone-100 text-stone-400 hover:bg-stone-200 dark:bg-anthracite-800 dark:text-stone-500 dark:hover:bg-anthracite-700"
                           } ${readOnly ? "cursor-default" : "cursor-pointer"}`}
                         >
                           {isEnabled ? (
@@ -259,7 +259,7 @@ function PermissionGrid({
                           )}
                         </button>
                       ) : (
-                        <span className="inline-block h-6 w-6 rounded-md bg-stone-50" />
+                        <span className="inline-block h-6 w-6 rounded-md bg-stone-50 dark:bg-anthracite-800/50" />
                       )}
                     </td>
                   );
@@ -357,19 +357,19 @@ function UserPermissionModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-5xl rounded-xl bg-white shadow-2xl max-h-[90vh] flex flex-col">
-        <div className="border-b border-stone-100 px-6 py-4 flex items-center justify-between flex-shrink-0">
+      <div className="w-full max-w-5xl rounded-xl bg-white shadow-2xl max-h-[90vh] flex flex-col dark:bg-anthracite-900 dark:ring-1 dark:ring-anthracite-800">
+        <div className="border-b border-stone-100 px-6 py-4 flex items-center justify-between flex-shrink-0 dark:border-anthracite-800">
           <div>
-            <h2 className="text-lg font-semibold text-anthracite-900">
+            <h2 className="text-lg font-semibold text-anthracite-900 dark:text-stone-100">
               Permissions — {user.firstName} {user.lastName}
             </h2>
-            <p className="text-sm text-stone-500 flex items-center gap-2 mt-0.5">
+            <p className="text-sm text-stone-500 flex items-center gap-2 mt-0.5 dark:text-stone-400">
               Rôle de base :
               <Badge variant={roleBadgeVariant(user.role)}>{ROLE_LABELS[user.role]}</Badge>
               {isCustom && <Badge variant="warning">Personnalisé</Badge>}
             </p>
           </div>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 transition-colors">
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 transition-colors dark:text-stone-500 dark:hover:text-stone-300">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -378,7 +378,7 @@ function UserPermissionModal({
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-stone-500">
+            <p className="text-sm text-stone-500 dark:text-stone-400">
               Cliquez sur les cases pour activer/désactiver les permissions. Les modifications sont indépendantes du rôle.
             </p>
             {isCustom && (
@@ -390,7 +390,7 @@ function UserPermissionModal({
           <PermissionGrid permissions={permissions} onChange={handleToggle} />
         </div>
 
-        <div className="border-t border-stone-100 px-6 py-4 flex justify-end gap-3 flex-shrink-0">
+        <div className="border-t border-stone-100 px-6 py-4 flex justify-end gap-3 flex-shrink-0 dark:border-anthracite-800">
           <Button variant="outline" onClick={onClose}>Annuler</Button>
           <Button onClick={handleSave} isLoading={loading}>Enregistrer</Button>
         </div>
@@ -425,16 +425,18 @@ export function AccessManagement({ users }: { users: UserWithPerms[] }) {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-anthracite-900">Gestion des accès</h1>
-        <p className="text-sm text-stone-500">Gérez les permissions par rôle et personnalisez par utilisateur.</p>
+        <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Gestion des accès</h1>
+        <p className="text-sm text-stone-500 dark:text-stone-400">Gérez les permissions par rôle et personnalisez par utilisateur.</p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-stone-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-stone-100 rounded-lg p-1 w-fit dark:bg-anthracite-800">
         <button
           onClick={() => setActiveTab("roles")}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === "roles" ? "bg-white text-anthracite-900 shadow-sm" : "text-stone-500 hover:text-stone-700"
+            activeTab === "roles"
+              ? "bg-white text-anthracite-900 shadow-sm dark:bg-anthracite-900 dark:text-stone-100"
+              : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
           }`}
         >
           Par rôle
@@ -442,7 +444,9 @@ export function AccessManagement({ users }: { users: UserWithPerms[] }) {
         <button
           onClick={() => setActiveTab("users")}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === "users" ? "bg-white text-anthracite-900 shadow-sm" : "text-stone-500 hover:text-stone-700"
+            activeTab === "users"
+              ? "bg-white text-anthracite-900 shadow-sm dark:bg-anthracite-900 dark:text-stone-100"
+              : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
           }`}
         >
           Par utilisateur
@@ -460,8 +464,8 @@ export function AccessManagement({ users }: { users: UserWithPerms[] }) {
                 onClick={() => setSelectedRole(role)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                   selectedRole === role
-                    ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm"
-                    : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
+                    ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm dark:border-brand-500 dark:bg-brand-900/30 dark:text-brand-300"
+                    : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50 dark:border-anthracite-700 dark:bg-anthracite-900 dark:text-stone-300 dark:hover:bg-anthracite-800"
                 }`}
               >
                 {ROLE_LABELS[role]}
@@ -471,13 +475,13 @@ export function AccessManagement({ users }: { users: UserWithPerms[] }) {
 
           {/* Role permissions grid (read-only) */}
           <Card className="overflow-hidden">
-            <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
+            <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50 dark:border-anthracite-800 dark:bg-anthracite-800/30">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium text-anthracite-800">
+                <h3 className="font-medium text-anthracite-800 dark:text-stone-200">
                   Permissions du rôle{" "}
                   <Badge variant={roleBadgeVariant(selectedRole)}>{ROLE_LABELS[selectedRole]}</Badge>
                 </h3>
-                <span className="text-xs text-stone-400">Lecture seule — les permissions par rôle sont définies dans le système</span>
+                <span className="text-xs text-stone-400 dark:text-stone-500">Lecture seule — les permissions par rôle sont définies dans le système</span>
               </div>
             </div>
             <PermissionGrid permissions={DEFAULT_PERMISSIONS[selectedRole] || {}} readOnly />
@@ -485,7 +489,7 @@ export function AccessManagement({ users }: { users: UserWithPerms[] }) {
 
           {/* Summary */}
           <Card className="p-4">
-            <h3 className="font-medium text-anthracite-800 mb-3">Résumé des rôles</h3>
+            <h3 className="font-medium text-anthracite-800 mb-3 dark:text-stone-200">Résumé des rôles</h3>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {ALL_ROLES.map((role) => {
                 const perms = DEFAULT_PERMISSIONS[role] || {};
@@ -497,15 +501,15 @@ export function AccessManagement({ users }: { users: UserWithPerms[] }) {
                     onClick={() => setSelectedRole(role)}
                     className={`text-left p-3 rounded-lg border transition-all ${
                       selectedRole === role
-                        ? "border-brand-500 bg-brand-50"
-                        : "border-stone-200 hover:bg-stone-50"
+                        ? "border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/30"
+                        : "border-stone-200 hover:bg-stone-50 dark:border-anthracite-700 dark:hover:bg-anthracite-800/50"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <Badge variant={roleBadgeVariant(role)}>{ROLE_LABELS[role]}</Badge>
-                      <span className="text-xs text-stone-400">{usersCount} utilisateur{usersCount !== 1 ? "s" : ""}</span>
+                      <span className="text-xs text-stone-400 dark:text-stone-500">{usersCount} utilisateur{usersCount !== 1 ? "s" : ""}</span>
                     </div>
-                    <p className="text-xs text-stone-500">{totalActions} permission{totalActions !== 1 ? "s" : ""}</p>
+                    <p className="text-xs text-stone-500 dark:text-stone-400">{totalActions} permission{totalActions !== 1 ? "s" : ""}</p>
                   </button>
                 );
               })}
@@ -520,21 +524,21 @@ export function AccessManagement({ users }: { users: UserWithPerms[] }) {
           {/* Users with custom permissions */}
           {usersWithCustomPerms.length > 0 && (
             <Card className="overflow-hidden">
-              <div className="px-4 py-3 border-b border-stone-100 bg-amber-50/50">
-                <h3 className="font-medium text-anthracite-800 flex items-center gap-2">
+              <div className="px-4 py-3 border-b border-stone-100 bg-amber-50/50 dark:border-anthracite-800 dark:bg-amber-900/10">
+                <h3 className="font-medium text-anthracite-800 flex items-center gap-2 dark:text-stone-200">
                   <svg className="h-4 w-4 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                   </svg>
                   Utilisateurs avec permissions personnalisées
                 </h3>
               </div>
-              <div className="divide-y divide-stone-100">
+              <div className="divide-y divide-stone-100 dark:divide-anthracite-800">
                 {usersWithCustomPerms.map((u) => (
-                  <div key={u.id} className="px-4 py-3 flex items-center justify-between hover:bg-stone-50 transition-colors">
+                  <div key={u.id} className="px-4 py-3 flex items-center justify-between hover:bg-stone-50 transition-colors dark:hover:bg-anthracite-800/40">
                     <div className="flex items-center gap-3">
                       <div>
-                        <p className="font-medium text-anthracite-800">{u.firstName} {u.lastName}</p>
-                        <p className="text-xs text-stone-500">{u.email}</p>
+                        <p className="font-medium text-anthracite-800 dark:text-stone-200">{u.firstName} {u.lastName}</p>
+                        <p className="text-xs text-stone-500 dark:text-stone-400">{u.email}</p>
                       </div>
                       <Badge variant={roleBadgeVariant(u.role)}>{ROLE_LABELS[u.role]}</Badge>
                       <Badge variant="warning">Personnalisé</Badge>
@@ -550,30 +554,30 @@ export function AccessManagement({ users }: { users: UserWithPerms[] }) {
 
           {/* All users list */}
           <Card className="overflow-hidden">
-            <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50">
-              <h3 className="font-medium text-anthracite-800">Tous les utilisateurs</h3>
-              <p className="text-xs text-stone-500">Cliquez sur un utilisateur pour personnaliser ses permissions</p>
+            <div className="px-4 py-3 border-b border-stone-100 bg-stone-50/50 dark:border-anthracite-800 dark:bg-anthracite-800/30">
+              <h3 className="font-medium text-anthracite-800 dark:text-stone-200">Tous les utilisateurs</h3>
+              <p className="text-xs text-stone-500 dark:text-stone-400">Cliquez sur un utilisateur pour personnaliser ses permissions</p>
             </div>
-            <div className="divide-y divide-stone-100">
+            <div className="divide-y divide-stone-100 dark:divide-anthracite-800">
               {users.map((u) => (
                 <button
                   key={u.id}
                   onClick={() => setEditingUser(u)}
-                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-stone-50 transition-colors text-left"
+                  className="w-full px-4 py-3 flex items-center justify-between hover:bg-stone-50 transition-colors text-left dark:hover:bg-anthracite-800/40"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="h-8 w-8 rounded-full bg-stone-200 flex items-center justify-center text-xs font-medium text-stone-600 flex-shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-stone-200 flex items-center justify-center text-xs font-medium text-stone-600 flex-shrink-0 dark:bg-anthracite-800 dark:text-stone-300">
                       {u.firstName[0]}{u.lastName[0]}
                     </div>
                     <div className="min-w-0">
-                      <p className="font-medium text-anthracite-800 truncate">{u.firstName} {u.lastName}</p>
-                      <p className="text-xs text-stone-500 truncate">{u.email}</p>
+                      <p className="font-medium text-anthracite-800 truncate dark:text-stone-200">{u.firstName} {u.lastName}</p>
+                      <p className="text-xs text-stone-500 truncate dark:text-stone-400">{u.email}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge variant={roleBadgeVariant(u.role)}>{ROLE_LABELS[u.role]}</Badge>
                     {u.customPermissions && <Badge variant="warning">Perso.</Badge>}
-                    <svg className="h-4 w-4 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <svg className="h-4 w-4 text-stone-400 dark:text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </div>

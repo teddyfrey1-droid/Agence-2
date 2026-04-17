@@ -34,9 +34,53 @@
     color-scheme: dark;
   }
 
-  /* Smooth selection */
+  /* Smooth selection — refined in both modes */
   ::selection {
-    @apply bg-brand-200 text-anthracite-900 dark:bg-brand-800 dark:text-white;
+    @apply bg-brand-300/60 text-anthracite-950;
+  }
+  :is(.dark) ::selection {
+    @apply bg-brand-500/40 text-stone-50;
+  }
+
+  /* Custom scrollbars — subtle in light, refined in dark */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.stone.300') transparent;
+  }
+  :is(.dark) * {
+    scrollbar-color: theme('colors.anthracite.700') transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: theme('colors.stone.300');
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.stone.400');
+    background-clip: padding-box;
+  }
+  :is(.dark) *::-webkit-scrollbar-thumb {
+    background-color: theme('colors.anthracite.700');
+    background-clip: padding-box;
+  }
+  :is(.dark) *::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.anthracite.600');
+    background-clip: padding-box;
+  }
+
+  /* Refined focus-visible ring */
+  :focus-visible {
+    outline: none;
+    @apply ring-2 ring-brand-500/60 ring-offset-2 ring-offset-white dark:ring-brand-400/60 dark:ring-offset-anthracite-950;
+    border-radius: 6px;
   }
 }
 
@@ -75,7 +119,37 @@
   }
 
   :is(.dark) .bg-gradient-premium {
-    background: linear-gradient(135deg, #1e1f27 0%, #252630 50%, #333541 100%);
+    background:
+      radial-gradient(ellipse at top left, rgba(176, 146, 106, 0.08), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(220, 184, 126, 0.06), transparent 50%),
+      linear-gradient(135deg, #1a1b22 0%, #23242e 45%, #2e303c 100%);
+  }
+
+  /* Thin sidebar scrollbar — only visible on hover */
+  .scrollbar-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+  .scrollbar-sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-sidebar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 9999px;
+    transition: background-color 0.3s ease;
+  }
+  .scrollbar-sidebar:hover {
+    scrollbar-color: theme('colors.stone.300') transparent;
+  }
+  .scrollbar-sidebar:hover::-webkit-scrollbar-thumb {
+    background-color: theme('colors.stone.300');
+  }
+  :is(.dark) .scrollbar-sidebar:hover {
+    scrollbar-color: theme('colors.anthracite.700') transparent;
+  }
+  :is(.dark) .scrollbar-sidebar:hover::-webkit-scrollbar-thumb {
+    background-color: theme('colors.anthracite.700');
   }
 
   .bg-gradient-dark {
@@ -258,4 +332,39 @@
   .delay-700  { animation-delay: 700ms; }
   .delay-900  { animation-delay: 900ms; }
   .delay-1100 { animation-delay: 1100ms; }
+
+  /* ── Admin panel interactions ── */
+
+  /* Pulsing live status indicator */
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.6; transform: scale(0.85); }
+  }
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  /* Card entrance staggered for admin grid */
+  @keyframes admin-card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  .animate-admin-card {
+    animation: admin-card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  /* Number tick-up for stats */
+  @keyframes tick-up {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-tick-up {
+    animation: tick-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
 }

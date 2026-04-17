@@ -132,7 +132,7 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto px-3 py-3">
+        <nav className="scrollbar-sidebar flex-1 overflow-y-auto px-3 py-3">
           {navGroups.map((group, gi) => (
             <div key={group.label} className={cn(gi > 0 && "mt-4")}>
               {gi > 0 && (

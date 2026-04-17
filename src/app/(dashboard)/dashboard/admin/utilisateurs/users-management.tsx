@@ -74,7 +74,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 const inputClass =
-  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-anthracite-800 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 transition-colors";
+  "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-anthracite-800 placeholder:text-stone-400 transition-colors focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-anthracite-700 dark:bg-anthracite-900 dark:text-stone-200 dark:placeholder:text-stone-500";
 
 // ─── Toast notification ─────────────────────────────────────────────
 
@@ -156,12 +156,12 @@ function CreateUserModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="border-b border-stone-100 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-anthracite-900">
+      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto dark:bg-anthracite-900 dark:ring-1 dark:ring-anthracite-800">
+        <div className="border-b border-stone-100 px-6 py-4 flex items-center justify-between dark:border-anthracite-800">
+          <h2 className="text-lg font-semibold text-anthracite-900 dark:text-stone-100">
             Nouvel utilisateur
           </h2>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 transition-colors">
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 transition-colors dark:text-stone-500 dark:hover:text-stone-300">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -177,27 +177,27 @@ function CreateUserModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-anthracite-700 mb-1">Prénom</label>
+              <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Prénom</label>
               <input type="text" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={inputClass} placeholder="Jean" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-anthracite-700 mb-1">Nom</label>
+              <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Nom</label>
               <input type="text" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={inputClass} placeholder="Dupont" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-anthracite-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Email</label>
             <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} placeholder="jean.dupont@exemple.fr" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-anthracite-700 mb-1">Téléphone</label>
+            <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Téléphone</label>
             <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} placeholder="06 12 34 56 78" />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-anthracite-700 mb-1">Rôle</label>
+            <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Rôle</label>
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })} className={inputClass}>
               {ALL_ROLES.map((role) => (
                 <option key={role} value={role}>{ROLE_LABELS[role]}</option>
@@ -222,7 +222,7 @@ function CreateUserModal({
 
             {!form.sendInvitation && (
               <div>
-                <label className="block text-sm font-medium text-anthracite-700 mb-1">Mot de passe</label>
+                <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Mot de passe</label>
                 <input
                   type="password"
                   required={!form.sendInvitation}
@@ -333,12 +333,12 @@ function EditUserModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="border-b border-stone-100 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-anthracite-900">
+      <div className="w-full max-w-lg rounded-xl bg-white shadow-2xl max-h-[90vh] overflow-y-auto dark:bg-anthracite-900 dark:ring-1 dark:ring-anthracite-800">
+        <div className="border-b border-stone-100 px-6 py-4 flex items-center justify-between dark:border-anthracite-800">
+          <h2 className="text-lg font-semibold text-anthracite-900 dark:text-stone-100">
             Modifier — {user.firstName} {user.lastName}
           </h2>
-          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 transition-colors">
+          <button onClick={onClose} className="text-stone-400 hover:text-stone-600 transition-colors dark:text-stone-500 dark:hover:text-stone-300">
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -352,27 +352,27 @@ function EditUserModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-anthracite-700 mb-1">Prénom</label>
+              <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Prénom</label>
               <input type="text" required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={inputClass} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-anthracite-700 mb-1">Nom</label>
+              <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Nom</label>
               <input type="text" required value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={inputClass} />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-anthracite-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Email</label>
             <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-anthracite-700 mb-1">Téléphone</label>
+            <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Téléphone</label>
             <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-anthracite-700 mb-1">Rôle</label>
+            <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">Rôle</label>
             <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as UserRole })} className={inputClass}>
               {ALL_ROLES.map((role) => (
                 <option key={role} value={role}>{ROLE_LABELS[role]}</option>
@@ -381,7 +381,7 @@ function EditUserModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-anthracite-700 mb-1">
+            <label className="block text-sm font-medium text-anthracite-700 mb-1 dark:text-stone-300">
               Nouveau mot de passe <span className="text-stone-400 font-normal">(laisser vide pour ne pas changer)</span>
             </label>
             <input type="password" minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} placeholder="8 caractères minimum" />
@@ -522,8 +522,8 @@ export function UsersManagement({ users: initialUsers }: { users: User[] }) {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-anthracite-900">Utilisateurs</h1>
-          <p className="text-sm text-stone-500">{users.length} utilisateur{users.length !== 1 ? "s" : ""}</p>
+          <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Utilisateurs</h1>
+          <p className="text-sm text-stone-500 dark:text-stone-400">{users.length} utilisateur{users.length !== 1 ? "s" : ""}</p>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -552,7 +552,7 @@ export function UsersManagement({ users: initialUsers }: { users: User[] }) {
             <option key={role} value={role}>{ROLE_LABELS[role]}</option>
           ))}
         </select>
-        <span className="text-sm text-stone-400">
+        <span className="text-sm text-stone-400 dark:text-stone-500">
           {filteredUsers.length} résultat{filteredUsers.length !== 1 ? "s" : ""}
         </span>
       </div>
@@ -562,24 +562,24 @@ export function UsersManagement({ users: initialUsers }: { users: User[] }) {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-stone-100 bg-stone-50/50">
-                <th className="px-4 py-3 text-left font-medium text-stone-500">Nom</th>
-                <th className="px-4 py-3 text-left font-medium text-stone-500">Email</th>
-                <th className="px-4 py-3 text-left font-medium text-stone-500">Rôle</th>
-                <th className="px-4 py-3 text-left font-medium text-stone-500">Statut</th>
-                <th className="px-4 py-3 text-left font-medium text-stone-500">Dernière connexion</th>
-                <th className="px-4 py-3 text-right font-medium text-stone-500">Actions</th>
+              <tr className="border-b border-stone-100 bg-stone-50/50 dark:border-anthracite-800 dark:bg-anthracite-800/30">
+                <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Nom</th>
+                <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Email</th>
+                <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Rôle</th>
+                <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Statut</th>
+                <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Dernière connexion</th>
+                <th className="px-4 py-3 text-right font-medium text-stone-500 dark:text-stone-400">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-100">
+            <tbody className="divide-y divide-stone-100 dark:divide-anthracite-800">
               {filteredUsers.map((user) => (
-                <tr key={user.id} className="hover:bg-stone-50 transition-colors">
+                <tr key={user.id} className="transition-colors hover:bg-stone-50 dark:hover:bg-anthracite-800/40">
                   <td className="px-4 py-3">
-                    <Link href={`/dashboard/admin/utilisateurs/${user.id}`} className="font-medium text-anthracite-800 hover:text-brand-600 transition-colors">
+                    <Link href={`/dashboard/admin/utilisateurs/${user.id}`} className="font-medium text-anthracite-800 transition-colors hover:text-brand-600 dark:text-stone-200 dark:hover:text-brand-400">
                       {user.firstName} {user.lastName}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-stone-600">{user.email}</td>
+                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{user.email}</td>
                   <td className="px-4 py-3">
                     <Badge variant={roleBadgeVariant(user.role)}>{ROLE_LABELS[user.role] || user.role}</Badge>
                   </td>
@@ -593,7 +593,7 @@ export function UsersManagement({ users: initialUsers }: { users: User[] }) {
                       )}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-stone-400">{formatDate(user.lastLoginAt)}</td>
+                  <td className="px-4 py-3 text-stone-400 dark:text-stone-500">{formatDate(user.lastLoginAt)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <Button variant="outline" size="sm" onClick={() => setEditingUser(user)}>
@@ -619,7 +619,7 @@ export function UsersManagement({ users: initialUsers }: { users: User[] }) {
               ))}
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-stone-400">Aucun utilisateur</td>
+                  <td colSpan={6} className="px-4 py-8 text-center text-stone-400 dark:text-stone-500">Aucun utilisateur</td>
                 </tr>
               )}
             </tbody>
@@ -633,10 +633,10 @@ export function UsersManagement({ users: initialUsers }: { users: User[] }) {
           <Card key={user.id} className="p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <Link href={`/dashboard/admin/utilisateurs/${user.id}`} className="font-medium text-anthracite-800 hover:text-brand-600 transition-colors">
+                <Link href={`/dashboard/admin/utilisateurs/${user.id}`} className="font-medium text-anthracite-800 transition-colors hover:text-brand-600 dark:text-stone-200 dark:hover:text-brand-400">
                   {user.firstName} {user.lastName}
                 </Link>
-                <p className="text-sm text-stone-500 truncate">{user.email}</p>
+                <p className="text-sm text-stone-500 truncate dark:text-stone-400">{user.email}</p>
               </div>
               <Badge variant={user.isActive ? "success" : "neutral"}>
                 {user.isActive ? "Actif" : "Bloqué"}
@@ -646,7 +646,7 @@ export function UsersManagement({ users: initialUsers }: { users: User[] }) {
             <div className="flex flex-wrap items-center gap-2 text-sm">
               <Badge variant={roleBadgeVariant(user.role)}>{ROLE_LABELS[user.role] || user.role}</Badge>
               {user.invitedAt && !user.isActivated && <Badge variant="warning">En attente</Badge>}
-              <span className="text-stone-400">{formatDate(user.lastLoginAt)}</span>
+              <span className="text-stone-400 dark:text-stone-500">{formatDate(user.lastLoginAt)}</span>
             </div>
 
             <div className="flex items-center gap-2 pt-1 border-t border-stone-100">
@@ -661,7 +661,7 @@ export function UsersManagement({ users: initialUsers }: { users: User[] }) {
           </Card>
         ))}
         {filteredUsers.length === 0 && (
-          <Card className="p-8 text-center text-stone-400">Aucun utilisateur</Card>
+          <Card className="p-8 text-center text-stone-400 dark:text-stone-500">Aucun utilisateur</Card>
         )}
       </div>
 
