@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActiveSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getAgencyInfo } from "@/lib/agency";
 
 export async function GET(
   request: NextRequest,
@@ -13,20 +14,31 @@ export async function GET(
     }
 
     const { id } = await params;
-    const property = await prisma.property.findUnique({
-      where: { id },
-      include: {
-        owner: { select: { firstName: true, lastName: true, company: true, phone: true, email: true } },
-        assignedTo: { select: { firstName: true, lastName: true } },
-        media: { where: { isPrimary: true }, take: 1, select: { url: true, isPrimary: true } },
-      },
-    });
+    const [property, agency] = await Promise.all([
+      prisma.property.findUnique({
+        where: { id },
+        include: {
+          owner: { select: { firstName: true, lastName: true, company: true, phone: true, email: true, address: true, city: true, zipCode: true } },
+          assignedTo: { select: { firstName: true, lastName: true, email: true, phone: true } },
+          media: { where: { isPrimary: true }, take: 1, select: { url: true, isPrimary: true } },
+        },
+      }),
+      getAgencyInfo(),
+    ]);
 
     if (!property) {
       return NextResponse.json({ error: "Bien introuvable" }, { status: 404 });
     }
 
-    return NextResponse.json(property);
+    return NextResponse.json({
+      property,
+      agency,
+      currentUser: {
+        firstName: session.firstName,
+        lastName: session.lastName,
+        email: session.email,
+      },
+    });
   } catch {
     return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }

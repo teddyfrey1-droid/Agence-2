@@ -11,6 +11,7 @@ import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PropertyPdfButton } from "@/components/property-pdf-button";
+import { PropertyContractButton } from "@/components/property-contract-button";
 import { PhotoUploader } from "@/components/photo-uploader";
 import { DeleteButton } from "@/components/delete-button";
 import { PublishButton } from "@/components/publish-button";
@@ -308,6 +309,7 @@ export default async function PropertyDetailPage({
                 Lancer le matching
               </Button>
               <PropertyPdfButton propertyId={id} />
+              <PropertyContractButton propertyId={id} />
               <DeleteButton entityId={id} entityType="properties" entityLabel="Bien" redirectTo="/dashboard/biens" />
             </CardContent>
           </Card>

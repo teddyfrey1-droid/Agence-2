@@ -33,10 +33,19 @@ function parseSender(): { email: string; name: string } {
   return { email: EMAIL_FROM_RAW.trim(), name: "Retail Avenue" };
 }
 
+interface EmailAttachment {
+  /** File name displayed in the recipient's client, e.g. "Contrat.pdf" */
+  name: string;
+  /** Base64-encoded file content (without data URL prefix) */
+  content: string;
+}
+
 interface EmailOptions {
   to: string;
   subject: string;
   html: string;
+  replyTo?: { email: string; name?: string };
+  attachments?: EmailAttachment[];
 }
 
 async function sendEmail(options: EmailOptions): Promise<boolean> {
@@ -50,12 +59,16 @@ async function sendEmail(options: EmailOptions): Promise<boolean> {
 
   const sender = parseSender();
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     sender,
     to: [{ email: options.to }],
     subject: options.subject,
     htmlContent: options.html,
   };
+  if (options.replyTo) payload.replyTo = options.replyTo;
+  if (options.attachments && options.attachments.length > 0) {
+    payload.attachment = options.attachments.map((a) => ({ name: a.name, content: a.content }));
+  }
 
   console.log(`[EMAIL] Envoi via Brevo → ${options.to} | Sender: ${sender.email} | Subject: ${options.subject}`);
 
@@ -353,6 +366,82 @@ export async function sendNotificationEmail(
             Voir dans l'application
           </a>
         </div>
+      </div>
+    `,
+  });
+}
+
+// ─── Contract Email (with PDF attachment) ────────────────────────────
+
+export async function sendContractEmail(params: {
+  to: string;
+  subject: string;
+  message: string;
+  recipientName: string;
+  recipientType: "BAILLEUR" | "CO_MANDATAIRE";
+  senderName: string;
+  senderEmail: string;
+  agencyName: string;
+  propertyRef: string;
+  propertyTitle: string;
+  fileName: string;
+  pdfBase64: string;
+}): Promise<boolean> {
+  const isBailleur = params.recipientType === "BAILLEUR";
+  const headline = isBailleur
+    ? "Contrat d'engagement à signer"
+    : "Convention de co-mandat à signer";
+  const intro = isBailleur
+    ? "Veuillez trouver ci-joint le contrat d'engagement relatif à la commercialisation du bien ci-dessous."
+    : "Veuillez trouver ci-joint la convention de co-mandat relative à la commercialisation conjointe du bien ci-dessous.";
+
+  const customMessage = (params.message || "").trim();
+
+  return sendEmail({
+    to: params.to,
+    subject: params.subject,
+    replyTo: { email: params.senderEmail, name: params.senderName },
+    attachments: [
+      {
+        name: params.fileName,
+        content: params.pdfBase64,
+      },
+    ],
+    html: `
+      <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #23211e;">
+        <div style="border-bottom: 2px solid #a68a4e; padding-bottom: 12px; margin-bottom: 24px;">
+          <div style="font-size: 12px; letter-spacing: 0.08em; color: #6e695f;">${escapeHtml(params.agencyName.toUpperCase())}</div>
+          <h1 style="margin: 6px 0 0; color: #201f1d; font-size: 22px;">${escapeHtml(headline)}</h1>
+        </div>
+        <p style="font-size: 15px; line-height: 1.6;">
+          Bonjour ${escapeHtml(params.recipientName)},
+        </p>
+        <p style="font-size: 15px; line-height: 1.6;">
+          ${escapeHtml(intro)}
+        </p>
+        <div style="background: #f9f6f0; border-radius: 8px; padding: 14px 18px; margin: 18px 0; font-size: 14px;">
+          <div><strong>Référence :</strong> ${escapeHtml(params.propertyRef)}</div>
+          <div><strong>Bien :</strong> ${escapeHtml(params.propertyTitle)}</div>
+        </div>
+        ${
+          customMessage
+            ? `<p style="font-size: 15px; line-height: 1.6; white-space: pre-line; border-left: 3px solid #a68a4e; padding-left: 12px; color: #3a3630;">${escapeHtml(customMessage)}</p>`
+            : ""
+        }
+        <p style="font-size: 15px; line-height: 1.6;">
+          Merci de bien vouloir retourner le document signé à l'adresse ci-dessous.
+        </p>
+        <p style="font-size: 15px; line-height: 1.6; margin-top: 28px;">
+          Cordialement,<br />
+          <strong>${escapeHtml(params.senderName)}</strong><br />
+          <span style="color: #6e695f;">${escapeHtml(params.agencyName)}</span><br />
+          <a href="mailto:${escapeHtml(params.senderEmail)}" style="color: #a68a4e;">${escapeHtml(params.senderEmail)}</a>
+        </p>
+        <p style="font-size: 11px; color: #8a857a; margin-top: 32px; border-top: 1px solid #e8e3d8; padding-top: 12px;">
+          ${isBailleur
+            ? "Document personnalisé — votre exemplaire ne comporte pas la répartition d'honoraires entre intermédiaires."
+            : "Document inter-agences — contient la répartition confidentielle des honoraires."}
+        </p>
       </div>
     `,
   });
