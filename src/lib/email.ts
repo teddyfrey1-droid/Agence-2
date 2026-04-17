@@ -378,7 +378,7 @@ export async function sendContractEmail(params: {
   subject: string;
   message: string;
   recipientName: string;
-  recipientType: "BAILLEUR" | "CO_MANDATAIRE";
+  recipientType: "BAILLEUR" | "CO_MANDATAIRE" | "PRENEUR" | "AGENCE";
   senderName: string;
   senderEmail: string;
   agencyName: string;
@@ -387,13 +387,23 @@ export async function sendContractEmail(params: {
   fileName: string;
   pdfBase64: string;
 }): Promise<boolean> {
-  const isBailleur = params.recipientType === "BAILLEUR";
-  const headline = isBailleur
-    ? "Contrat d'engagement à signer"
-    : "Convention de co-mandat à signer";
-  const intro = isBailleur
-    ? "Veuillez trouver ci-joint le contrat d'engagement relatif à la commercialisation du bien ci-dessous."
-    : "Veuillez trouver ci-joint la convention de co-mandat relative à la commercialisation conjointe du bien ci-dessous.";
+  const r = params.recipientType;
+  const headline =
+    r === "PRENEUR"
+      ? "Feuille d'engagement — à signer par le preneur"
+      : r === "BAILLEUR"
+      ? "Contrat d'engagement à signer"
+      : r === "CO_MANDATAIRE"
+      ? "Convention de co-mandat à signer"
+      : "Exemplaire interne — dossier d'engagement";
+  const intro =
+    r === "PRENEUR"
+      ? "Veuillez trouver ci-joint la feuille d'engagement à signer préalablement à la transmission au bailleur. Merci de nous retourner le document signé, accompagné de la mention « Lu et approuvé »."
+      : r === "BAILLEUR"
+      ? "Veuillez trouver ci-joint le contrat d'engagement relatif à la commercialisation du bien ci-dessous. Le preneur a signé le document au préalable ; nous sollicitons désormais votre accord."
+      : r === "CO_MANDATAIRE"
+      ? "Veuillez trouver ci-joint la convention de co-mandat relative à la commercialisation conjointe du bien ci-dessous. La répartition des honoraires y est détaillée."
+      : "Veuillez trouver ci-joint l'exemplaire de l'engagement archivé pour le dossier de l'agence.";
 
   const customMessage = (params.message || "").trim();
 
@@ -438,9 +448,11 @@ export async function sendContractEmail(params: {
           <a href="mailto:${escapeHtml(params.senderEmail)}" style="color: #a68a4e;">${escapeHtml(params.senderEmail)}</a>
         </p>
         <p style="font-size: 11px; color: #8a857a; margin-top: 32px; border-top: 1px solid #e8e3d8; padding-top: 12px;">
-          ${isBailleur
-            ? "Document personnalisé — votre exemplaire ne comporte pas la répartition d'honoraires entre intermédiaires."
-            : "Document inter-agences — contient la répartition confidentielle des honoraires."}
+          ${
+            r === "CO_MANDATAIRE"
+              ? "Document inter-agences — contient la répartition confidentielle des honoraires."
+              : "Document personnalisé — votre exemplaire ne comporte pas la répartition d'honoraires entre intermédiaires."
+          }
         </p>
       </div>
     `,

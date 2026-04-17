@@ -7,6 +7,8 @@ import {
   contractFileName,
   type ContractFormData,
   type ContractRecipientType,
+  type ContractParty,
+  type PartyRole,
 } from "@/lib/contract-pdf";
 
 const inputCls =
@@ -15,8 +17,6 @@ const labelCls = "block text-xs font-medium text-anthracite-700 dark:text-stone-
 
 interface LoadedData {
   property: ContractFormData["property"] & {
-    quarter: string | null;
-    pricePerSqm: number | null;
     owner: {
       firstName: string;
       lastName: string;
@@ -47,6 +47,13 @@ interface LoadedData {
   currentUser: { firstName: string; lastName: string; email: string };
 }
 
+const ROLE_LABELS: Record<PartyRole, string> = {
+  AGENCE: "Agence mandataire",
+  CO_MANDATAIRE: "Agence co-mandataire",
+  PRENEUR: "Preneur / Acquéreur",
+  BAILLEUR: "Bailleur / Vendeur",
+};
+
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -69,6 +76,33 @@ function blobToBase64(blob: Blob): Promise<string> {
   });
 }
 
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function emptyParty(role: PartyRole): ContractParty {
+  return {
+    role,
+    name: "",
+    representative: "",
+    address: "",
+    zipCode: "",
+    city: "",
+    siret: "",
+    professionalCard: "",
+    email: "",
+    phone: "",
+    signatureDataUrl: null,
+    signedAt: null,
+    signedCity: null,
+  };
+}
+
 export function PropertyContractModal({
   propertyId,
   onClose,
@@ -78,36 +112,43 @@ export function PropertyContractModal({
 }) {
   const [data, setData] = useState<LoadedData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"form" | "send">("form");
+  const [tab, setTab] = useState<"parties" | "nego" | "send">("parties");
   const [busy, setBusy] = useState<"download" | "email" | null>(null);
   const [message, setMessage] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
-  const [recipientType, setRecipientType] = useState<ContractRecipientType>("CO_MANDATAIRE");
-  const [form, setForm] = useState({
-    mandateKind: "CO_MANDAT" as ContractFormData["mandateKind"],
+  const [recipientType, setRecipientType] = useState<ContractRecipientType>("PRENEUR");
+  const [mandateKind, setMandateKind] = useState<ContractFormData["mandateKind"]>("ENGAGEMENT_LOCATION");
+  const [docTitle, setDocTitle] = useState("Feuille d'engagement");
+
+  const [parties, setParties] = useState<ContractParty[]>([
+    emptyParty("AGENCE"),
+    emptyParty("PRENEUR"),
+    emptyParty("BAILLEUR"),
+  ]);
+
+  const [core, setCore] = useState({
     startDate: todayISO(),
-    endDate: inMonthsISO(6),
+    endDate: inMonthsISO(3),
     city: "Paris",
     feesPercent: "",
     feesAmount: "",
     feesPayer: "PRENEUR" as ContractFormData["feesPayer"],
     splitUsPct: "50",
     splitThemPct: "50",
-    specialConditions: "",
-    // Counterparty
-    cpName: "",
-    cpLegalForm: "",
-    cpAddress: "",
-    cpZipCode: "",
-    cpCity: "",
-    cpSiret: "",
-    cpProCard: "",
-    cpRepresentative: "",
-    cpEmail: "",
-    cpPhone: "",
   });
 
-  // Email tab
+  const [nego, setNego] = useState({
+    proposedRent: "",
+    proposedPrice: "",
+    freeRent: "",
+    worksByLandlord: "",
+    worksByTenant: "",
+    deposit: "",
+    leaseDuration: "",
+    entryDate: "",
+    clauses: "",
+  });
+
   const [email, setEmail] = useState({
     to: "",
     subject: "",
@@ -119,10 +160,60 @@ export function PropertyContractModal({
       .then((r) => r.json())
       .then((d: LoadedData) => {
         setData(d);
-        // Prefill counterparty if co-mandat already marked
-        if (d.property.isCoMandat && d.property.coMandatAgency) {
-          setForm((f) => ({ ...f, cpName: d.property.coMandatAgency || "" }));
+        // Prefill AGENCE party from agency info
+        setParties((ps) =>
+          ps.map((p) =>
+            p.role !== "AGENCE"
+              ? p
+              : {
+                  ...p,
+                  name: d.agency.name,
+                  legalForm: d.agency.legalName || "",
+                  address: d.agency.address || "",
+                  zipCode: d.agency.zipCode || "",
+                  city: d.agency.city || "",
+                  siret: d.agency.siret || "",
+                  professionalCard: d.agency.professionalCardNumber
+                    ? `${d.agency.professionalCardNumber}${d.agency.professionalCardAuthority ? ` (${d.agency.professionalCardAuthority})` : ""}`
+                    : "",
+                  representative: `${d.currentUser.firstName} ${d.currentUser.lastName}`.trim(),
+                  email: d.agency.email || "",
+                  phone: d.agency.phone || "",
+                }
+          )
+        );
+        // Prefill BAILLEUR from property owner
+        if (d.property.owner) {
+          const o = d.property.owner;
+          setParties((ps) =>
+            ps.map((p) =>
+              p.role !== "BAILLEUR"
+                ? p
+                : {
+                    ...p,
+                    name: o.company || `${o.firstName} ${o.lastName}`,
+                    representative: o.company ? `${o.firstName} ${o.lastName}` : "",
+                    address: o.address || "",
+                    zipCode: o.zipCode || "",
+                    city: o.city || "",
+                    email: o.email || "",
+                    phone: o.phone || "",
+                  }
+            )
+          );
         }
+        // Default mandate type
+        if (d.property.transactionType === "VENTE" || d.property.transactionType === "FOND_DE_COMMERCE") {
+          setMandateKind("ENGAGEMENT_VENTE");
+          setDocTitle("Feuille d'engagement — Vente");
+        }
+        // Prefill proposed rent/price from initial demand
+        setNego((n) => ({
+          ...n,
+          proposedRent: d.property.rentMonthly ? `${d.property.rentMonthly} € / mois HC` : "",
+          proposedPrice: d.property.price ? `${d.property.price} €` : "",
+          deposit: d.property.deposit ? `${d.property.deposit} €` : "",
+        }));
         setLoading(false);
       })
       .catch(() => {
@@ -131,70 +222,56 @@ export function PropertyContractModal({
       });
   }, [propertyId]);
 
-  // When switching to BAILLEUR, autofill counterparty with owner data
+  // Sync default email recipient whenever recipientType changes
   useEffect(() => {
-    if (!data) return;
-    if (recipientType === "BAILLEUR" && data.property.owner) {
-      const o = data.property.owner;
-      setForm((f) => ({
-        ...f,
-        mandateKind: f.mandateKind === "CO_MANDAT" ? "EXCLUSIF" : f.mandateKind,
-        cpName: o.company || `${o.firstName} ${o.lastName}`,
-        cpRepresentative: o.company ? `${o.firstName} ${o.lastName}` : "",
-        cpAddress: o.address || "",
-        cpZipCode: o.zipCode || "",
-        cpCity: o.city || "",
-        cpEmail: o.email || "",
-        cpPhone: o.phone || "",
-        cpLegalForm: "",
-        cpSiret: "",
-        cpProCard: "",
-      }));
-      setEmail((e) => ({ ...e, to: o.email || "" }));
+    const p = parties.find((x) => x.role === recipientType);
+    if (p?.email) setEmail((e) => ({ ...e, to: p.email || "" }));
+  }, [recipientType, parties]);
+
+  function updateParty(role: PartyRole, patch: Partial<ContractParty>) {
+    setParties((ps) => ps.map((p) => (p.role === role ? { ...p, ...patch } : p)));
+  }
+
+  function toggleCoMandataire() {
+    setParties((ps) => {
+      const has = ps.some((p) => p.role === "CO_MANDATAIRE");
+      if (has) return ps.filter((p) => p.role !== "CO_MANDATAIRE");
+      // insert CO_MANDATAIRE right after AGENCE
+      const agencyIdx = ps.findIndex((p) => p.role === "AGENCE");
+      const next = [...ps];
+      const cm = emptyParty("CO_MANDATAIRE");
+      if (data?.property.coMandatAgency) cm.name = data.property.coMandatAgency;
+      next.splice(agencyIdx + 1, 0, cm);
+      return next;
+    });
+  }
+
+  function hasCoMandataire() {
+    return parties.some((p) => p.role === "CO_MANDATAIRE");
+  }
+
+  async function handleSignatureUpload(role: PartyRole, file: File | null) {
+    if (!file) {
+      updateParty(role, { signatureDataUrl: null, signedAt: null });
+      return;
     }
-    if (recipientType === "CO_MANDATAIRE") {
-      setForm((f) => ({
-        ...f,
-        mandateKind: "CO_MANDAT",
-        cpName: data.property.coMandatAgency || f.cpName,
-      }));
+    if (file.size > 2 * 1024 * 1024) {
+      setMessage({ kind: "err", text: "Image de signature trop volumineuse (max 2 Mo)." });
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recipientType, data]);
+    const dataUrl = await fileToDataUrl(file);
+    updateParty(role, {
+      signatureDataUrl: dataUrl,
+      signedAt: todayISO(),
+    });
+  }
 
   function buildContractData(): ContractFormData | null {
     if (!data) return null;
-    const a = data.agency;
-    const cu = data.currentUser;
     return {
       recipientType,
-      signedBy: `${cu.firstName} ${cu.lastName}`.trim(),
-      agency: {
-        name: a.name,
-        legalForm: a.legalName || undefined,
-        address: a.address || undefined,
-        zipCode: a.zipCode || undefined,
-        city: a.city || undefined,
-        siret: a.siret || undefined,
-        professionalCard: a.professionalCardNumber
-          ? `${a.professionalCardNumber}${a.professionalCardAuthority ? ` (${a.professionalCardAuthority})` : ""}`
-          : undefined,
-        representative: `${cu.firstName} ${cu.lastName}`.trim(),
-        email: a.email || undefined,
-        phone: a.phone || undefined,
-      },
-      counterparty: {
-        name: form.cpName,
-        legalForm: form.cpLegalForm || undefined,
-        address: form.cpAddress || undefined,
-        zipCode: form.cpZipCode || undefined,
-        city: form.cpCity || undefined,
-        siret: form.cpSiret || undefined,
-        professionalCard: form.cpProCard || undefined,
-        representative: form.cpRepresentative || undefined,
-        email: form.cpEmail || undefined,
-        phone: form.cpPhone || undefined,
-      },
+      parties,
+      signedBy: `${data.currentUser.firstName} ${data.currentUser.lastName}`.trim(),
       property: {
         reference: data.property.reference,
         title: data.property.title,
@@ -212,16 +289,17 @@ export function PropertyContractModal({
         charges: data.property.charges,
         deposit: data.property.deposit,
       },
-      mandateKind: form.mandateKind,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      city: form.city,
-      feesPercent: form.feesPercent,
-      feesAmount: form.feesAmount,
-      feesPayer: form.feesPayer,
-      splitUsPct: form.splitUsPct,
-      splitThemPct: form.splitThemPct,
-      specialConditions: form.specialConditions,
+      mandateKind,
+      startDate: core.startDate,
+      endDate: core.endDate,
+      city: core.city,
+      feesPercent: core.feesPercent,
+      feesAmount: core.feesAmount,
+      feesPayer: core.feesPayer,
+      splitUsPct: core.splitUsPct,
+      splitThemPct: core.splitThemPct,
+      negotiation: { ...nego },
+      title: docTitle,
     };
   }
 
@@ -229,8 +307,9 @@ export function PropertyContractModal({
     setMessage(null);
     const contract = buildContractData();
     if (!contract) return;
-    if (!contract.counterparty.name.trim()) {
-      setMessage({ kind: "err", text: "Le nom du co-contractant est requis." });
+    const required = contract.parties.filter((p) => p.role !== "CO_MANDATAIRE" || hasCoMandataire());
+    if (required.some((p) => !p.name.trim())) {
+      setMessage({ kind: "err", text: "Toutes les parties doivent avoir un nom." });
       return;
     }
     setBusy("download");
@@ -244,7 +323,7 @@ export function PropertyContractModal({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      setMessage({ kind: "ok", text: "Contrat téléchargé." });
+      setMessage({ kind: "ok", text: `Exemplaire ${ROLE_LABELS[contract.recipientType]} téléchargé.` });
     } catch {
       setMessage({ kind: "err", text: "Erreur lors de la génération du PDF." });
     } finally {
@@ -256,8 +335,8 @@ export function PropertyContractModal({
     setMessage(null);
     const contract = buildContractData();
     if (!contract) return;
-    if (!contract.counterparty.name.trim()) {
-      setMessage({ kind: "err", text: "Le nom du co-contractant est requis." });
+    if (contract.parties.some((p) => !p.name.trim())) {
+      setMessage({ kind: "err", text: "Toutes les parties doivent avoir un nom." });
       return;
     }
     const to = email.to.trim();
@@ -269,6 +348,7 @@ export function PropertyContractModal({
     try {
       const blob = await generateContractPdf(contract);
       const base64 = await blobToBase64(blob);
+      const recipientParty = contract.parties.find((p) => p.role === contract.recipientType);
       const res = await fetch(`/api/properties/${propertyId}/contract/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -276,10 +356,10 @@ export function PropertyContractModal({
           to,
           subject:
             email.subject.trim() ||
-            `Contrat d'engagement — ${contract.property.reference} ${contract.property.title}`,
+            `${docTitle} — ${contract.property.reference} ${contract.property.title}`,
           message: email.body.trim(),
           recipientType: contract.recipientType,
-          recipientName: contract.counterparty.name,
+          recipientName: recipientParty?.representative || recipientParty?.name || "",
           fileName: contractFileName(contract),
           pdfBase64: base64,
         }),
@@ -289,7 +369,7 @@ export function PropertyContractModal({
         setMessage({ kind: "err", text: payload?.error || "Échec de l'envoi." });
         return;
       }
-      setMessage({ kind: "ok", text: `Contrat envoyé à ${to}.` });
+      setMessage({ kind: "ok", text: `Document envoyé à ${to}.` });
     } catch {
       setMessage({ kind: "err", text: "Erreur lors de l'envoi." });
     } finally {
@@ -297,18 +377,19 @@ export function PropertyContractModal({
     }
   }
 
+  const signedCount = parties.filter((p) => p.signatureDataUrl).length;
   const showFees = recipientType === "CO_MANDATAIRE";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-anthracite-900">
+      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-anthracite-900">
         <div className="flex items-center justify-between border-b border-stone-100 px-6 py-4 dark:border-stone-800">
           <div>
             <h2 className="text-lg font-semibold text-anthracite-900 dark:text-stone-100">
-              Contrat d&apos;engagement
+              Feuille d&apos;engagement multipartite
             </h2>
             <p className="text-xs text-stone-500">
-              Générez et envoyez un mandat signable — les honoraires sont masqués pour le bailleur.
+              Signature séquentielle — le preneur signe, puis le bailleur reçoit avec la signature captée. Honoraires masqués hors co-mandataire.
             </p>
           </div>
           <button
@@ -323,22 +404,23 @@ export function PropertyContractModal({
 
         {/* Tabs */}
         <div className="flex border-b border-stone-100 dark:border-stone-800">
-          <button
-            onClick={() => setTab("form")}
-            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
-              tab === "form" ? "text-brand-600 border-b-2 border-brand-600" : "text-stone-500 hover:text-stone-700"
-            }`}
-          >
-            1 · Contenu du contrat
-          </button>
-          <button
-            onClick={() => setTab("send")}
-            className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${
-              tab === "send" ? "text-brand-600 border-b-2 border-brand-600" : "text-stone-500 hover:text-stone-700"
-            }`}
-          >
-            2 · Envoyer par email
-          </button>
+          {[
+            { id: "parties", label: "1 · Parties & signatures" },
+            { id: "nego", label: "2 · Négociation" },
+            { id: "send", label: "3 · Envoyer / Télécharger" },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id as typeof tab)}
+              className={`flex-1 px-3 py-2.5 text-xs font-medium transition-colors sm:text-sm ${
+                tab === t.id
+                  ? "text-brand-600 border-b-2 border-brand-600"
+                  : "text-stone-500 hover:text-stone-700"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -346,270 +428,276 @@ export function PropertyContractModal({
             <p className="py-8 text-center text-sm text-stone-500">Chargement…</p>
           ) : !data ? (
             <p className="py-8 text-center text-sm text-red-500">Impossible de charger le bien.</p>
-          ) : tab === "form" ? (
+          ) : tab === "parties" ? (
             <div className="space-y-5">
-              {/* Recipient type */}
-              <div>
-                <label className={labelCls}>Type de destinataire</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRecipientType("BAILLEUR")}
-                    className={`rounded-lg border px-3 py-3 text-left text-sm transition ${
-                      recipientType === "BAILLEUR"
-                        ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20"
-                        : "border-stone-200 bg-white hover:bg-stone-50 dark:border-stone-700 dark:bg-anthracite-800"
-                    }`}
-                  >
-                    <div className="font-semibold text-anthracite-900 dark:text-stone-100">
-                      Bailleur / Propriétaire
-                    </div>
-                    <div className="mt-0.5 text-[11px] text-stone-500">
-                      Honoraires masqués dans le PDF.
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRecipientType("CO_MANDATAIRE")}
-                    className={`rounded-lg border px-3 py-3 text-left text-sm transition ${
-                      recipientType === "CO_MANDATAIRE"
-                        ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20"
-                        : "border-stone-200 bg-white hover:bg-stone-50 dark:border-stone-700 dark:bg-anthracite-800"
-                    }`}
-                  >
-                    <div className="font-semibold text-anthracite-900 dark:text-stone-100">
-                      Agence co-mandataire
-                    </div>
-                    <div className="mt-0.5 text-[11px] text-stone-500">
-                      Répartition des honoraires visible.
-                    </div>
-                  </button>
-                </div>
-              </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className={labelCls}>Type de mandat</label>
+                  <label className={labelCls}>Type de document</label>
                   <select
                     className={inputCls}
-                    value={form.mandateKind}
-                    onChange={(e) =>
-                      setForm({ ...form, mandateKind: e.target.value as ContractFormData["mandateKind"] })
-                    }
+                    value={mandateKind}
+                    onChange={(e) => setMandateKind(e.target.value as ContractFormData["mandateKind"])}
                   >
+                    <option value="ENGAGEMENT_LOCATION">Feuille d&apos;engagement — Location</option>
+                    <option value="ENGAGEMENT_VENTE">Feuille d&apos;engagement — Vente</option>
                     <option value="SIMPLE">Mandat simple</option>
                     <option value="EXCLUSIF">Mandat exclusif</option>
-                    <option value="CO_MANDAT">Co-mandat</option>
+                    <option value="CO_MANDAT">Convention de co-mandat</option>
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Lieu de signature</label>
+                  <label className={labelCls}>Intitulé affiché</label>
                   <input
                     className={inputCls}
-                    value={form.city}
-                    onChange={(e) => setForm({ ...form, city: e.target.value })}
+                    value={docTitle}
+                    onChange={(e) => setDocTitle(e.target.value)}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className={labelCls}>Date de début</label>
+                  <label className={labelCls}>Début</label>
                   <input
                     type="date"
                     className={inputCls}
-                    value={form.startDate}
-                    onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+                    value={core.startDate}
+                    onChange={(e) => setCore({ ...core, startDate: e.target.value })}
                   />
                 </div>
                 <div>
-                  <label className={labelCls}>Date de fin</label>
+                  <label className={labelCls}>Fin / Caducité</label>
                   <input
                     type="date"
                     className={inputCls}
-                    value={form.endDate}
-                    onChange={(e) => setForm({ ...form, endDate: e.target.value })}
+                    value={core.endDate}
+                    onChange={(e) => setCore({ ...core, endDate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Fait à</label>
+                  <input
+                    className={inputCls}
+                    value={core.city}
+                    onChange={(e) => setCore({ ...core, city: e.target.value })}
                   />
                 </div>
               </div>
 
-              {/* Counterparty */}
-              <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  {recipientType === "BAILLEUR"
-                    ? "Coordonnées du bailleur / propriétaire"
-                    : "Coordonnées de l'agence co-mandataire"}
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="col-span-2">
-                    <label className={labelCls}>Nom / Raison sociale *</label>
-                    <input
-                      className={inputCls}
-                      value={form.cpName}
-                      onChange={(e) => setForm({ ...form, cpName: e.target.value })}
-                      placeholder={recipientType === "BAILLEUR" ? "M. Dupont / SCI Dupont" : "Agence XYZ"}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Représentant</label>
-                    <input
-                      className={inputCls}
-                      value={form.cpRepresentative}
-                      onChange={(e) => setForm({ ...form, cpRepresentative: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Forme juridique</label>
-                    <input
-                      className={inputCls}
-                      value={form.cpLegalForm}
-                      onChange={(e) => setForm({ ...form, cpLegalForm: e.target.value })}
-                      placeholder="SARL, SCI, SAS…"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className={labelCls}>Adresse</label>
-                    <input
-                      className={inputCls}
-                      value={form.cpAddress}
-                      onChange={(e) => setForm({ ...form, cpAddress: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Code postal</label>
-                    <input
-                      className={inputCls}
-                      value={form.cpZipCode}
-                      onChange={(e) => setForm({ ...form, cpZipCode: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Ville</label>
-                    <input
-                      className={inputCls}
-                      value={form.cpCity}
-                      onChange={(e) => setForm({ ...form, cpCity: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>SIRET</label>
-                    <input
-                      className={inputCls}
-                      value={form.cpSiret}
-                      onChange={(e) => setForm({ ...form, cpSiret: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>
-                      {recipientType === "CO_MANDATAIRE" ? "Carte professionnelle" : "N° identifiant"}
-                    </label>
-                    <input
-                      className={inputCls}
-                      value={form.cpProCard}
-                      onChange={(e) => setForm({ ...form, cpProCard: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Téléphone</label>
-                    <input
-                      className={inputCls}
-                      value={form.cpPhone}
-                      onChange={(e) => setForm({ ...form, cpPhone: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Email</label>
-                    <input
-                      type="email"
-                      className={inputCls}
-                      value={form.cpEmail}
-                      onChange={(e) => setForm({ ...form, cpEmail: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Fees — only visible if not bailleur */}
-              {showFees && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 dark:border-amber-900/30 dark:bg-amber-900/10">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
-                    Honoraires &amp; répartition (masqué sur l&apos;exemplaire bailleur)
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-2 dark:border-stone-700 dark:bg-anthracite-800/50">
+                <div>
+                  <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
+                    Parties signataires : <span className="text-brand-600">{parties.length}</span>
                   </p>
+                  <p className="text-[11px] text-stone-500">
+                    {signedCount} signature{signedCount > 1 ? "s" : ""} captée{signedCount > 1 ? "s" : ""} sur {parties.length}
+                  </p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={toggleCoMandataire}>
+                  {hasCoMandataire() ? "Retirer le co-mandataire" : "+ Ajouter une agence co-mandataire"}
+                </Button>
+              </div>
+
+              {parties.map((p) => (
+                <PartyEditor
+                  key={p.role}
+                  party={p}
+                  onChange={(patch) => updateParty(p.role, patch)}
+                  onSignatureUpload={(file) => handleSignatureUpload(p.role, file)}
+                />
+              ))}
+            </div>
+          ) : tab === "nego" ? (
+            <div className="space-y-4">
+              <p className="text-xs text-stone-500">
+                Ces conditions apparaissent dans l&apos;article « Conditions négociées » du PDF. Elles sont modifiables à chaque échange —
+                signez une nouvelle version à chaque contre-offre.
+              </p>
+
+              {data.property.transactionType === "LOCATION" || data.property.transactionType === "CESSION_BAIL" ? (
+                <>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className={labelCls}>Taux d&apos;honoraires</label>
+                      <label className={labelCls}>Loyer proposé</label>
                       <input
                         className={inputCls}
-                        value={form.feesPercent}
-                        onChange={(e) => setForm({ ...form, feesPercent: e.target.value })}
-                        placeholder="ex: 15 % du loyer annuel HT"
+                        value={nego.proposedRent}
+                        onChange={(e) => setNego({ ...nego, proposedRent: e.target.value })}
+                        placeholder="ex: 2 500 € / mois HC"
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Montant</label>
+                      <label className={labelCls}>Franchise de loyer</label>
                       <input
                         className={inputCls}
-                        value={form.feesAmount}
-                        onChange={(e) => setForm({ ...form, feesAmount: e.target.value })}
-                        placeholder="ex: 25 000 € HT"
+                        value={nego.freeRent}
+                        onChange={(e) => setNego({ ...nego, freeRent: e.target.value })}
+                        placeholder="ex: 3 mois"
                       />
                     </div>
                     <div>
-                      <label className={labelCls}>Partie redevable</label>
-                      <select
+                      <label className={labelCls}>Dépôt de garantie</label>
+                      <input
                         className={inputCls}
-                        value={form.feesPayer}
-                        onChange={(e) =>
-                          setForm({ ...form, feesPayer: e.target.value as ContractFormData["feesPayer"] })
-                        }
-                      >
-                        <option value="PRENEUR">Preneur</option>
-                        <option value="BAILLEUR">Bailleur</option>
-                        <option value="ACQUEREUR">Acquéreur</option>
-                        <option value="VENDEUR">Vendeur</option>
-                        <option value="PARTAGE">Partagés</option>
-                      </select>
+                        value={nego.deposit}
+                        onChange={(e) => setNego({ ...nego, deposit: e.target.value })}
+                        placeholder="ex: 3 mois HC"
+                      />
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className={labelCls}>% Notre agence</label>
-                        <input
-                          className={inputCls}
-                          value={form.splitUsPct}
-                          onChange={(e) => setForm({ ...form, splitUsPct: e.target.value })}
-                        />
-                      </div>
-                      <div>
-                        <label className={labelCls}>% Co-mandataire</label>
-                        <input
-                          className={inputCls}
-                          value={form.splitThemPct}
-                          onChange={(e) => setForm({ ...form, splitThemPct: e.target.value })}
-                        />
-                      </div>
+                    <div>
+                      <label className={labelCls}>Durée du bail</label>
+                      <input
+                        className={inputCls}
+                        value={nego.leaseDuration}
+                        onChange={(e) => setNego({ ...nego, leaseDuration: e.target.value })}
+                        placeholder="ex: 9 ans (3/6/9) ferme"
+                      />
                     </div>
                   </div>
+                </>
+              ) : (
+                <div>
+                  <label className={labelCls}>Prix proposé</label>
+                  <input
+                    className={inputCls}
+                    value={nego.proposedPrice}
+                    onChange={(e) => setNego({ ...nego, proposedPrice: e.target.value })}
+                    placeholder="ex: 850 000 €"
+                  />
                 </div>
               )}
 
               <div>
-                <label className={labelCls}>Conditions particulières</label>
-                <textarea
+                <label className={labelCls}>Date d&apos;entrée en jouissance</label>
+                <input
+                  type="date"
                   className={inputCls}
-                  rows={3}
-                  value={form.specialConditions}
-                  onChange={(e) => setForm({ ...form, specialConditions: e.target.value })}
-                  placeholder="Informations complémentaires, exclusivités, exclusions…"
+                  value={nego.entryDate}
+                  onChange={(e) => setNego({ ...nego, entryDate: e.target.value })}
                 />
               </div>
 
-              <div className="rounded-lg bg-stone-50 p-3 text-xs text-stone-600 dark:bg-anthracite-800/50 dark:text-stone-400">
-                Signé par <strong className="text-anthracite-800 dark:text-stone-200">{data.currentUser.firstName} {data.currentUser.lastName}</strong>{" "}
-                pour le compte de <strong className="text-anthracite-800 dark:text-stone-200">{data.agency.name}</strong>.
+              <div>
+                <label className={labelCls}>Travaux à charge du bailleur</label>
+                <textarea
+                  className={inputCls}
+                  rows={2}
+                  value={nego.worksByLandlord}
+                  onChange={(e) => setNego({ ...nego, worksByLandlord: e.target.value })}
+                  placeholder="ex: réfection de la façade, climatisation en état de marche"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Travaux à charge du preneur</label>
+                <textarea
+                  className={inputCls}
+                  rows={2}
+                  value={nego.worksByTenant}
+                  onChange={(e) => setNego({ ...nego, worksByTenant: e.target.value })}
+                  placeholder="ex: aménagement intérieur, agencement cuisine"
+                />
+              </div>
+
+              <div>
+                <label className={labelCls}>Clauses particulières</label>
+                <textarea
+                  className={inputCls}
+                  rows={4}
+                  value={nego.clauses}
+                  onChange={(e) => setNego({ ...nego, clauses: e.target.value })}
+                  placeholder="Dérogations, exclusivités, clauses résolutoires, condition suspensive, etc."
+                />
+              </div>
+
+              <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 dark:border-amber-900/30 dark:bg-amber-900/10">
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">
+                  Honoraires &amp; répartition (visibles uniquement sur l&apos;exemplaire co-mandataire)
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Taux</label>
+                    <input
+                      className={inputCls}
+                      value={core.feesPercent}
+                      onChange={(e) => setCore({ ...core, feesPercent: e.target.value })}
+                      placeholder="ex: 15 % du loyer annuel HT"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Montant</label>
+                    <input
+                      className={inputCls}
+                      value={core.feesAmount}
+                      onChange={(e) => setCore({ ...core, feesAmount: e.target.value })}
+                      placeholder="ex: 25 000 € HT"
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Partie redevable</label>
+                    <select
+                      className={inputCls}
+                      value={core.feesPayer}
+                      onChange={(e) => setCore({ ...core, feesPayer: e.target.value as ContractFormData["feesPayer"] })}
+                    >
+                      <option value="PRENEUR">Preneur</option>
+                      <option value="BAILLEUR">Bailleur</option>
+                      <option value="ACQUEREUR">Acquéreur</option>
+                      <option value="VENDEUR">Vendeur</option>
+                      <option value="PARTAGE">Partagés</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className={labelCls}>% Notre agence</label>
+                      <input
+                        className={inputCls}
+                        value={core.splitUsPct}
+                        onChange={(e) => setCore({ ...core, splitUsPct: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelCls}>% Co-mandataire</label>
+                      <input
+                        className={inputCls}
+                        value={core.splitThemPct}
+                        onChange={(e) => setCore({ ...core, splitThemPct: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
+              <div>
+                <label className={labelCls}>Pour qui générer / envoyer ?</label>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {parties.map((p) => (
+                    <button
+                      key={p.role}
+                      type="button"
+                      onClick={() => setRecipientType(p.role)}
+                      className={`rounded-lg border px-3 py-2 text-left text-xs transition ${
+                        recipientType === p.role
+                          ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20"
+                          : "border-stone-200 bg-white hover:bg-stone-50 dark:border-stone-700 dark:bg-anthracite-800"
+                      }`}
+                    >
+                      <div className="font-semibold text-anthracite-900 dark:text-stone-100">
+                        {ROLE_LABELS[p.role]}
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-stone-500">
+                        {p.role === "CO_MANDATAIRE" ? "Honoraires visibles" : "Sans honoraires"}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-lg bg-stone-50 p-3 text-xs text-stone-600 dark:bg-anthracite-800/50 dark:text-stone-400">
+                <strong>Flux recommandé :</strong> 1) Télécharger l&apos;exemplaire Preneur, le lui faire signer, téléverser son image de signature dans l&apos;onglet 1 → 2) Générer l&apos;exemplaire Bailleur (la signature du preneur est reportée sur son PDF) → 3) Bailleur signe à son tour → 4) Exemplaire co-mandataire avec honoraires.
+              </div>
+
               <div>
                 <label className={labelCls}>Destinataire (email)</label>
                 <input
@@ -617,7 +705,7 @@ export function PropertyContractModal({
                   className={inputCls}
                   value={email.to}
                   onChange={(e) => setEmail({ ...email, to: e.target.value })}
-                  placeholder="contact@agence-partenaire.fr"
+                  placeholder="contact@partenaire.fr"
                 />
               </div>
               <div>
@@ -626,27 +714,23 @@ export function PropertyContractModal({
                   className={inputCls}
                   value={email.subject}
                   onChange={(e) => setEmail({ ...email, subject: e.target.value })}
-                  placeholder={`Contrat d'engagement — ${data.property.reference} ${data.property.title}`}
+                  placeholder={`${docTitle} — ${data.property.reference} ${data.property.title}`}
                 />
               </div>
               <div>
                 <label className={labelCls}>Message</label>
                 <textarea
                   className={inputCls}
-                  rows={6}
+                  rows={5}
                   value={email.body}
                   onChange={(e) => setEmail({ ...email, body: e.target.value })}
-                  placeholder="Bonjour, veuillez trouver ci-joint le contrat d'engagement pour signature…"
+                  placeholder="Bonjour, veuillez trouver ci-joint le document pour signature…"
                 />
               </div>
               <div className="rounded-lg bg-stone-50 p-3 text-xs text-stone-600 dark:bg-anthracite-800/50 dark:text-stone-400">
-                Le PDF sera généré avec le logo {data.agency.name}, les mentions légales de l&apos;agence et{" "}
-                {recipientType === "BAILLEUR" ? (
-                  <strong>sans la partie honoraires</strong>
-                ) : (
-                  <strong>avec la répartition d&apos;honoraires</strong>
-                )}.
-                Pièce jointe nommée automatiquement.
+                Exemplaire {ROLE_LABELS[recipientType]} — {showFees ? <strong>inclut la répartition d&apos;honoraires</strong> : <strong>sans honoraires</strong>}. Signé par{" "}
+                <strong className="text-anthracite-800 dark:text-stone-200">{data.currentUser.firstName} {data.currentUser.lastName}</strong>{" "}
+                pour <strong className="text-anthracite-800 dark:text-stone-200">{data.agency.name}</strong>.
               </div>
             </div>
           )}
@@ -676,19 +760,190 @@ export function PropertyContractModal({
               isLoading={busy === "download"}
               disabled={loading}
             >
-              Télécharger le PDF
+              Télécharger l&apos;exemplaire {ROLE_LABELS[recipientType]}
             </Button>
             {tab === "send" && (
               <Button type="button" onClick={handleSend} isLoading={busy === "email"} disabled={loading}>
                 Envoyer par email
               </Button>
             )}
-            {tab === "form" && (
-              <Button type="button" onClick={() => setTab("send")} disabled={loading}>
-                Suivant — Envoyer
+            {tab !== "send" && (
+              <Button
+                type="button"
+                onClick={() => setTab(tab === "parties" ? "nego" : "send")}
+                disabled={loading}
+              >
+                Suivant
               </Button>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PartyEditor({
+  party,
+  onChange,
+  onSignatureUpload,
+}: {
+  party: ContractParty;
+  onChange: (patch: Partial<ContractParty>) => void;
+  onSignatureUpload: (file: File | null) => void;
+}) {
+  const roleLabel = ROLE_LABELS[party.role];
+  const isAgency = party.role === "AGENCE" || party.role === "CO_MANDATAIRE";
+
+  return (
+    <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
+      <div className="mb-3 flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{roleLabel}</p>
+        {party.signatureDataUrl ? (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-200">
+            <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            Signature captée
+          </span>
+        ) : (
+          <span className="text-[10px] font-medium text-stone-400">En attente de signature</span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="col-span-2">
+          <label className={labelCls}>Nom / Raison sociale *</label>
+          <input
+            className={inputCls}
+            value={party.name}
+            onChange={(e) => onChange({ name: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Représentant</label>
+          <input
+            className={inputCls}
+            value={party.representative || ""}
+            onChange={(e) => onChange({ representative: e.target.value })}
+          />
+        </div>
+        {isAgency && (
+          <div>
+            <label className={labelCls}>Forme juridique</label>
+            <input
+              className={inputCls}
+              value={party.legalForm || ""}
+              onChange={(e) => onChange({ legalForm: e.target.value })}
+            />
+          </div>
+        )}
+        <div className="col-span-2">
+          <label className={labelCls}>Adresse</label>
+          <input
+            className={inputCls}
+            value={party.address || ""}
+            onChange={(e) => onChange({ address: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Code postal</label>
+          <input
+            className={inputCls}
+            value={party.zipCode || ""}
+            onChange={(e) => onChange({ zipCode: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Ville</label>
+          <input
+            className={inputCls}
+            value={party.city || ""}
+            onChange={(e) => onChange({ city: e.target.value })}
+          />
+        </div>
+        {isAgency && (
+          <>
+            <div>
+              <label className={labelCls}>SIRET</label>
+              <input
+                className={inputCls}
+                value={party.siret || ""}
+                onChange={(e) => onChange({ siret: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>Carte professionnelle</label>
+              <input
+                className={inputCls}
+                value={party.professionalCard || ""}
+                onChange={(e) => onChange({ professionalCard: e.target.value })}
+              />
+            </div>
+          </>
+        )}
+        <div>
+          <label className={labelCls}>Téléphone</label>
+          <input
+            className={inputCls}
+            value={party.phone || ""}
+            onChange={(e) => onChange({ phone: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Email</label>
+          <input
+            type="email"
+            className={inputCls}
+            value={party.email || ""}
+            onChange={(e) => onChange({ email: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-stone-100 pt-3 dark:border-stone-800">
+        <div className="col-span-2">
+          <label className={labelCls}>Image de signature (PNG/JPG)</label>
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            className="block w-full text-xs text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-anthracite-800 hover:file:bg-stone-200 dark:file:bg-anthracite-700 dark:file:text-stone-200"
+            onChange={(e) => onSignatureUpload(e.target.files?.[0] || null)}
+          />
+          {party.signatureDataUrl && (
+            <div className="mt-2 flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={party.signatureDataUrl}
+                alt="signature"
+                className="h-12 rounded border border-stone-200 bg-white object-contain px-2 dark:border-stone-700"
+              />
+              <button
+                type="button"
+                className="text-[11px] text-red-600 hover:underline"
+                onClick={() => onChange({ signatureDataUrl: null, signedAt: null, signedCity: null })}
+              >
+                Retirer
+              </button>
+            </div>
+          )}
+        </div>
+        <div>
+          <label className={labelCls}>Date de signature</label>
+          <input
+            type="date"
+            className={inputCls}
+            value={party.signedAt || ""}
+            onChange={(e) => onChange({ signedAt: e.target.value || null })}
+            disabled={!party.signatureDataUrl}
+          />
+          <input
+            className={inputCls + " mt-1"}
+            placeholder="Lieu"
+            value={party.signedCity || ""}
+            onChange={(e) => onChange({ signedCity: e.target.value || null })}
+            disabled={!party.signatureDataUrl}
+          />
         </div>
       </div>
     </div>

@@ -46,7 +46,12 @@ export async function POST(
   }
 
   const recipientType = b.recipientType;
-  if (recipientType !== "BAILLEUR" && recipientType !== "CO_MANDATAIRE") {
+  if (
+    recipientType !== "PRENEUR" &&
+    recipientType !== "BAILLEUR" &&
+    recipientType !== "CO_MANDATAIRE" &&
+    recipientType !== "AGENCE"
+  ) {
     return NextResponse.json({ error: "Type de destinataire invalide" }, { status: 400 });
   }
 
