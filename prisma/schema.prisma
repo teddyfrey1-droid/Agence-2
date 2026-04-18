@@ -271,6 +271,8 @@ model User {
   pushSubscriptions PushSubscription[]
   clientTracking    ClientTracking[]
   propertySharesSent PropertyShare[] @relation("PropertySharesSent")
+  panelOverrides    Panel[]            @relation("PanelAgentOverride")
+  panelAssignments  PanelAssignment[]  @relation("PanelAssignedBy")
 
   // Client portal — link to contact record
   linkedContactId   String?   @unique
@@ -418,6 +420,8 @@ model Property {
   statusHistory StatusHistory[]
   events        Event[]
   shares        PropertyShare[]
+  panels        Panel[]
+  panelHistory  PanelAssignment[]
 
   @@index([assignedToId])
   @@index([status])
@@ -888,4 +892,76 @@ model PropertyShare {
   @@index([sentById])
   @@index([shareToken])
   @@map("property_shares")
+}
+
+// ============================================================
+// PHYSICAL PANELS (street signage with reusable QR codes)
+// ============================================================
+
+enum PanelStatus {
+  DISPONIBLE   // free, no property assigned
+  ACTIF        // currently displaying a property
+  RETIRE       // archived / removed from rotation
+}
+
+model Panel {
+  id         String      @id @default(cuid())
+  // Short human-readable code printed on the back of the panel for inventory.
+  // Also embedded in the QR URL so the same panel can be remapped to any
+  // property without reprinting (e.g. PAN-0001).
+  code       String      @unique
+  label      String?     // optional location/description ("Vitrine 12 rue X")
+  status     PanelStatus @default(DISPONIBLE)
+  propertyId String?     // current assignment, null when free
+
+  // Optional override of the agent reachable through the QR. Defaults to
+  // the property's assigned agent when null.
+  agentOverrideId String?
+
+  notes      String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  property       Property?         @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  agentOverride  User?             @relation("PanelAgentOverride", fields: [agentOverrideId], references: [id])
+  assignments    PanelAssignment[]
+  scans          PanelScan[]
+
+  @@index([propertyId])
+  @@index([status])
+  @@map("panels")
+}
+
+model PanelAssignment {
+  id           String    @id @default(cuid())
+  panelId      String
+  propertyId   String
+  assignedById String?
+  assignedAt   DateTime  @default(now())
+  unassignedAt DateTime?
+  reason       String?   // free text: "vendu", "retiré", "réassigné"
+
+  panel      Panel     @relation(fields: [panelId], references: [id], onDelete: Cascade)
+  property   Property  @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  assignedBy User?     @relation("PanelAssignedBy", fields: [assignedById], references: [id])
+
+  @@index([panelId])
+  @@index([propertyId])
+  @@map("panel_assignments")
+}
+
+model PanelScan {
+  id         String   @id @default(cuid())
+  panelId    String
+  propertyId String?  // snapshot at scan time
+  agentId    String?  // snapshot at scan time
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  panel Panel @relation(fields: [panelId], references: [id], onDelete: Cascade)
+
+  @@index([panelId])
+  @@index([createdAt])
+  @@map("panel_scans")
 }

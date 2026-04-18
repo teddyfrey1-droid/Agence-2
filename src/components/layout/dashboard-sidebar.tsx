@@ -65,6 +65,7 @@ const navGroups: NavGroup[] = [
       { name: "Dossiers", href: "/dashboard/dossiers", icon: "M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" },
       { name: "Pipeline", href: "/dashboard/dossiers/pipeline", icon: "M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" },
       { name: "Carte", href: "/dashboard/carte", icon: "M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" },
+      { name: "Panneaux", href: "/dashboard/panneaux", icon: "M4 4h16v4H4zM4 12h10v8H4zM16 12h4v4h-4zM16 18h4v2h-4z" },
     ],
   },
   {

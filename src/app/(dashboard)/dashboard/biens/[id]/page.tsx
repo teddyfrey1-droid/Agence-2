@@ -16,6 +16,7 @@ import { PhotoUploader } from "@/components/photo-uploader";
 import { DeleteButton } from "@/components/delete-button";
 import { PublishButton } from "@/components/publish-button";
 import { PropertyShareButton } from "@/components/property-share-button";
+import { PropertyPanelsCard } from "@/components/property-panels-card";
 import { prisma } from "@/lib/prisma";
 
 export default async function PropertyDetailPage({
@@ -24,7 +25,7 @@ export default async function PropertyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [property, matches] = await Promise.all([
+  const [property, matches, attachedPanels, availablePanels] = await Promise.all([
     findPropertyById(id),
     prisma.match.findMany({
       where: { propertyId: id },
@@ -36,6 +37,22 @@ export default async function PropertyDetailPage({
         },
       },
       orderBy: { score: "desc" },
+    }),
+    prisma.panel.findMany({
+      where: { propertyId: id },
+      select: {
+        id: true,
+        code: true,
+        label: true,
+        _count: { select: { scans: true } },
+      },
+      orderBy: { code: "asc" },
+    }),
+    prisma.panel.findMany({
+      where: { status: "DISPONIBLE" },
+      select: { id: true, code: true, label: true },
+      orderBy: { code: "asc" },
+      take: 50,
     }),
   ]);
 
@@ -364,6 +381,17 @@ export default async function PropertyDetailPage({
               )}
             </CardContent>
           </Card>
+
+          <PropertyPanelsCard
+            propertyId={id}
+            attached={attachedPanels.map((p) => ({
+              id: p.id,
+              code: p.code,
+              label: p.label,
+              scanCount: p._count.scans,
+            }))}
+            available={availablePanels}
+          />
 
           <Card>
             <CardHeader>
