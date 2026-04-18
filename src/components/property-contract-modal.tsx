@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   generateContractPdf,
@@ -100,6 +100,9 @@ function emptyParty(role: PartyRole): ContractParty {
     signatureDataUrl: null,
     signedAt: null,
     signedCity: null,
+    // By default: only the co-mandataire sees the fees; every party must sign.
+    showFees: role === "CO_MANDATAIRE",
+    signatureRequired: true,
   };
 }
 
@@ -378,7 +381,8 @@ export function PropertyContractModal({
   }
 
   const signedCount = parties.filter((p) => p.signatureDataUrl).length;
-  const showFees = recipientType === "CO_MANDATAIRE";
+  const recipientParty = parties.find((p) => p.role === recipientType);
+  const showFees = recipientParty?.showFees ?? recipientType === "CO_MANDATAIRE";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -389,7 +393,7 @@ export function PropertyContractModal({
               Feuille d&apos;engagement multipartite
             </h2>
             <p className="text-xs text-stone-500">
-              Signature séquentielle — le preneur signe, puis le bailleur reçoit avec la signature captée. Honoraires masqués hors co-mandataire.
+              Sélectionnez par partie qui voit les honoraires et qui doit signer électroniquement.
             </p>
           </div>
           <button
@@ -687,7 +691,8 @@ export function PropertyContractModal({
                         {ROLE_LABELS[p.role]}
                       </div>
                       <div className="mt-0.5 text-[10px] text-stone-500">
-                        {p.role === "CO_MANDATAIRE" ? "Honoraires visibles" : "Sans honoraires"}
+                        {p.showFees ? "Honoraires visibles" : "Sans honoraires"}
+                        {p.signatureRequired === false ? " · signature non requise" : ""}
                       </div>
                     </button>
                   ))}
@@ -695,7 +700,7 @@ export function PropertyContractModal({
               </div>
 
               <div className="rounded-lg bg-stone-50 p-3 text-xs text-stone-600 dark:bg-anthracite-800/50 dark:text-stone-400">
-                <strong>Flux recommandé :</strong> 1) Télécharger l&apos;exemplaire Preneur, le lui faire signer, téléverser son image de signature dans l&apos;onglet 1 → 2) Générer l&apos;exemplaire Bailleur (la signature du preneur est reportée sur son PDF) → 3) Bailleur signe à son tour → 4) Exemplaire co-mandataire avec honoraires.
+                <strong>Flux recommandé :</strong> chaque partie signe directement dans l&apos;onglet 1 (pavé de signature). Générez ensuite l&apos;exemplaire adapté — les honoraires ne sont inclus que pour les rôles que vous avez autorisés à les voir.
               </div>
 
               <div>
@@ -794,12 +799,15 @@ function PartyEditor({
 }) {
   const roleLabel = ROLE_LABELS[party.role];
   const isAgency = party.role === "AGENCE" || party.role === "CO_MANDATAIRE";
+  const signatureRequired = party.signatureRequired !== false;
 
   return (
     <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{roleLabel}</p>
-        {party.signatureDataUrl ? (
+        {!signatureRequired ? (
+          <span className="text-[10px] font-medium text-stone-400">Signature non requise</span>
+        ) : party.signatureDataUrl ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-200">
             <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -809,6 +817,27 @@ function PartyEditor({
         ) : (
           <span className="text-[10px] font-medium text-stone-400">En attente de signature</span>
         )}
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-3 rounded-lg bg-stone-50 p-2 text-[11px] text-anthracite-700 dark:bg-anthracite-800/50 dark:text-stone-300">
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            className="h-3.5 w-3.5 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+            checked={party.showFees ?? false}
+            onChange={(e) => onChange({ showFees: e.target.checked })}
+          />
+          <span>Voit les honoraires sur son exemplaire</span>
+        </label>
+        <label className="flex items-center gap-1.5 cursor-pointer">
+          <input
+            type="checkbox"
+            className="h-3.5 w-3.5 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+            checked={signatureRequired}
+            onChange={(e) => onChange({ signatureRequired: e.target.checked })}
+          />
+          <span>Signature électronique obligatoire</span>
+        </label>
       </div>
 
       <div className="grid grid-cols-2 gap-2">
@@ -901,51 +930,179 @@ function PartyEditor({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-stone-100 pt-3 dark:border-stone-800">
-        <div className="col-span-2">
-          <label className={labelCls}>Image de signature (PNG/JPG)</label>
-          <input
-            type="file"
-            accept="image/png,image/jpeg"
-            className="block w-full text-xs text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-anthracite-800 hover:file:bg-stone-200 dark:file:bg-anthracite-700 dark:file:text-stone-200"
-            onChange={(e) => onSignatureUpload(e.target.files?.[0] || null)}
-          />
-          {party.signatureDataUrl && (
+      {signatureRequired ? (
+        <div className="mt-3 grid grid-cols-3 gap-2 border-t border-stone-100 pt-3 dark:border-stone-800">
+          <div className="col-span-2">
+            <label className={labelCls}>Signature électronique</label>
+            <SignaturePad
+              value={party.signatureDataUrl || null}
+              onChange={(dataUrl) =>
+                onChange({
+                  signatureDataUrl: dataUrl,
+                  signedAt: dataUrl ? todayISO() : null,
+                })
+              }
+            />
             <div className="mt-2 flex items-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={party.signatureDataUrl}
-                alt="signature"
-                className="h-12 rounded border border-stone-200 bg-white object-contain px-2 dark:border-stone-700"
-              />
-              <button
-                type="button"
-                className="text-[11px] text-red-600 hover:underline"
-                onClick={() => onChange({ signatureDataUrl: null, signedAt: null, signedCity: null })}
-              >
-                Retirer
-              </button>
+              <label className="text-[11px] text-stone-500 cursor-pointer hover:text-anthracite-800">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  className="hidden"
+                  onChange={(e) => onSignatureUpload(e.target.files?.[0] || null)}
+                />
+                ou importer une image
+              </label>
+              {party.signatureDataUrl && (
+                <button
+                  type="button"
+                  className="text-[11px] text-red-600 hover:underline"
+                  onClick={() => onChange({ signatureDataUrl: null, signedAt: null, signedCity: null })}
+                >
+                  Effacer
+                </button>
+              )}
             </div>
-          )}
+          </div>
+          <div>
+            <label className={labelCls}>Date de signature</label>
+            <input
+              type="date"
+              className={inputCls}
+              value={party.signedAt || ""}
+              onChange={(e) => onChange({ signedAt: e.target.value || null })}
+              disabled={!party.signatureDataUrl}
+            />
+            <input
+              className={inputCls + " mt-1"}
+              placeholder="Lieu"
+              value={party.signedCity || ""}
+              onChange={(e) => onChange({ signedCity: e.target.value || null })}
+              disabled={!party.signatureDataUrl}
+            />
+          </div>
         </div>
-        <div>
-          <label className={labelCls}>Date de signature</label>
-          <input
-            type="date"
-            className={inputCls}
-            value={party.signedAt || ""}
-            onChange={(e) => onChange({ signedAt: e.target.value || null })}
-            disabled={!party.signatureDataUrl}
-          />
-          <input
-            className={inputCls + " mt-1"}
-            placeholder="Lieu"
-            value={party.signedCity || ""}
-            onChange={(e) => onChange({ signedCity: e.target.value || null })}
-            disabled={!party.signatureDataUrl}
-          />
+      ) : (
+        <div className="mt-3 rounded-lg border border-dashed border-stone-200 bg-stone-50/60 px-3 py-2 text-[11px] italic text-stone-500 dark:border-stone-700 dark:bg-anthracite-800/40">
+          Cette partie n&apos;apparaît pas dans le pavé de signatures.
         </div>
+      )}
+    </div>
+  );
+}
+
+function SignaturePad({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (dataUrl: string | null) => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawingRef = useRef(false);
+  const hasStrokeRef = useRef(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ratio = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(ratio, ratio);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = "#111827";
+    if (value) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+      };
+      img.src = value;
+    }
+  }, [value]);
+
+  function pos(evt: React.PointerEvent<HTMLCanvasElement>) {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return { x: evt.clientX - rect.left, y: evt.clientY - rect.top };
+  }
+
+  function start(evt: React.PointerEvent<HTMLCanvasElement>) {
+    evt.preventDefault();
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    (canvas as HTMLCanvasElement).setPointerCapture(evt.pointerId);
+    drawingRef.current = true;
+    const p = pos(evt);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+
+  function draw(evt: React.PointerEvent<HTMLCanvasElement>) {
+    if (!drawingRef.current) return;
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    const p = pos(evt);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    hasStrokeRef.current = true;
+  }
+
+  function end() {
+    if (!drawingRef.current) return;
+    drawingRef.current = false;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    if (hasStrokeRef.current) {
+      onChange(canvas.toDataURL("image/png"));
+    }
+  }
+
+  function clear() {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    const rect = canvas.getBoundingClientRect();
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    hasStrokeRef.current = false;
+    onChange(null);
+  }
+
+  return (
+    <div>
+      <div className="relative rounded-lg border border-stone-300 bg-white dark:border-stone-600">
+        <canvas
+          ref={canvasRef}
+          className="block h-24 w-full touch-none rounded-lg"
+          style={{ touchAction: "none" }}
+          onPointerDown={start}
+          onPointerMove={draw}
+          onPointerUp={end}
+          onPointerLeave={end}
+          onPointerCancel={end}
+        />
+        {!value && !hasStrokeRef.current && (
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[11px] italic text-stone-400">
+            Signez ici avec la souris ou le doigt
+          </span>
+        )}
       </div>
+      <button
+        type="button"
+        className="mt-1 text-[11px] text-stone-500 hover:text-anthracite-800"
+        onClick={clear}
+      >
+        Effacer la signature
+      </button>
     </div>
   );
 }

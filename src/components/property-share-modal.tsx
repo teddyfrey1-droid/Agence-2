@@ -9,6 +9,7 @@ interface Contact {
   firstName: string;
   lastName: string;
   email: string | null;
+  company?: string | null;
 }
 
 interface Share {
@@ -54,9 +55,12 @@ export function PropertyShareModal({
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [shares, setShares] = useState<Share[]>([]);
   const [search, setSearch] = useState("");
+  const [searching, setSearching] = useState(false);
   const [form, setForm] = useState({
     recipientEmail: "",
-    recipientName: "",
+    recipientFirstName: "",
+    recipientLastName: "",
+    recipientCompany: "",
     contactId: "",
     message: "",
   });
@@ -65,12 +69,29 @@ export function PropertyShareModal({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/contacts?search=${encodeURIComponent(search)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.items) setContacts(data.items.filter((c: Contact) => c.email));
+    if (search.trim().length < 2) {
+      setContacts([]);
+      return;
+    }
+    setSearching(true);
+    const controller = new AbortController();
+    const t = setTimeout(() => {
+      fetch(`/api/contacts?search=${encodeURIComponent(search.trim())}&perPage=10`, {
+        signal: controller.signal,
       })
-      .catch(() => {});
+        .then((r) => (r.ok ? r.json() : { items: [] }))
+        .then((data) => {
+          if (Array.isArray(data.items)) {
+            setContacts(data.items.filter((c: Contact) => c.email));
+          }
+        })
+        .catch(() => {})
+        .finally(() => setSearching(false));
+    }, 200);
+    return () => {
+      controller.abort();
+      clearTimeout(t);
+    };
   }, [search]);
 
   useEffect(() => {
@@ -84,31 +105,66 @@ export function PropertyShareModal({
     setForm({
       ...form,
       recipientEmail: contact.email || "",
-      recipientName: `${contact.firstName} ${contact.lastName}`,
+      recipientFirstName: contact.firstName || "",
+      recipientLastName: contact.lastName || "",
+      recipientCompany: contact.company || "",
       contactId: contact.id,
     });
     setSearch("");
   };
 
+  const composeRecipientName = () => {
+    const person = [form.recipientFirstName, form.recipientLastName].filter(Boolean).join(" ").trim();
+    if (form.recipientCompany.trim() && person) {
+      return `${person} — ${form.recipientCompany.trim()}`;
+    }
+    return person || form.recipientCompany.trim();
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.recipientEmail) return;
-    setSending(true);
     setError(null);
+    const email = form.recipientEmail.trim();
+    if (!email) {
+      setError("Email du destinataire requis.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError("Adresse email invalide.");
+      return;
+    }
+    const recipientName = composeRecipientName();
+    if (!recipientName) {
+      setError("Renseignez au moins un prénom/nom ou une société.");
+      return;
+    }
+    setSending(true);
 
     try {
       const res = await fetch(`/api/properties/${propertyId}/share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          recipientEmail: email,
+          recipientName,
+          contactId: form.contactId || null,
+          message: form.message,
+        }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Erreur");
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Erreur lors de l'envoi.");
         return;
       }
       setSuccess(true);
-      setForm({ recipientEmail: "", recipientName: "", contactId: "", message: "" });
+      setForm({
+        recipientEmail: "",
+        recipientFirstName: "",
+        recipientLastName: "",
+        recipientCompany: "",
+        contactId: "",
+        message: "",
+      });
       setTimeout(() => setSuccess(false), 3000);
     } catch {
       setError("Erreur réseau");
@@ -161,72 +217,81 @@ export function PropertyShareModal({
             )}
 
             {/* Contact search */}
-            <div>
-              <label className="block text-sm font-medium text-anthracite-700 dark:text-stone-300 mb-1">
-                Destinataire
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-anthracite-700 dark:text-stone-300">
+                Rechercher dans mes contacts
               </label>
-              {form.recipientName ? (
-                <div className="flex items-center justify-between rounded-lg bg-brand-50 dark:bg-brand-900/20 px-3 py-2">
-                  <div>
-                    <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">{form.recipientName}</p>
-                    <p className="text-xs text-stone-500">{form.recipientEmail}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, recipientEmail: "", recipientName: "", contactId: "" })}
-                    className="text-stone-400 hover:text-stone-600"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <input
-                    type="text"
-                    placeholder="Rechercher un contact..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className={inputClass}
-                  />
-                  {search.length >= 2 && contacts.length > 0 && (
-                    <div className="max-h-40 overflow-y-auto rounded-lg border border-stone-200 dark:border-stone-700 divide-y divide-stone-100 dark:divide-stone-800">
-                      {contacts.slice(0, 8).map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => selectContact(c)}
-                          className="w-full px-3 py-2 text-left hover:bg-stone-50 dark:hover:bg-anthracite-800 transition-colors"
-                        >
-                          <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
-                            {c.firstName} {c.lastName}
-                          </p>
-                          <p className="text-xs text-stone-400">{c.email}</p>
-                        </button>
-                      ))}
-                    </div>
+              <input
+                type="text"
+                placeholder="Nom, prénom, société ou email..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className={inputClass}
+              />
+              {search.trim().length >= 2 && (
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-stone-200 dark:border-stone-700 divide-y divide-stone-100 dark:divide-stone-800">
+                  {searching && contacts.length === 0 && (
+                    <p className="px-3 py-2 text-xs text-stone-400">Recherche en cours…</p>
                   )}
-                  <div className="text-xs text-stone-400 dark:text-stone-500">ou saisir manuellement :</div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="Nom"
-                      value={form.recipientName}
-                      onChange={(e) => setForm({ ...form, recipientName: e.target.value })}
-                      className={inputClass}
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      required
-                      value={form.recipientEmail}
-                      onChange={(e) => setForm({ ...form, recipientEmail: e.target.value })}
-                      className={inputClass}
-                    />
-                  </div>
+                  {!searching && contacts.length === 0 && (
+                    <p className="px-3 py-2 text-xs text-stone-400">
+                      Aucun contact trouvé — remplissez les champs ci-dessous pour un envoi ponctuel.
+                    </p>
+                  )}
+                  {contacts.slice(0, 8).map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => selectContact(c)}
+                      className="w-full px-3 py-2 text-left hover:bg-stone-50 dark:hover:bg-anthracite-800 transition-colors"
+                    >
+                      <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
+                        {c.firstName} {c.lastName}
+                        {c.company ? <span className="text-stone-400"> — {c.company}</span> : null}
+                      </p>
+                      <p className="text-xs text-stone-400">{c.email}</p>
+                    </button>
+                  ))}
                 </div>
               )}
+
+              {form.contactId && (
+                <p className="text-[11px] text-brand-600">
+                  Contact lié depuis votre base — toute interaction sera enregistrée sur sa fiche.
+                </p>
+              )}
+
+              <div className="pt-2 grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  placeholder="Prénom"
+                  value={form.recipientFirstName}
+                  onChange={(e) => setForm({ ...form, recipientFirstName: e.target.value, contactId: "" })}
+                  className={inputClass}
+                />
+                <input
+                  type="text"
+                  placeholder="Nom"
+                  value={form.recipientLastName}
+                  onChange={(e) => setForm({ ...form, recipientLastName: e.target.value, contactId: "" })}
+                  className={inputClass}
+                />
+                <input
+                  type="text"
+                  placeholder="Société (optionnel)"
+                  value={form.recipientCompany}
+                  onChange={(e) => setForm({ ...form, recipientCompany: e.target.value, contactId: "" })}
+                  className={inputClass + " col-span-2"}
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  required
+                  value={form.recipientEmail}
+                  onChange={(e) => setForm({ ...form, recipientEmail: e.target.value, contactId: "" })}
+                  className={inputClass + " col-span-2"}
+                />
+              </div>
             </div>
 
             <div>

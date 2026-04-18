@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { findPropertyById } from "@/modules/properties";
+import { prisma } from "@/lib/prisma";
 import { formatPrice, formatSurface, formatDate } from "@/lib/utils";
 import {
   PROPERTY_TYPE_LABELS,
@@ -18,6 +19,14 @@ export default async function PropertyDetailPage({
   const property = await findPropertyById(id);
 
   if (!property || !property.isPublished) {
+    // Legacy fallback: older emails linked /biens/<shareToken>. Redirect to the new share view.
+    const share = await prisma.propertyShare.findUnique({
+      where: { shareToken: id },
+      select: { shareToken: true },
+    });
+    if (share) {
+      redirect(`/biens/partage/${share.shareToken}`);
+    }
     notFound();
   }
 
@@ -76,8 +85,10 @@ export default async function PropertyDetailPage({
               </h1>
 
               <p className="mt-2 text-lg text-stone-500">
-                {property.address && `${property.address}, `}
                 {property.district || property.city}
+              </p>
+              <p className="mt-1 text-xs italic text-stone-400">
+                Localisation approximative — l&apos;adresse exacte est communiquée aux candidats qualifiés après prise de contact.
               </p>
 
               {property.description && (

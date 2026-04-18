@@ -9,6 +9,7 @@
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
 const EMAIL_FROM_RAW = process.env.EMAIL_FROM || "noreply@retailplace.immo";
+const AGENCY_NAME = process.env.AGENCY_NAME || "Retail Avenue";
 
 /**
  * Escape HTML special characters to prevent HTML injection in email templates.
@@ -30,7 +31,7 @@ function parseSender(): { email: string; name: string } {
   if (match) {
     return { name: match[1].trim(), email: match[2].trim() };
   }
-  return { email: EMAIL_FROM_RAW.trim(), name: "Retail Avenue" };
+  return { email: EMAIL_FROM_RAW.trim(), name: AGENCY_NAME };
 }
 
 interface EmailAttachment {
@@ -98,6 +99,106 @@ async function sendEmail(options: EmailOptions): Promise<boolean> {
   }
 }
 
+// ─── Shared branded layout ───────────────────────────────────────────
+
+/**
+ * Absolute URL of the brand logo shown in email headers. `/logo-mark.svg` is
+ * served from /public so this resolves to `<APP_URL>/logo-mark.svg`.
+ */
+const LOGO_URL = `${APP_URL.replace(/\/$/, "")}/logo-mark.svg`;
+
+interface LayoutOptions {
+  /** Eyebrow label above the main title, e.g. "Proposition de bien" */
+  eyebrow: string;
+  /** Main H1 title */
+  title: string;
+  /** HTML body content */
+  content: string;
+  /** Optional CTA button */
+  cta?: { label: string; href: string };
+  /** Optional footer line (defaults to agency coordinates) */
+  footerNote?: string;
+}
+
+function brandedLayout(opts: LayoutOptions): string {
+  const { eyebrow, title, content, cta, footerNote } = opts;
+  const ctaHtml = cta
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:28px auto;">
+         <tr>
+           <td align="center" bgcolor="#a68a4e" style="border-radius:8px;">
+             <a href="${escapeHtml(cta.href)}"
+                style="display:inline-block;padding:14px 32px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:15px;color:#ffffff;text-decoration:none;font-weight:600;letter-spacing:0.02em;">
+               ${escapeHtml(cta.label)}
+             </a>
+           </td>
+         </tr>
+       </table>`
+    : "";
+
+  const footer =
+    footerNote ||
+    `Cet email vous est adressé par ${escapeHtml(AGENCY_NAME)} dans le cadre de la gestion de votre dossier commercial.`;
+
+  return `<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>${escapeHtml(title)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f5f2ec;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;color:#23211d;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f5f2ec" style="padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(32,31,29,0.06);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#fbf7ef 0%,#efe8d9 100%);padding:28px 32px;border-bottom:1px solid #e8dfcc;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="left">
+                    <img src="${escapeHtml(LOGO_URL)}" alt="${escapeHtml(AGENCY_NAME)}" height="32"
+                      style="display:block;height:32px;width:auto;" />
+                  </td>
+                  <td align="right" style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#8a815f;font-weight:600;">
+                    ${escapeHtml(eyebrow)}
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:36px 36px 28px;">
+              <h1 style="margin:0 0 18px;font-family:'Georgia',serif;font-size:24px;line-height:1.25;color:#1a1a2e;font-weight:600;">
+                ${escapeHtml(title)}
+              </h1>
+              <div style="font-size:15px;line-height:1.65;color:#3a3630;">
+                ${content}
+              </div>
+              ${ctaHtml}
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 36px;">
+              <div style="border-top:1px solid #ece6d8;"></div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 36px 30px;font-size:12px;line-height:1.55;color:#8a857a;">
+              <strong style="color:#3a3630;">${escapeHtml(AGENCY_NAME)}</strong><br />
+              ${footer}
+            </td>
+          </tr>
+        </table>
+        <p style="max-width:600px;margin:16px auto 0;font-size:11px;line-height:1.5;color:#a39f95;">
+          Si vous avez reçu cet email par erreur, merci de le supprimer. © ${new Date().getFullYear()} ${escapeHtml(AGENCY_NAME)}.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
 // ─── Email templates ────────────────────────────────────────────────
 
 export async function sendInvitationEmail(
@@ -107,33 +208,26 @@ export async function sendInvitationEmail(
 ): Promise<boolean> {
   const activationUrl = `${APP_URL}/activation?token=${token}`;
 
+  const content = `
+    <p style="margin:0 0 14px;">Bonjour <strong>${escapeHtml(firstName)}</strong>,</p>
+    <p style="margin:0 0 14px;">
+      Vous avez été invité(e) à rejoindre la plateforme ${escapeHtml(AGENCY_NAME)}.
+      Cliquez sur le bouton ci-dessous pour activer votre compte et définir votre mot de passe.
+    </p>
+    <p style="margin:0;color:#6e695f;font-size:13px;">
+      Ce lien expire dans 48 heures. Si vous n'êtes pas à l'origine de cette invitation, ignorez simplement cet email.
+    </p>`;
+
   return sendEmail({
     to,
-    subject: "Vous êtes invité à rejoindre Retail Avenue",
-    html: `
-      <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue sur Retail Avenue</h1>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${escapeHtml(firstName)},
-        </p>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Vous avez été invité(e) à rejoindre la plateforme Retail Avenue.
-          Cliquez sur le bouton ci-dessous pour activer votre compte et définir votre mot de passe.
-        </p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${escapeHtml(activationUrl)}"
-             style="background: #8B6914; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-            Activer mon compte
-          </a>
-        </div>
-        <p style="color: #888; font-size: 14px;">
-          Ce lien expire dans 48 heures. Si vous n'avez pas demandé cette invitation, ignorez cet email.
-        </p>
-        <p style="color: #888; font-size: 14px;">
-          Lien direct : <a href="${escapeHtml(activationUrl)}">${escapeHtml(activationUrl)}</a>
-        </p>
-      </div>
-    `,
+    subject: `Vous êtes invité à rejoindre ${AGENCY_NAME}`,
+    html: brandedLayout({
+      eyebrow: "Invitation",
+      title: "Bienvenue à bord",
+      content,
+      cta: { label: "Activer mon compte", href: activationUrl },
+      footerNote: `Lien direct : <a href="${escapeHtml(activationUrl)}" style="color:#a68a4e;">${escapeHtml(activationUrl)}</a>`,
+    }),
   });
 }
 
@@ -144,33 +238,26 @@ export async function sendPasswordResetEmail(
 ): Promise<boolean> {
   const resetUrl = `${APP_URL}/reinitialisation-mot-de-passe?token=${token}`;
 
+  const content = `
+    <p style="margin:0 0 14px;">Bonjour <strong>${escapeHtml(firstName)}</strong>,</p>
+    <p style="margin:0 0 14px;">
+      Vous avez demandé la réinitialisation de votre mot de passe.
+      Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
+    </p>
+    <p style="margin:0;color:#6e695f;font-size:13px;">
+      Ce lien expire dans une heure. Si vous n'avez pas fait cette demande, ignorez cet email — votre compte reste sécurisé.
+    </p>`;
+
   return sendEmail({
     to,
-    subject: "Réinitialisation de votre mot de passe - Retail Avenue",
-    html: `
-      <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">Réinitialisation du mot de passe</h1>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${escapeHtml(firstName)},
-        </p>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Vous avez demandé la réinitialisation de votre mot de passe.
-          Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe.
-        </p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${escapeHtml(resetUrl)}"
-             style="background: #8B6914; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-            Réinitialiser mon mot de passe
-          </a>
-        </div>
-        <p style="color: #888; font-size: 14px;">
-          Ce lien expire dans 1 heure. Si vous n'avez pas fait cette demande, ignorez cet email.
-        </p>
-        <p style="color: #888; font-size: 14px;">
-          Lien direct : <a href="${escapeHtml(resetUrl)}">${escapeHtml(resetUrl)}</a>
-        </p>
-      </div>
-    `,
+    subject: `Réinitialisation de votre mot de passe — ${AGENCY_NAME}`,
+    html: brandedLayout({
+      eyebrow: "Sécurité",
+      title: "Réinitialisation du mot de passe",
+      content,
+      cta: { label: "Choisir un nouveau mot de passe", href: resetUrl },
+      footerNote: `Lien direct : <a href="${escapeHtml(resetUrl)}" style="color:#a68a4e;">${escapeHtml(resetUrl)}</a>`,
+    }),
   });
 }
 
@@ -180,26 +267,22 @@ export async function sendWelcomeEmail(
 ): Promise<boolean> {
   const loginUrl = `${APP_URL}/login`;
 
+  const content = `
+    <p style="margin:0 0 14px;">Bonjour <strong>${escapeHtml(firstName)}</strong>,</p>
+    <p style="margin:0 0 14px;">
+      Votre compte a été activé avec succès. Vous pouvez désormais vous connecter à la plateforme
+      et démarrer votre suivi d'activité.
+    </p>`;
+
   return sendEmail({
     to,
-    subject: "Votre compte Retail Avenue est activé",
-    html: `
-      <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">Bienvenue !</h1>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${escapeHtml(firstName)},
-        </p>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter.
-        </p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${loginUrl}"
-             style="background: #8B6914; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-            Se connecter
-          </a>
-        </div>
-      </div>
-    `,
+    subject: `Votre compte ${AGENCY_NAME} est activé`,
+    html: brandedLayout({
+      eyebrow: "Compte activé",
+      title: "Bienvenue !",
+      content,
+      cta: { label: "Se connecter", href: loginUrl },
+    }),
   });
 }
 
@@ -218,41 +301,60 @@ export async function sendPropertyShareEmail(params: {
   senderName: string;
   message?: string;
 }): Promise<boolean> {
-  const viewUrl = `${APP_URL}/biens/${params.shareToken}?src=share`;
+  const viewUrl = `${APP_URL}/biens/partage/${params.shareToken}`;
   const priceDisplay = params.transactionType === "LOCATION"
-    ? params.propertyRent ? `${new Intl.NumberFormat("fr-FR").format(params.propertyRent)} €/mois` : "Prix sur demande"
-    : params.propertyPrice ? `${new Intl.NumberFormat("fr-FR").format(params.propertyPrice)} €` : "Prix sur demande";
+    ? params.propertyRent
+      ? `${new Intl.NumberFormat("fr-FR").format(params.propertyRent)} € / mois HT HC`
+      : "Prix sur demande"
+    : params.propertyPrice
+      ? `${new Intl.NumberFormat("fr-FR").format(params.propertyPrice)} €`
+      : "Prix sur demande";
+
+  const content = `
+    <p style="margin:0 0 14px;">
+      Bonjour${params.recipientName ? ` <strong>${escapeHtml(params.recipientName)}</strong>` : ""},
+    </p>
+    <p style="margin:0 0 18px;">
+      <strong>${escapeHtml(params.senderName)}</strong> vous propose un bien qui pourrait correspondre à votre recherche.
+    </p>
+    ${params.message ? `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;">
+        <tr><td style="border-left:3px solid #a68a4e;padding:10px 14px;background:#faf6ee;border-radius:0 8px 8px 0;font-style:italic;color:#3a3630;font-size:14px;line-height:1.55;">
+          ${escapeHtml(params.message)}
+        </td></tr>
+      </table>` : ""}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 8px;border:1px solid #ece6d8;border-radius:10px;">
+      <tr>
+        <td style="padding:18px 20px;">
+          <p style="margin:0 0 4px;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8a815f;font-weight:600;">
+            Réf. ${escapeHtml(params.propertyReference)}
+          </p>
+          <p style="margin:0 0 6px;font-size:17px;font-weight:700;color:#1a1a2e;">
+            ${escapeHtml(params.propertyTitle)}
+          </p>
+          <p style="margin:0 0 10px;font-size:14px;color:#6e695f;">
+            ${escapeHtml(params.propertyCity)}
+          </p>
+          <p style="margin:0;font-size:20px;font-weight:700;color:#a68a4e;">
+            ${priceDisplay}
+          </p>
+        </td>
+      </tr>
+    </table>
+    <p style="margin:16px 0 0;font-size:13px;color:#6e695f;">
+      L'accès à la fiche complète est personnel et confidentiel.
+    </p>`;
 
   return sendEmail({
     to: params.to,
     subject: `Proposition de bien — ${params.propertyTitle} (${params.propertyReference})`,
-    html: `
-      <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">Proposition de bien</h1>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour${params.recipientName ? ` ${escapeHtml(params.recipientName)}` : ""},
-        </p>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          ${escapeHtml(params.senderName)} vous propose un bien qui pourrait vous intéresser :
-        </p>
-        ${params.message ? `<div style="background: #f5f5f0; border-left: 3px solid #8B6914; padding: 12px 16px; margin: 16px 0; border-radius: 0 8px 8px 0;"><p style="color: #555; font-size: 14px; line-height: 1.5; margin: 0; font-style: italic;">${escapeHtml(params.message)}</p></div>` : ""}
-        <div style="background: #fafaf8; border: 1px solid #e5e5e0; border-radius: 12px; padding: 24px; margin: 24px 0;">
-          <h2 style="color: #1a1a2e; font-size: 18px; margin: 0 0 8px 0;">${escapeHtml(params.propertyTitle)}</h2>
-          <p style="color: #8B6914; font-size: 14px; margin: 0 0 4px 0;">${escapeHtml(params.propertyReference)}</p>
-          <p style="color: #666; font-size: 14px; margin: 0 0 12px 0;">${escapeHtml(params.propertyCity)}</p>
-          <p style="color: #1a1a2e; font-size: 20px; font-weight: 700; margin: 0;">${priceDisplay}</p>
-        </div>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${viewUrl}"
-             style="background: #8B6914; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-            Voir le bien
-          </a>
-        </div>
-        <p style="color: #888; font-size: 13px; text-align: center;">
-          Proposé par ${escapeHtml(params.senderName)} — Retail Avenue
-        </p>
-      </div>
-    `,
+    html: brandedLayout({
+      eyebrow: "Proposition de bien",
+      title: "Un bien sélectionné pour vous",
+      content,
+      cta: { label: "Voir la fiche du bien", href: viewUrl },
+      footerNote: `Proposé par <strong>${escapeHtml(params.senderName)}</strong> — ${escapeHtml(AGENCY_NAME)}`,
+    }),
   });
 }
 
@@ -265,33 +367,26 @@ export async function sendFollowUpEmail(
 ): Promise<boolean> {
   const loginUrl = `${APP_URL}/espace-client`;
 
+  const content = `
+    <p style="margin:0 0 14px;">Bonjour <strong>${escapeHtml(firstName)}</strong>,</p>
+    <p style="margin:0 0 14px;">
+      Nous n'avons pas eu de nouvelles depuis ${escapeHtml(daysSinceLastActivity)} jours.
+      De nouveaux biens ont été ajoutés et pourraient correspondre à vos critères.
+    </p>
+    <p style="margin:0;">
+      Connectez-vous à votre espace client pour consulter les dernières propositions.
+    </p>`;
+
   return sendEmail({
     to,
-    subject: "Êtes-vous toujours en recherche ? — Retail Avenue",
-    html: `
-      <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">Comment avance votre recherche ?</h1>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${escapeHtml(firstName)},
-        </p>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Nous n'avons pas eu de nouvelles depuis ${escapeHtml(daysSinceLastActivity)} jours.
-          De nouveaux biens ont été ajoutés et pourraient correspondre à vos critères.
-        </p>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Connectez-vous à votre espace client pour consulter les dernières propositions.
-        </p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${loginUrl}"
-             style="background: #8B6914; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-            Accéder à mon espace
-          </a>
-        </div>
-        <p style="color: #888; font-size: 13px; text-align: center;">
-          Votre conseiller reste à votre disposition pour toute question.
-        </p>
-      </div>
-    `,
+    subject: `Êtes-vous toujours en recherche ? — ${AGENCY_NAME}`,
+    html: brandedLayout({
+      eyebrow: "Suivi de recherche",
+      title: "Comment avance votre recherche ?",
+      content,
+      cta: { label: "Accéder à mon espace", href: loginUrl },
+      footerNote: "Votre conseiller reste à votre disposition pour toute question.",
+    }),
   });
 }
 
@@ -307,33 +402,39 @@ export async function sendMatchingPropertyEmail(
 ): Promise<boolean> {
   const propertyUrl = `${APP_URL}/espace-client/biens/${propertyId}`;
 
+  const scoreColor = score >= 70 ? "#047857" : "#b45309";
+  const scoreBg = score >= 70 ? "#ecfdf5" : "#fffbeb";
+
+  const content = `
+    <p style="margin:0 0 14px;">Bonjour <strong>${escapeHtml(firstName)}</strong>,</p>
+    <p style="margin:0 0 14px;">
+      Nous avons identifié un bien qui correspond à vos critères.
+    </p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 0;border:1px solid #ece6d8;border-radius:10px;">
+      <tr>
+        <td style="padding:18px 20px;">
+          <p style="margin:0 0 4px;font-size:17px;font-weight:700;color:#1a1a2e;">
+            ${escapeHtml(propertyTitle)}
+          </p>
+          <p style="margin:0 0 12px;font-size:14px;color:#6e695f;">
+            ${escapeHtml(propertyCity)}
+          </p>
+          <span style="display:inline-block;background:${scoreBg};color:${scoreColor};padding:5px 12px;border-radius:20px;font-size:13px;font-weight:600;">
+            Score de compatibilité : ${escapeHtml(score)} %
+          </span>
+        </td>
+      </tr>
+    </table>`;
+
   return sendEmail({
     to,
     subject: `Nouveau bien correspondant à votre recherche — ${propertyTitle}`,
-    html: `
-      <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">Un bien correspond à votre recherche</h1>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${escapeHtml(firstName)},
-        </p>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Nous avons identifié un bien qui correspond à vos critères avec un score de compatibilité de <strong>${escapeHtml(score)}%</strong>.
-        </p>
-        <div style="background: #fafaf8; border: 1px solid #e5e5e0; border-radius: 12px; padding: 24px; margin: 24px 0;">
-          <h2 style="color: #1a1a2e; font-size: 18px; margin: 0 0 8px 0;">${escapeHtml(propertyTitle)}</h2>
-          <p style="color: #666; font-size: 14px; margin: 0 0 12px 0;">${escapeHtml(propertyCity)}</p>
-          <div style="display: inline-block; background: ${score >= 70 ? "#ecfdf5" : "#fffbeb"}; color: ${score >= 70 ? "#059669" : "#d97706"}; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 600;">
-            Score : ${score}%
-          </div>
-        </div>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${propertyUrl}"
-             style="background: #8B6914; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-            Voir le bien
-          </a>
-        </div>
-      </div>
-    `,
+    html: brandedLayout({
+      eyebrow: "Matching",
+      title: "Un bien correspond à votre recherche",
+      content,
+      cta: { label: "Voir la fiche du bien", href: propertyUrl },
+    }),
   });
 }
 
@@ -348,26 +449,19 @@ export async function sendNotificationEmail(
 ): Promise<boolean> {
   const actionUrl = link ? `${APP_URL}${link}` : `${APP_URL}/dashboard`;
 
+  const content = `
+    <p style="margin:0 0 14px;">Bonjour <strong>${escapeHtml(firstName)}</strong>,</p>
+    <p style="margin:0;line-height:1.65;">${escapeHtml(message)}</p>`;
+
   return sendEmail({
     to,
-    subject: `${title} — Retail Avenue`,
-    html: `
-      <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-        <h1 style="color: #1a1a2e; font-size: 24px;">${escapeHtml(title)}</h1>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          Bonjour ${escapeHtml(firstName)},
-        </p>
-        <p style="color: #555; font-size: 16px; line-height: 1.6;">
-          ${escapeHtml(message)}
-        </p>
-        <div style="text-align: center; margin: 32px 0;">
-          <a href="${actionUrl}"
-             style="background: #8B6914; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
-            Voir dans l'application
-          </a>
-        </div>
-      </div>
-    `,
+    subject: `${title} — ${AGENCY_NAME}`,
+    html: brandedLayout({
+      eyebrow: "Notification",
+      title,
+      content,
+      cta: { label: "Voir dans l'application", href: actionUrl },
+    }),
   });
 }
 
@@ -406,6 +500,40 @@ export async function sendContractEmail(params: {
       : "Veuillez trouver ci-joint l'exemplaire de l'engagement archivé pour le dossier de l'agence.";
 
   const customMessage = (params.message || "").trim();
+  const confidentialityNote =
+    r === "CO_MANDATAIRE"
+      ? "Document inter-agences — contient la répartition confidentielle des honoraires."
+      : "Document personnalisé — la visibilité des honoraires dépend de la configuration choisie pour votre rôle.";
+
+  const content = `
+    <p style="margin:0 0 14px;">Bonjour <strong>${escapeHtml(params.recipientName)}</strong>,</p>
+    <p style="margin:0 0 16px;line-height:1.65;">${escapeHtml(intro)}</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;background:#faf6ee;border-radius:10px;">
+      <tr>
+        <td style="padding:14px 18px;font-size:14px;line-height:1.6;color:#3a3630;">
+          <strong style="color:#1a1a2e;">Référence :</strong> ${escapeHtml(params.propertyRef)}<br />
+          <strong style="color:#1a1a2e;">Bien :</strong> ${escapeHtml(params.propertyTitle)}
+        </td>
+      </tr>
+    </table>
+    ${customMessage ? `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 18px;">
+        <tr><td style="border-left:3px solid #a68a4e;padding:10px 14px;background:#fbf7ef;border-radius:0 8px 8px 0;white-space:pre-line;font-size:14px;line-height:1.55;color:#3a3630;">
+          ${escapeHtml(customMessage)}
+        </td></tr>
+      </table>` : ""}
+    <p style="margin:0 0 4px;line-height:1.65;">
+      Merci de bien vouloir retourner le document signé à l'adresse ci-dessous.
+    </p>
+    <p style="margin:22px 0 0;font-size:14px;color:#3a3630;line-height:1.6;">
+      Cordialement,<br />
+      <strong>${escapeHtml(params.senderName)}</strong><br />
+      <span style="color:#6e695f;">${escapeHtml(params.agencyName)}</span><br />
+      <a href="mailto:${escapeHtml(params.senderEmail)}" style="color:#a68a4e;">${escapeHtml(params.senderEmail)}</a>
+    </p>
+    <p style="margin:18px 0 0;font-size:11px;color:#8a857a;font-style:italic;">
+      ${escapeHtml(confidentialityNote)}
+    </p>`;
 
   return sendEmail({
     to: params.to,
@@ -417,44 +545,11 @@ export async function sendContractEmail(params: {
         content: params.pdfBase64,
       },
     ],
-    html: `
-      <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #23211e;">
-        <div style="border-bottom: 2px solid #a68a4e; padding-bottom: 12px; margin-bottom: 24px;">
-          <div style="font-size: 12px; letter-spacing: 0.08em; color: #6e695f;">${escapeHtml(params.agencyName.toUpperCase())}</div>
-          <h1 style="margin: 6px 0 0; color: #201f1d; font-size: 22px;">${escapeHtml(headline)}</h1>
-        </div>
-        <p style="font-size: 15px; line-height: 1.6;">
-          Bonjour ${escapeHtml(params.recipientName)},
-        </p>
-        <p style="font-size: 15px; line-height: 1.6;">
-          ${escapeHtml(intro)}
-        </p>
-        <div style="background: #f9f6f0; border-radius: 8px; padding: 14px 18px; margin: 18px 0; font-size: 14px;">
-          <div><strong>Référence :</strong> ${escapeHtml(params.propertyRef)}</div>
-          <div><strong>Bien :</strong> ${escapeHtml(params.propertyTitle)}</div>
-        </div>
-        ${
-          customMessage
-            ? `<p style="font-size: 15px; line-height: 1.6; white-space: pre-line; border-left: 3px solid #a68a4e; padding-left: 12px; color: #3a3630;">${escapeHtml(customMessage)}</p>`
-            : ""
-        }
-        <p style="font-size: 15px; line-height: 1.6;">
-          Merci de bien vouloir retourner le document signé à l'adresse ci-dessous.
-        </p>
-        <p style="font-size: 15px; line-height: 1.6; margin-top: 28px;">
-          Cordialement,<br />
-          <strong>${escapeHtml(params.senderName)}</strong><br />
-          <span style="color: #6e695f;">${escapeHtml(params.agencyName)}</span><br />
-          <a href="mailto:${escapeHtml(params.senderEmail)}" style="color: #a68a4e;">${escapeHtml(params.senderEmail)}</a>
-        </p>
-        <p style="font-size: 11px; color: #8a857a; margin-top: 32px; border-top: 1px solid #e8e3d8; padding-top: 12px;">
-          ${
-            r === "CO_MANDATAIRE"
-              ? "Document inter-agences — contient la répartition confidentielle des honoraires."
-              : "Document personnalisé — votre exemplaire ne comporte pas la répartition d'honoraires entre intermédiaires."
-          }
-        </p>
-      </div>
-    `,
+    html: brandedLayout({
+      eyebrow: "Document contractuel",
+      title: headline,
+      content,
+      footerNote: `${escapeHtml(params.senderName)} · ${escapeHtml(params.agencyName)} · <a href="mailto:${escapeHtml(params.senderEmail)}" style="color:#a68a4e;">${escapeHtml(params.senderEmail)}</a>`,
+    }),
   });
 }

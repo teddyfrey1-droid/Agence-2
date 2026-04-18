@@ -157,15 +157,14 @@ export default function CartePage() {
       link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
       document.head.appendChild(link);
     }
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-    script.onload = () => {
-      if (!mapRef.current) return;
+
+    const initMap = () => {
+      if (!mapRef.current || mapInstanceRef.current) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const L = (window as any).L;
+      if (!L) return;
       leafletRef.current = L;
 
-      // Use a dark tile style
       const isDark = document.documentElement.classList.contains("dark");
       const tileUrl = isDark
         ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
@@ -180,9 +179,34 @@ export default function CartePage() {
       mapInstanceRef.current = map;
       drawLayerRef.current = L.layerGroup().addTo(map);
       setMapReady(true);
+      // Ensure tiles render correctly after the container reaches its final size
+      setTimeout(() => map.invalidateSize(), 150);
+      setTimeout(() => map.invalidateSize(), 500);
     };
-    document.head.appendChild(script);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((window as any).L) {
+      initMap();
+    } else {
+      let script = document.getElementById("leaflet-js") as HTMLScriptElement | null;
+      if (!script) {
+        script = document.createElement("script");
+        script.id = "leaflet-js";
+        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+        script.async = true;
+        document.head.appendChild(script);
+      }
+      script.addEventListener("load", initMap);
+    }
+
+    // React-to-resize: some flex layouts mount the container with 0px height
+    const ro = new ResizeObserver(() => {
+      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+    });
+    if (mapRef.current) ro.observe(mapRef.current);
+
     return () => {
+      ro.disconnect();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;

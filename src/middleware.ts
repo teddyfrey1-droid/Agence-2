@@ -30,6 +30,7 @@ const publicApiPaths = [
   "/api/contacts/public",
   "/api/search-requests/public",
   "/api/properties/public",
+  "/api/property-shares/",
   "/api/setup",
 ];
 

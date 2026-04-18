@@ -22,6 +22,10 @@ export interface ContractParty {
   signatureDataUrl?: string | null;
   signedAt?: string | null; // ISO date
   signedCity?: string | null;
+  /** Whether this party sees the fees section on its exemplary. Defaults to false (true only for CO_MANDATAIRE historically). */
+  showFees?: boolean;
+  /** Whether this party is required to sign. Defaults to true. */
+  signatureRequired?: boolean;
 }
 
 export interface NegotiationTerms {
@@ -147,9 +151,14 @@ function partyBlock(p: ContractParty): string {
   return joinLines(lines);
 }
 
-/** Honoraires doivent rester invisibles pour ces rôles. */
-function feesHiddenFor(role: ContractRecipientType): boolean {
-  return role === "PRENEUR" || role === "BAILLEUR" || role === "AGENCE";
+/** Honoraires visibles pour ce destinataire selon la configuration par partie. */
+function shouldShowFeesFor(data: ContractFormData): boolean {
+  const recipient = data.parties.find((p) => p.role === data.recipientType);
+  if (recipient && typeof recipient.showFees === "boolean") {
+    return recipient.showFees;
+  }
+  // Default legacy behaviour: only CO_MANDATAIRE sees fees.
+  return data.recipientType === "CO_MANDATAIRE";
 }
 
 export async function generateContractPdf(data: ContractFormData): Promise<Blob> {
@@ -401,8 +410,8 @@ export async function generateContractPdf(data: ContractFormData): Promise<Blob>
   y += 4;
   articleNum += 1;
 
-  // ─── Article — Honoraires (HIDDEN pour PRENEUR, BAILLEUR, AGENCE) ───
-  const showFees = !feesHiddenFor(data.recipientType);
+  // ─── Article — Honoraires (visibilité pilotée par partie) ───
+  const showFees = shouldShowFeesFor(data);
   if (showFees) {
     if (y > pageHeight - 60) { doc.addPage(); y = 20; }
     doc.setFont("helvetica", "bold");
@@ -488,9 +497,10 @@ export async function generateContractPdf(data: ContractFormData): Promise<Blob>
   }
 
   // ─── Signatures ───
-  const nbSigs = data.parties.length;
-  const perRow = nbSigs <= 2 ? 2 : nbSigs === 3 ? 3 : 2;
-  const nbRows = Math.ceil(nbSigs / perRow);
+  const signingParties = data.parties.filter((p) => p.signatureRequired !== false);
+  const nbSigs = signingParties.length;
+  const perRow = nbSigs <= 2 ? Math.max(nbSigs, 1) : nbSigs === 3 ? 3 : 2;
+  const nbRows = Math.max(Math.ceil(nbSigs / Math.max(perRow, 1)), 1);
   const boxW = (contentWidth - (perRow - 1) * 6) / perRow;
   const boxH = 48;
   const neededSpace = 20 + nbRows * (boxH + 6);
@@ -511,7 +521,14 @@ export async function generateContractPdf(data: ContractFormData): Promise<Blob>
   );
   y += 8;
 
-  data.parties.forEach((p, idx) => {
+  if (nbSigs === 0) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(...BRAND.muted);
+    doc.text("Aucune signature requise sur cet exemplaire.", margin, y + 6);
+  }
+
+  signingParties.forEach((p, idx) => {
     const col = idx % perRow;
     const row = Math.floor(idx / perRow);
     const bx = margin + col * (boxW + 6);
