@@ -16,7 +16,7 @@ export default async function PanneauxPage() {
     redirect("/dashboard");
   }
 
-  const [panels, properties] = await Promise.all([
+  const [panels, properties, agents] = await Promise.all([
     listPanels(),
     prisma.property.findMany({
       where: { status: { in: ["ACTIF", "EN_NEGOCIATION", "BROUILLON"] } },
@@ -29,6 +29,11 @@ export default async function PanneauxPage() {
       },
       orderBy: { updatedAt: "desc" },
       take: 200,
+    }),
+    prisma.user.findMany({
+      where: { isActive: true, role: { not: "CLIENT" } },
+      select: { id: true, firstName: true, lastName: true, role: true, phone: true },
+      orderBy: [{ firstName: "asc" }, { lastName: "asc" }],
     }),
   ]);
 
@@ -68,7 +73,7 @@ export default async function PanneauxPage() {
         </div>
       </div>
 
-      <PanelsManager panels={panelsForClient} properties={properties} />
+      <PanelsManager panels={panelsForClient} properties={properties} agents={agents} />
     </div>
   );
 }

@@ -164,7 +164,7 @@ export async function listPanels() {
           assignedTo: { select: { firstName: true, lastName: true } },
         },
       },
-      agentOverride: { select: { firstName: true, lastName: true } },
+      agentOverride: { select: { id: true, firstName: true, lastName: true } },
       _count: { select: { scans: true, assignments: true } },
     },
     orderBy: [{ status: "asc" }, { code: "asc" }],

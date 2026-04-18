@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Badge, Button, Input, Modal, Select } from "@/components/ui";
 import { useToast } from "@/components/ui/toast";
@@ -10,6 +10,14 @@ type PanelStatus = "DISPONIBLE" | "ACTIF" | "RETIRE";
 interface AgentLite {
   firstName: string;
   lastName: string;
+  phone?: string | null;
+}
+
+export interface AgentOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: string;
   phone?: string | null;
 }
 
@@ -29,7 +37,7 @@ export interface PanelRow {
   notes: string | null;
   propertyId: string | null;
   property: PropertyLite | null;
-  agentOverride: { firstName: string; lastName: string } | null;
+  agentOverride: { id: string; firstName: string; lastName: string } | null;
   scanCount: number;
   assignmentCount: number;
   updatedAt: string;
@@ -38,6 +46,7 @@ export interface PanelRow {
 interface Props {
   panels: PanelRow[];
   properties: PropertyLite[];
+  agents: AgentOption[];
 }
 
 const STATUS_VARIANT: Record<PanelStatus, "success" | "neutral" | "danger"> = {
@@ -52,7 +61,7 @@ const STATUS_LABEL: Record<PanelStatus, string> = {
   RETIRE: "Retiré",
 };
 
-export function PanelsManager({ panels, properties }: Props) {
+export function PanelsManager({ panels, properties, agents }: Props) {
   const router = useRouter();
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -100,20 +109,25 @@ export function PanelsManager({ panels, properties }: Props) {
     return true;
   }
 
-  async function handleAssign(panelId: string, propertyId: string | null, reason?: string) {
+  async function handleAssign(
+    panelId: string,
+    propertyId: string | null,
+    agentOverrideId: string | null,
+    reason?: string,
+  ) {
     setBusyId(panelId);
     try {
       const res = await fetch(`/api/panels/${panelId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ propertyId, reason }),
+        body: JSON.stringify({ propertyId, agentOverrideId, reason }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         addToast(body.error ?? "Réassignation impossible", "error");
         return;
       }
-      addToast(propertyId ? "Panneau réassigné" : "Panneau détaché", "success");
+      addToast(propertyId ? "Panneau mis à jour" : "Panneau détaché", "success");
       setAssignFor(null);
       refresh();
     } finally {
@@ -221,11 +235,15 @@ export function PanelsManager({ panels, properties }: Props) {
                           {panel.property.reference}
                         </span>{" "}
                         — {panel.property.title}
-                        {panel.property.assignedTo && (
-                          <span className="ml-2 text-xs text-stone-500">
-                            · Agent : {panel.property.assignedTo.firstName} {panel.property.assignedTo.lastName}
+                        {panel.agentOverride ? (
+                          <span className="ml-2 text-xs font-medium text-brand-600 dark:text-brand-400">
+                            · Contact : {panel.agentOverride.firstName} {panel.agentOverride.lastName} (override)
                           </span>
-                        )}
+                        ) : panel.property.assignedTo ? (
+                          <span className="ml-2 text-xs text-stone-500">
+                            · Contact : {panel.property.assignedTo.firstName} {panel.property.assignedTo.lastName}
+                          </span>
+                        ) : null}
                       </span>
                     ) : (
                       <span className="italic text-stone-400">Non assigné à un bien</span>
@@ -294,6 +312,7 @@ export function PanelsManager({ panels, properties }: Props) {
       <AssignPanelModal
         panel={assignFor}
         properties={properties}
+        agents={agents}
         onClose={() => setAssignFor(null)}
         onSubmit={handleAssign}
         busy={busyId === assignFor?.id}
@@ -401,45 +420,196 @@ function CreatePanelModal({
 function AssignPanelModal({
   panel,
   properties,
+  agents,
   onClose,
   onSubmit,
   busy,
 }: {
   panel: PanelRow | null;
   properties: PropertyLite[];
+  agents: AgentOption[];
   onClose: () => void;
-  onSubmit: (panelId: string, propertyId: string | null, reason?: string) => Promise<void>;
+  onSubmit: (
+    panelId: string,
+    propertyId: string | null,
+    agentOverrideId: string | null,
+    reason?: string,
+  ) => Promise<void>;
   busy: boolean;
 }) {
   const [propertyId, setPropertyId] = useState("");
+  const [keepProperty, setKeepProperty] = useState(true);
+  const [agentMode, setAgentMode] = useState<"default" | "override">("default");
+  const [agentOverrideId, setAgentOverrideId] = useState("");
+  const [agentSearch, setAgentSearch] = useState("");
   const [reason, setReason] = useState("");
+
+  // Reset fields when a different panel is opened
+  const openedForId = panel?.id ?? null;
+  useEffect(() => {
+    setPropertyId("");
+    setKeepProperty(true);
+    setAgentMode(panel?.agentOverride ? "override" : "default");
+    setAgentOverrideId(panel?.agentOverride?.id ?? "");
+    setAgentSearch("");
+    setReason("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openedForId]);
+
+  const filteredAgents = useMemo(() => {
+    const needle = agentSearch.trim().toLowerCase();
+    if (!needle) return agents;
+    return agents.filter((a) =>
+      `${a.firstName} ${a.lastName} ${a.role}`.toLowerCase().includes(needle),
+    );
+  }, [agents, agentSearch]);
 
   if (!panel) return null;
 
-  const currentLabel = panel.property
+  const currentPropertyLabel = panel.property
     ? `${panel.property.reference} — ${panel.property.title}`
     : "Non assigné";
+  const defaultAgent = panel.property?.assignedTo
+    ? `${panel.property.assignedTo.firstName} ${panel.property.assignedTo.lastName}`
+    : "— aucun agent attribué au bien —";
+
+  const selectedAgent = agents.find((a) => a.id === agentOverrideId) || null;
+
+  // Effective submitted values
+  const submitPropertyId = keepProperty ? panel.propertyId : propertyId || null;
+  const submitAgentOverrideId = agentMode === "override" ? agentOverrideId || null : null;
+  const canSubmit = agentMode === "default" || !!agentOverrideId;
 
   return (
-    <Modal open={!!panel} onClose={onClose} title={`Réassigner ${panel.code}`} size="md">
+    <Modal open={!!panel} onClose={onClose} title={`Panneau ${panel.code}`} size="md">
       <div className="space-y-4">
         <div className="rounded-lg bg-stone-50 p-3 text-sm dark:bg-anthracite-800">
           <p className="text-xs uppercase tracking-wide text-stone-500">Affectation actuelle</p>
-          <p className="mt-1 font-medium text-anthracite-800 dark:text-stone-200">{currentLabel}</p>
+          <p className="mt-1 font-medium text-anthracite-800 dark:text-stone-200">
+            {currentPropertyLabel}
+          </p>
+          <p className="mt-1 text-xs text-stone-500">
+            Contact actuel :{" "}
+            <span className="font-medium text-anthracite-700 dark:text-stone-300">
+              {panel.agentOverride
+                ? `${panel.agentOverride.firstName} ${panel.agentOverride.lastName} (override)`
+                : defaultAgent}
+            </span>
+          </p>
         </div>
 
-        <Select
-          label="Nouveau bien"
-          placeholder="— Détacher (aucun bien) —"
-          options={properties
-            .filter((p) => p.id !== panel.propertyId)
-            .map((p) => ({
-              value: p.id,
-              label: `${p.reference} — ${p.title}`,
-            }))}
-          value={propertyId}
-          onChange={(e) => setPropertyId(e.target.value)}
-        />
+        {/* Property assignment */}
+        <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
+          <label className="flex items-center gap-2 text-sm font-medium text-anthracite-800 dark:text-stone-200">
+            <input
+              type="checkbox"
+              checked={keepProperty}
+              onChange={(e) => setKeepProperty(e.target.checked)}
+            />
+            Conserver le bien actuellement assigné
+          </label>
+          {!keepProperty && (
+            <div className="mt-3">
+              <Select
+                label="Nouveau bien"
+                placeholder="— Détacher (aucun bien) —"
+                options={properties
+                  .filter((p) => p.id !== panel.propertyId)
+                  .map((p) => ({
+                    value: p.id,
+                    label: `${p.reference} — ${p.title}`,
+                  }))}
+                value={propertyId}
+                onChange={(e) => setPropertyId(e.target.value)}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Agent override */}
+        <div className="rounded-lg border border-stone-200 p-3 dark:border-stone-700">
+          <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
+            Agent contacté lors du scan
+          </p>
+          <div className="mt-2 flex flex-col gap-1.5 text-sm text-anthracite-700 dark:text-stone-300">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="agentMode"
+                checked={agentMode === "default"}
+                onChange={() => setAgentMode("default")}
+              />
+              <span>
+                Agent du bien par défaut
+                <span className="ml-1 text-xs text-stone-500">({defaultAgent})</span>
+              </span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="agentMode"
+                checked={agentMode === "override"}
+                onChange={() => setAgentMode("override")}
+              />
+              <span>Forcer un autre agent</span>
+            </label>
+          </div>
+          {agentMode === "override" && (
+            <div className="mt-3 space-y-2">
+              <Input
+                placeholder="Rechercher un agent (nom, prénom, rôle)…"
+                value={agentSearch}
+                onChange={(e) => setAgentSearch(e.target.value)}
+              />
+              <div className="max-h-48 overflow-y-auto rounded border border-stone-200 dark:border-stone-700">
+                {filteredAgents.length === 0 ? (
+                  <p className="p-3 text-center text-xs text-stone-500">Aucun agent trouvé</p>
+                ) : (
+                  <ul className="divide-y divide-stone-100 dark:divide-stone-800">
+                    {filteredAgents.map((a) => {
+                      const checked = agentOverrideId === a.id;
+                      return (
+                        <li key={a.id}>
+                          <label
+                            className={`flex cursor-pointer items-center justify-between gap-2 px-3 py-2 text-sm ${
+                              checked
+                                ? "bg-brand-50 dark:bg-brand-900/30"
+                                : "hover:bg-stone-50 dark:hover:bg-anthracite-800"
+                            }`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                name="agentOverrideId"
+                                checked={checked}
+                                onChange={() => setAgentOverrideId(a.id)}
+                              />
+                              <span>
+                                <span className="font-medium text-anthracite-800 dark:text-stone-200">
+                                  {a.firstName} {a.lastName}
+                                </span>
+                                <span className="ml-2 text-xs text-stone-500">{a.role}</span>
+                              </span>
+                            </span>
+                            {a.phone && (
+                              <span className="text-xs text-stone-400">{a.phone}</span>
+                            )}
+                          </label>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+              {selectedAgent && (
+                <p className="text-xs text-stone-500">
+                  Sélection : {selectedAgent.firstName} {selectedAgent.lastName}
+                  {selectedAgent.phone ? ` · ${selectedAgent.phone}` : " · aucun téléphone renseigné"}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         <Input
           label="Raison (optionnel)"
@@ -450,7 +620,7 @@ function AssignPanelModal({
 
         <p className="text-xs text-stone-500">
           Le QR imprimé reste identique — seule la cible change. Les scans déclencheront une
-          discussion WhatsApp avec l'agent du nouveau bien.
+          discussion WhatsApp avec l&apos;agent sélectionné.
         </p>
 
         <div className="flex justify-end gap-2 pt-2">
@@ -458,10 +628,18 @@ function AssignPanelModal({
             Annuler
           </Button>
           <Button
-            onClick={() => onSubmit(panel.id, propertyId || null, reason.trim() || undefined)}
+            onClick={() =>
+              onSubmit(
+                panel.id,
+                submitPropertyId,
+                submitAgentOverrideId,
+                reason.trim() || undefined,
+              )
+            }
             isLoading={busy}
+            disabled={!canSubmit}
           >
-            {propertyId ? "Réassigner" : "Détacher"}
+            Enregistrer
           </Button>
         </div>
       </div>

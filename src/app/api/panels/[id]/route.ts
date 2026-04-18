@@ -58,11 +58,22 @@ export async function PATCH(
 
   // Reassign (or clear) the panel
   if (data.propertyId !== undefined || data.agentOverrideId !== undefined) {
+    // Preserve fields that weren't explicitly provided — otherwise changing
+    // only the agent override would accidentally detach the property.
+    const current = await prisma.panel.findUnique({
+      where: { id },
+      select: { propertyId: true, agentOverrideId: true },
+    });
+    if (!current) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+    const nextPropertyId =
+      data.propertyId === undefined ? current.propertyId : data.propertyId;
+    const nextAgentOverrideId =
+      data.agentOverrideId === undefined ? current.agentOverrideId : data.agentOverrideId;
     try {
       const panel = await assignPanel({
         panelId: id,
-        propertyId: data.propertyId ?? null,
-        agentOverrideId: data.agentOverrideId ?? null,
+        propertyId: nextPropertyId,
+        agentOverrideId: nextAgentOverrideId,
         assignedById: session.userId,
         reason: data.reason,
       });
