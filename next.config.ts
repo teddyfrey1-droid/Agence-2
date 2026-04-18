@@ -23,9 +23,11 @@ const cspDirectives: Record<string, string[]> = {
     // Next.js inlines bootstrapping scripts; 'unsafe-inline' is unavoidable
     // unless we wire up nonces via middleware.
     "'unsafe-inline'",
+    // Leaflet.js is loaded from unpkg by the dashboard carte page.
+    "https://unpkg.com",
     ...(isDev ? ["'unsafe-eval'"] : []),
   ],
-  "style-src": ["'self'", "'unsafe-inline'"],
+  "style-src": ["'self'", "'unsafe-inline'", "https://unpkg.com"],
   "img-src": ["'self'", "data:", "blob:", "https:"],
   "font-src": ["'self'", "data:"],
   "connect-src": [
@@ -34,6 +36,9 @@ const cspDirectives: Record<string, string[]> = {
     "https://api.mapbox.com",
     "https://events.mapbox.com",
     "https://*.tiles.mapbox.com",
+    // OpenStreetMap + Carto tiles used by the Leaflet carte
+    "https://*.tile.openstreetmap.org",
+    "https://*.basemaps.cartocdn.com",
     ...(isDev ? ["ws:", "wss:"] : []),
   ],
   "worker-src": ["'self'", "blob:"],

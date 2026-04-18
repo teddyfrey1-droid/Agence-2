@@ -41,6 +41,9 @@ function isPublicPath(pathname: string): boolean {
   // Property detail pages are public
   if (pathname.startsWith("/biens/")) return true;
 
+  // Panel QR landing (public — scanners are anonymous prospects)
+  if (pathname.startsWith("/panneau/")) return true;
+
   // Next.js internals
   if (pathname.startsWith("/_next")) return true;
 
