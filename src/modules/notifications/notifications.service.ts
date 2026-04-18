@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 import { sendNotificationEmail } from "@/lib/email";
+import { publish } from "@/lib/event-bus";
 
 type NotificationType = "MATCH_NEW" | "MATCH_HIGH" | "PROPERTY_NEW" | "DEAL_UPDATE" | "TASK_DUE" | "SYSTEM" | "DEAL_ASSIGNED" | "TASK_ASSIGNED" | "CLIENT_REQUEST" | "CLIENT_ACCOUNT_CREATED" | "FIELD_SPOTTING_NEW" | "PROPOSAL_OPENED";
 
@@ -45,6 +46,17 @@ export async function createNotification(data: {
 }) {
   // Always create the in-app notification
   const notification = await prisma.notification.create({ data });
+
+  // Push to any open SSE connection for this user — instant delivery,
+  // no 30s polling wait.
+  publish(data.userId, {
+    type: "notification",
+    id: notification.id,
+    title: notification.title,
+    message: notification.message,
+    link: notification.link ?? undefined,
+    createdAt: notification.createdAt.toISOString(),
+  });
 
   // Check settings for push and email
   const settings = await getSettings();

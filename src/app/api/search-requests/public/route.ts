@@ -3,6 +3,12 @@ import { publicSearchRequestSchema } from "@/modules/search-requests/search-requ
 import { handlePublicSearchRequestForm } from "@/modules/contacts";
 import { applyRateLimit, PUBLIC_FORM_RATE_LIMIT } from "@/lib/rate-limit";
 import { runMatchingForSearchRequest } from "@/modules/matching";
+import {
+  rescoreSearchRequest,
+  HOT_LEAD_THRESHOLD,
+} from "@/modules/search-requests";
+import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/modules/notifications";
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,13 +38,46 @@ export async function POST(request: NextRequest) {
       surfaceMax: parsed.data.surfaceMax ?? undefined,
     });
 
+    const srId = result.searchRequest.id;
+
     // Kick off matching for the fresh request (fire-and-forget)
-    runMatchingForSearchRequest(result.searchRequest.id).catch((err) =>
+    runMatchingForSearchRequest(srId).catch((err) =>
       console.error("[search-requests/public] initial matching failed", err)
     );
 
+    // Immediately alert managers about the new (always-unassigned) lead and
+    // upgrade to "priority" if the qualification score is high.
+    (async () => {
+      try {
+        const score = await rescoreSearchRequest(srId);
+        const managers = await prisma.user.findMany({
+          where: {
+            role: { in: ["MANAGER", "DIRIGEANT", "ASSOCIE"] },
+            isActive: true,
+          },
+          select: { id: true },
+        });
+        const isHot = score !== null && score >= HOT_LEAD_THRESHOLD;
+        await Promise.all(
+          managers.map((m) =>
+            createNotification({
+              userId: m.id,
+              type: "CLIENT_REQUEST",
+              title: isHot ? "Lead prioritaire" : "Nouvelle demande site web",
+              message: isHot
+                ? `Demande ${result.searchRequest.reference} — score ${score}/100, à attribuer`
+                : `Demande ${result.searchRequest.reference} — à attribuer`,
+              link: `/dashboard/demandes/${srId}`,
+            })
+          )
+        );
+      } catch (err) {
+        console.error("[search-requests/public] alert failed", err);
+      }
+    })();
+
     return NextResponse.json(
-      { success: true, requestId: result.searchRequest.id },
+      { success: true, requestId: srId },
       { status: 201 }
     );
   } catch (err) {

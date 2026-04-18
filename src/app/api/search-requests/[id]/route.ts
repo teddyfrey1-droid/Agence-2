@@ -1,9 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getActiveSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
-import { findSearchRequestById, updateSearchRequest } from "@/modules/search-requests";
+import {
+  findSearchRequestById,
+  updateSearchRequest,
+  rescoreSearchRequest,
+} from "@/modules/search-requests";
 import { updateSearchRequestSchema } from "@/modules/search-requests/search-requests.schema";
 import { prisma } from "@/lib/prisma";
+import {
+  runMatchingForSearchRequest,
+  cleanupMatchesForInactiveSearchRequest,
+} from "@/modules/matching";
+
+// Criteria fields that materially change who a search request matches against.
+// Touching any of them triggers a fresh matching pass.
+const CRITERIA_FIELDS = [
+  "propertyTypes",
+  "transactionType",
+  "budgetMin",
+  "budgetMax",
+  "surfaceMin",
+  "surfaceMax",
+  "districts",
+  "quarters",
+  "cities",
+  "needsExtraction",
+  "needsTerrace",
+  "needsParking",
+  "needsLoadingDock",
+] as const;
+
+const ACTIVE_STATUSES = new Set(["NOUVELLE", "QUALIFIEE", "EN_COURS"]);
+const INACTIVE_STATUSES = new Set(["EN_PAUSE", "SATISFAITE", "ABANDONNEE", "ARCHIVEE"]);
 
 export async function GET(
   _request: NextRequest,
@@ -50,6 +79,13 @@ export async function PATCH(
       );
     }
     const data = parsed.data;
+
+    // Snapshot pre-update status so we can detect activation transitions.
+    const before = await prisma.searchRequest.findUnique({
+      where: { id },
+      select: { status: true },
+    });
+
     const updated = await updateSearchRequest(id, {
       ...(data.propertyTypes !== undefined && { propertyTypes: data.propertyTypes as never }),
       ...(data.transactionType !== undefined && { transactionType: data.transactionType as never }),
@@ -61,7 +97,43 @@ export async function PATCH(
       ...(data.description !== undefined && { description: data.description }),
       ...(data.notes !== undefined && { notes: data.notes }),
       ...(data.districts !== undefined && { districts: data.districts }),
+      ...(data.quarters !== undefined && { quarters: data.quarters }),
+      ...(data.cities !== undefined && { cities: data.cities }),
+      ...(data.needsExtraction !== undefined && { needsExtraction: data.needsExtraction }),
+      ...(data.needsTerrace !== undefined && { needsTerrace: data.needsTerrace }),
+      ...(data.needsParking !== undefined && { needsParking: data.needsParking }),
+      ...(data.needsLoadingDock !== undefined && { needsLoadingDock: data.needsLoadingDock }),
+      ...(data.status !== undefined && { status: data.status as never }),
     });
+
+    // Proactive reaction to what just changed:
+    //   1. Criteria changed  → rerun matching against the full catalog.
+    //   2. Status → active   → rerun matching (e.g. qualifying a NOUVELLE).
+    //   3. Status → inactive → wipe suggested matches to clean up the inbox.
+    const criteriaChanged = CRITERIA_FIELDS.some((k) => data[k] !== undefined);
+    const wasActive = before ? ACTIVE_STATUSES.has(before.status) : false;
+    const nowActive =
+      data.status !== undefined ? ACTIVE_STATUSES.has(data.status) : wasActive;
+    const becameActive = !wasActive && nowActive;
+    const becameInactive = wasActive && data.status !== undefined && INACTIVE_STATUSES.has(data.status);
+
+    if (nowActive && (criteriaChanged || becameActive)) {
+      runMatchingForSearchRequest(id).catch((err) =>
+        console.error("[search-requests PATCH] re-match failed", err)
+      );
+    } else if (becameInactive) {
+      cleanupMatchesForInactiveSearchRequest(id).catch((err) =>
+        console.error("[search-requests PATCH] cleanup failed", err)
+      );
+    }
+
+    // Keep the qualification score fresh whenever criteria change.
+    if (criteriaChanged) {
+      rescoreSearchRequest(id).catch((err) =>
+        console.error("[search-requests PATCH] rescoring failed", err)
+      );
+    }
+
     return NextResponse.json(updated);
   } catch {
     return NextResponse.json({ error: "Erreur interne" }, { status: 500 });

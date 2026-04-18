@@ -23,7 +23,11 @@ export const createSearchRequestSchema = z.object({
   notes: z.string().optional(),
 });
 
-export const updateSearchRequestSchema = createSearchRequestSchema.partial();
+export const updateSearchRequestSchema = createSearchRequestSchema.partial().extend({
+  status: z
+    .enum(["NOUVELLE", "QUALIFIEE", "EN_COURS", "EN_PAUSE", "SATISFAITE", "ABANDONNEE", "ARCHIVEE"])
+    .optional(),
+});
 
 export const publicSearchRequestSchema = z.object({
   firstName: z.string().min(1, "Le prénom est requis"),

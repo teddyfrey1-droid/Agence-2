@@ -104,11 +104,55 @@ export function NotificationBell() {
     }
   }, []);
 
-  // Initial fetch and polling
+  // Initial fetch + real-time SSE stream (fallback to slow polling if the
+  // stream is unavailable — e.g. old browser, proxy stripping text/event-stream).
   useEffect(() => {
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+
+    let es: EventSource | null = null;
+    let fallbackInterval: ReturnType<typeof setInterval> | null = null;
+    let disposed = false;
+
+    const startFallback = () => {
+      if (fallbackInterval || disposed) return;
+      fallbackInterval = setInterval(fetchNotifications, 60000);
+    };
+
+    try {
+      es = new EventSource("/api/notifications/stream");
+      es.onmessage = (evt) => {
+        try {
+          const payload = JSON.parse(evt.data);
+          if (payload?.type === "notification") {
+            // Refresh the full list so counters, ordering and deduping stay
+            // authoritative (DB is the source of truth).
+            fetchNotifications();
+          }
+        } catch {
+          // Ignore malformed frames
+        }
+      };
+      es.onerror = () => {
+        // Browser will auto-reconnect; in the meantime fall back to polling.
+        startFallback();
+      };
+    } catch {
+      startFallback();
+    }
+
+    // Refetch when the tab regains focus — covers the "laptop was asleep"
+    // case where the SSE socket is already dead.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchNotifications();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      disposed = true;
+      es?.close();
+      if (fallbackInterval) clearInterval(fallbackInterval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [fetchNotifications]);
 
   // Close on outside click
