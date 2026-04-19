@@ -124,7 +124,7 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-stone-200/70 bg-stone-50/40 backdrop-blur-sm transition-transform duration-300 ease-in-out lg:z-40 lg:w-64 lg:translate-x-0 dark:border-anthracite-800 dark:bg-anthracite-950/60",
+          "fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-stone-200/70 bg-white shadow-xl transition-transform duration-300 ease-in-out lg:z-40 lg:w-64 lg:translate-x-0 lg:bg-stone-50/60 lg:shadow-none lg:backdrop-blur-sm dark:border-anthracite-800 dark:bg-anthracite-950 dark:lg:bg-anthracite-950/70",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -147,7 +147,7 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
         <nav className="scrollbar-sidebar flex-1 overflow-y-auto px-3 py-4">
           {navGroups.map((group, gi) => (
             <div key={group.label} className={cn(gi > 0 && "mt-5")}>
-              <p className="mb-1.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500/80 dark:text-stone-500">
+              <p className="mb-1.5 px-3 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
                 {group.label}
               </p>
               <ul className="space-y-0.5">
@@ -160,10 +160,10 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
                         href={item.href}
                         onClick={close}
                         className={cn(
-                          "group/nav relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
+                          "group/nav relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13.5px] font-medium transition-all duration-150",
                           isActive
-                            ? "bg-brand-50 text-brand-900 shadow-[inset_3px_0_0_0_theme(colors.brand.600)] dark:bg-brand-900/40 dark:text-brand-200 dark:shadow-[inset_3px_0_0_0_theme(colors.brand.400)]"
-                            : "text-anthracite-600 hover:bg-stone-100/70 hover:text-anthracite-900 active:bg-stone-100 dark:text-stone-400 dark:hover:bg-anthracite-800 dark:hover:text-stone-100"
+                            ? "bg-brand-50 text-brand-900 shadow-[inset_3px_0_0_0_theme(colors.brand.600)] dark:bg-brand-900/40 dark:text-brand-100 dark:shadow-[inset_3px_0_0_0_theme(colors.brand.400)]"
+                            : "text-anthracite-800 hover:bg-stone-100 hover:text-anthracite-900 active:bg-stone-200/70 dark:text-stone-200 dark:hover:bg-anthracite-800 dark:hover:text-white"
                         )}
                       >
                         <svg
@@ -171,7 +171,7 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
                             "h-[18px] w-[18px] flex-shrink-0 transition-colors",
                             isActive
                               ? "text-brand-600 dark:text-brand-400"
-                              : "text-stone-400 group-hover/nav:text-anthracite-700 dark:text-stone-500 dark:group-hover/nav:text-stone-300"
+                              : "text-stone-500 group-hover/nav:text-anthracite-900 dark:text-stone-400 dark:group-hover/nav:text-white"
                           )}
                           fill="none"
                           viewBox="0 0 24 24"
