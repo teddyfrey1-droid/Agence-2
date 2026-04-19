@@ -1,0 +1,354 @@
+/* ── Google Fonts — Plus Jakarta Sans + DM Serif Display + DM Mono ── */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&display=swap');
+
+@import "mapbox-gl/dist/mapbox-gl.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── iOS safe-area utilities (for PWA / notch / Dynamic Island) ── */
+@layer utilities {
+  .pt-safe  { padding-top:    env(safe-area-inset-top,    0px); }
+  .pb-safe  { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .pl-safe  { padding-left:   env(safe-area-inset-left,   0px); }
+  .pr-safe  { padding-right:  env(safe-area-inset-right,  0px); }
+
+  .pb-safe-or-4 { padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px)); }
+  .pb-safe-or-6 { padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px)); }
+
+  /* Numeric display — DM Mono for financial figures */
+  .font-mono-display { font-family: 'DM Mono', monospace; }
+
+  /* Italic serif accent for page titles */
+  .title-accent { font-family: 'DM Serif Display', serif; font-style: italic; }
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-brand-50 text-anthracite-900 font-sans dark:bg-anthracite-950 dark:text-stone-100;
+    /* Override Tailwind's Inter with Plus Jakarta Sans */
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    /* Sidebar is always dark — override CSS var */
+    --sidebar-bg: theme('colors.anthracite.950');
+    --sidebar-border: rgba(255,255,255,0.06);
+    --sidebar-text: rgba(255,255,255,0.55);
+    --sidebar-text-active: theme('colors.brand.200');
+    --sidebar-active-bg: rgba(176,146,106,0.18);
+    --sidebar-hover-bg: rgba(255,255,255,0.06);
+    --sidebar-label: rgba(255,255,255,0.25);
+  }
+
+  /* Smooth selection */
+  ::selection {
+    @apply bg-brand-300/60 text-anthracite-950;
+  }
+  :is(.dark) ::selection {
+    @apply bg-brand-500/40 text-stone-50;
+  }
+
+  /* Custom scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.stone.300') transparent;
+  }
+  :is(.dark) * {
+    scrollbar-color: theme('colors.anthracite.700') transparent;
+  }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb {
+    background-color: theme('colors.stone.300');
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover { background-color: theme('colors.stone.400'); }
+  :is(.dark) *::-webkit-scrollbar-thumb { background-color: theme('colors.anthracite.700'); }
+  :is(.dark) *::-webkit-scrollbar-thumb:hover { background-color: theme('colors.anthracite.600'); }
+
+  /* Refined focus-visible ring */
+  :focus-visible {
+    outline: none;
+    @apply ring-2 ring-brand-500/60 ring-offset-2 ring-offset-white dark:ring-brand-400/60 dark:ring-offset-anthracite-950;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto max-w-7xl px-4 sm:px-6;
+  }
+
+  .section-padding {
+    @apply py-12 sm:py-16 md:py-24;
+  }
+
+  /* ── Typography hierarchy ── */
+  .heading-display {
+    font-family: 'DM Serif Display', serif;
+    @apply text-3xl font-normal tracking-tight text-anthracite-900 md:text-4xl lg:text-5xl dark:text-stone-100;
+  }
+
+  .heading-section {
+    font-family: 'DM Serif Display', serif;
+    @apply text-2xl font-normal tracking-tight text-anthracite-900 md:text-3xl dark:text-stone-100;
+  }
+
+  .heading-card {
+    @apply text-sm font-bold text-anthracite-900 sm:text-[15px] dark:text-stone-100;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  .text-body {
+    @apply text-[14px] leading-relaxed text-anthracite-600 dark:text-stone-300;
+  }
+
+  .text-caption {
+    @apply text-xs font-medium uppercase tracking-wider text-stone-400 sm:text-sm sm:normal-case sm:tracking-normal sm:font-normal sm:text-stone-500 dark:text-stone-400;
+  }
+
+  /* KPI number — large financial figure */
+  .kpi-number {
+    font-family: 'DM Serif Display', serif;
+    font-style: normal;
+    @apply text-[2rem] leading-none tracking-tight text-anthracite-900 dark:text-stone-100;
+  }
+
+  /* Page title with italic accent word */
+  .page-title-serif {
+    font-family: 'DM Serif Display', serif;
+    @apply text-[1.7rem] leading-tight tracking-tight text-anthracite-900 sm:text-[1.9rem] dark:text-stone-100;
+  }
+  .page-title-serif em {
+    font-style: italic;
+    @apply text-brand-600 dark:text-brand-400;
+  }
+
+  /* ── Premium gradient backgrounds ── */
+  .bg-gradient-premium {
+    background: linear-gradient(135deg, #faf8f5 0%, #f3efe8 50%, #e8e0d3 100%);
+  }
+  :is(.dark) .bg-gradient-premium {
+    background:
+      radial-gradient(ellipse at top left, rgba(176, 146, 106, 0.08), transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(220, 184, 126, 0.06), transparent 50%),
+      linear-gradient(135deg, #1a1b22 0%, #23242e 45%, #2e303c 100%);
+  }
+
+  /* Thin sidebar scrollbar */
+  .scrollbar-sidebar {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.3s ease;
+  }
+  .scrollbar-sidebar::-webkit-scrollbar { width: 4px; }
+  .scrollbar-sidebar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 9999px;
+  }
+  .scrollbar-sidebar:hover { scrollbar-color: rgba(255,255,255,0.12) transparent; }
+  .scrollbar-sidebar:hover::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.12); }
+
+  .bg-gradient-dark {
+    background: linear-gradient(135deg, #1e1f27 0%, #333541 100%);
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-white/80 backdrop-blur-lg dark:bg-anthracite-900/80;
+  }
+
+  /* ── Luxury editorial utilities ── */
+  .label-overline {
+    @apply font-sans text-[10px] font-semibold tracking-[0.45em] uppercase text-brand-600;
+  }
+  .rule-brand { @apply block h-px w-8 bg-brand-400; }
+  .rule-gold  { @apply block h-px w-12 bg-champagne-400; }
+  .line-vertical { @apply block w-px bg-brand-300 mx-auto; }
+
+  .card-editorial {
+    @apply overflow-hidden bg-white transition-shadow duration-500 hover:shadow-premium;
+  }
+
+  .nav-luxury {
+    @apply font-sans text-[11px] tracking-[0.2em] uppercase text-stone-500 transition-colors duration-300 hover:text-anthracite-900 dark:text-stone-400 dark:hover:text-stone-100;
+  }
+
+  /* ── Kanban drag visual ── */
+  .kanban-col-drag-over {
+    @apply border-brand-400 bg-brand-50/60 dark:bg-brand-900/10;
+    box-shadow: 0 0 0 3px rgba(176,146,106,0.2), 0 8px 30px rgba(176,146,106,0.08);
+  }
+  .kcard-dragging {
+    opacity: 0.65;
+    transform: scale(1.03) rotate(0.6deg);
+    box-shadow: 0 20px 50px -8px rgba(0,0,0,0.22), 0 8px 20px -4px rgba(0,0,0,0.12);
+    cursor: grabbing !important;
+    border-color: theme('colors.brand.300') !important;
+  }
+  .kanban-drop-ghost {
+    @apply rounded-xl border-2 border-dashed border-brand-400 bg-brand-50/50 dark:border-brand-600 dark:bg-brand-900/10;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Floating label input ── */
+  .float-field {
+    @apply relative;
+  }
+  .float-field .float-input {
+    @apply block w-full rounded-xl border border-stone-300 bg-white px-3.5 pt-6 pb-2.5
+      text-[14px] font-medium text-anthracite-900
+      shadow-sm transition-all duration-150
+      placeholder:text-transparent
+      hover:border-stone-400
+      focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100
+      disabled:cursor-not-allowed disabled:bg-stone-50 disabled:text-stone-500
+      dark:border-anthracite-700 dark:bg-anthracite-800 dark:text-stone-100
+      dark:hover:border-anthracite-600
+      dark:focus:border-brand-400 dark:focus:ring-brand-900/30;
+  }
+  .float-field .float-label {
+    @apply pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2
+      text-[13.5px] font-medium text-stone-400
+      transition-all duration-150 origin-left;
+    white-space: nowrap;
+  }
+  .float-field .float-input:focus ~ .float-label,
+  .float-field .float-input:not(:placeholder-shown) ~ .float-label {
+    @apply top-[13px] translate-y-0 text-[10px] font-bold uppercase tracking-[0.07em] text-brand-600;
+    transform: translateY(0);
+  }
+  .float-field .float-input:focus { padding-bottom: 10px; padding-top: 24px; }
+
+  /* ── Objective ring animation ── */
+  @keyframes ring-fill {
+    from { stroke-dashoffset: var(--ring-total, 283); }
+    to   { stroke-dashoffset: var(--ring-offset, 0); }
+  }
+  .ring-animated {
+    animation: ring-fill 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--ring-delay, 0.3s);
+  }
+
+  /* ── Score ring animation ── */
+  @keyframes score-fill {
+    from { stroke-dashoffset: 283; }
+  }
+  .score-ring { animation: score-fill 1s ease-out forwards; }
+
+  /* ── Toast slide up ── */
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(16px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .animate-slide-up { animation: slide-up 0.3s ease-out; }
+
+  /* ── Modal ── */
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  .animate-fade-in { animation: fade-in 0.2s ease-out; }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .animate-scale-in { animation: scale-in 0.2s ease-out; }
+
+  /* ── Card entrance ── */
+  @keyframes card-enter {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-card-enter { animation: card-enter 0.35s ease-out both; }
+
+  /* Staggered delay helpers */
+  .delay-75   { animation-delay: 75ms; }
+  .delay-150  { animation-delay: 150ms; }
+  .delay-225  { animation-delay: 225ms; }
+  .delay-300  { animation-delay: 300ms; }
+  .delay-375  { animation-delay: 375ms; }
+  .delay-450  { animation-delay: 450ms; }
+  .delay-500  { animation-delay: 500ms; }
+  .delay-700  { animation-delay: 700ms; }
+  .delay-900  { animation-delay: 900ms; }
+  .delay-1100 { animation-delay: 1100ms; }
+
+  /* ── Shimmer skeleton ── */
+  @keyframes shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+  }
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.3) 50%, transparent 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+  :is(.dark) .animate-shimmer {
+    background: linear-gradient(90deg, transparent 25%, rgba(255,255,255,0.05) 50%, transparent 75%);
+    background-size: 200% 100%;
+  }
+
+  /* ── Luxury entrance animations ── */
+  @keyframes reveal-up {
+    from { opacity: 0; transform: translateY(40px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes reveal-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes line-draw {
+    from { transform: scaleX(0); transform-origin: left; }
+    to   { transform: scaleX(1); transform-origin: left; }
+  }
+  @keyframes scroll-breath {
+    0%, 100% { opacity: 0.4; transform: translateY(0); }
+    50%       { opacity: 0.9; transform: translateY(6px); }
+  }
+
+  .animate-reveal-up    { animation: reveal-up   1s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-reveal-fade  { animation: reveal-fade  1.4s ease-out both; }
+  .animate-line-draw    { animation: line-draw    0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-scroll-breath { animation: scroll-breath 2.4s ease-in-out infinite; }
+
+  /* ── Admin panel interactions ── */
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.6; transform: scale(0.85); }
+  }
+  .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+
+  @keyframes admin-card-enter {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .animate-admin-card { animation: admin-card-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  @keyframes tick-up {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-tick-up { animation: tick-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  /* ── Chart bar grow ── */
+  @keyframes bar-grow {
+    from { height: 0 !important; opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .animate-bar-grow { animation: bar-grow 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+  /* ── Photo drop zone ── */
+  .photo-drop-active {
+    @apply border-brand-500 bg-brand-50 dark:border-brand-500 dark:bg-brand-900/10;
+    box-shadow: 0 0 0 4px rgba(176,146,106,0.12);
+  }
+}
