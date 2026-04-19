@@ -230,10 +230,10 @@ export function PhotoUploader({
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`relative flex min-h-[120px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-colors ${
+        className={`relative flex min-h-[140px] cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 transition-all duration-200 ${
           dragOver
-            ? "border-brand-400 bg-brand-50/50 dark:border-brand-600 dark:bg-brand-900/20"
-            : "border-stone-300 bg-stone-50/50 hover:border-stone-400 hover:bg-stone-100/50 dark:border-stone-600 dark:bg-anthracite-800/50 dark:hover:border-stone-500"
+            ? "photo-drop-active"
+            : "border-stone-300 bg-stone-50/40 hover:border-brand-400 hover:bg-brand-50/30 dark:border-anthracite-700 dark:bg-anthracite-800/40 dark:hover:border-brand-600"
         }`}
       >
         {uploading ? (
