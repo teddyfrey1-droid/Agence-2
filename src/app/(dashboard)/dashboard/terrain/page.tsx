@@ -6,6 +6,7 @@ import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { TerrainKanban } from "@/components/terrain-kanban";
 
@@ -27,41 +28,48 @@ export default async function TerrainPage({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Repérages terrain</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">{total} repérage(s)</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
-            <Link
-              href={`/dashboard/terrain?view=kanban${params.status ? `&status=${params.status}` : ""}`}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                isKanban
-                  ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
-                  : "bg-white text-stone-600 hover:bg-stone-50 dark:bg-anthracite-800 dark:text-stone-400"
-              }`}
-            >
-              Pipeline
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Repérages"
+        title="Terrain"
+        description={`${total} repérage${total !== 1 ? "s" : ""} enregistré${total !== 1 ? "s" : ""}`}
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+          </svg>
+        }
+        actions={
+          <>
+            {/* View toggle */}
+            <div className="flex rounded-lg border border-stone-200 dark:border-stone-700 overflow-hidden">
+              <Link
+                href={`/dashboard/terrain?view=kanban${params.status ? `&status=${params.status}` : ""}`}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  isKanban
+                    ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
+                    : "bg-white text-stone-600 hover:bg-stone-50 dark:bg-anthracite-800 dark:text-stone-400"
+                }`}
+              >
+                Pipeline
+              </Link>
+              <Link
+                href={`/dashboard/terrain?view=list${params.status ? `&status=${params.status}` : ""}`}
+                className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                  !isKanban
+                    ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
+                    : "bg-white text-stone-600 hover:bg-stone-50 dark:bg-anthracite-800 dark:text-stone-400"
+                }`}
+              >
+                Liste
+              </Link>
+            </div>
+            <Link href="/dashboard/terrain/nouveau">
+              <Button>Nouveau repérage</Button>
             </Link>
-            <Link
-              href={`/dashboard/terrain?view=list${params.status ? `&status=${params.status}` : ""}`}
-              className={`px-3 py-1.5 text-xs font-medium transition-colors ${
-                !isKanban
-                  ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
-                  : "bg-white text-stone-600 hover:bg-stone-50 dark:bg-anthracite-800 dark:text-stone-400"
-              }`}
-            >
-              Liste
-            </Link>
-          </div>
-          <Link href="/dashboard/terrain/nouveau">
-            <Button>Nouveau repérage</Button>
-          </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {items.length === 0 ? (
         <EmptyState title="Aucun repérage" description="Ajoutez un repérage terrain depuis le bureau ou le mobile." />

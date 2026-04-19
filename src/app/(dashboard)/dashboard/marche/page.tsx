@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
+import { PageHeader } from "@/components/ui/page-header";
 import { formatPrice } from "@/lib/utils";
 import { PARIS_DISTRICTS } from "@/lib/constants";
 
@@ -109,15 +110,17 @@ export default async function MarketStatsPage() {
   const maxPricePerSqm = Math.max(...allStats.filter((s) => s.avgPricePerSqm).map((s) => s.avgPricePerSqm!), 1);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">
-          Statistiques marche
-        </h1>
-        <p className="text-sm text-stone-500 dark:text-stone-400">
-          Prix au m² par arrondissement — donnees issues de votre portefeuille.
-        </p>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Veille"
+        title="Marché"
+        description="Prix au m² par arrondissement — données issues de votre portefeuille."
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.518l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
+          </svg>
+        }
+      />
 
       {/* Global KPIs */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -4,6 +4,7 @@ import { getActiveSession } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { listPanels } from "@/modules/panels";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/ui/page-header";
 import { PanelsManager } from "./panels-manager";
 
 export const metadata: Metadata = { title: "Panneaux QR" };
@@ -61,17 +62,17 @@ export default async function PanneauxPage() {
   }));
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">
-            Panneaux QR
-          </h1>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            Imprimez un panneau une fois — réassignez-le à un autre bien en un clic après une vente.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-5 p-4 sm:space-y-6 sm:p-6 lg:p-8">
+      <PageHeader
+        eyebrow="Visibilité"
+        title="Panneaux"
+        description="Imprimez un panneau une fois — réassignez-le à un autre bien en un clic après une vente."
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v16m0-16h12l-2 4 2 4H4" />
+          </svg>
+        }
+      />
 
       <PanelsManager panels={panelsForClient} properties={properties} agents={agents} />
     </div>

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { formatDateTime } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -84,35 +85,39 @@ export default async function VisitesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-widest text-stone-400 dark:text-stone-500">
-            Planificateur
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-anthracite-900 dark:text-stone-100">
-            Visites
-          </h1>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            {countThisWeek} visite{countThisWeek !== 1 ? "s" : ""} programmée
-            {countThisWeek !== 1 ? "s" : ""} cette semaine
-          </p>
-        </div>
-        <Link href="/dashboard/calendrier">
-          <Button>
-            <svg
-              className="mr-1.5 h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Nouvelle visite
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Tournées"
+        title="Visites"
+        description={`${countThisWeek} visite${countThisWeek !== 1 ? "s" : ""} programmée${countThisWeek !== 1 ? "s" : ""} cette semaine`}
+        icon={
+          <svg
+            className="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={1.6}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l3 3m0 0l-3 3m3-3H2.25" />
+          </svg>
+        }
+        actions={
+          <Link href="/dashboard/calendrier">
+            <Button>
+              <svg
+                className="mr-1.5 h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Nouvelle visite
+            </Button>
+          </Link>
+        }
+      />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <MiniStat label="À venir (30 j)" value={upcoming.length} />

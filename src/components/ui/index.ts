@@ -6,6 +6,7 @@ export { Badge, getStatusBadgeVariant } from "./badge";
 export { Card, CardHeader, CardContent, CardFooter } from "./card";
 export { StatCard } from "./stat-card";
 export { EmptyState } from "./empty-state";
+export { PageHeader } from "./page-header";
 export { Logo, LogoMark } from "./logo";
 export { Modal, ConfirmModal } from "./modal";
 export { Tabs } from "./tabs";

@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function InteractionsPage({
   searchParams,
@@ -16,11 +17,17 @@ export default async function InteractionsPage({
   const { items, total, totalPages } = await findInteractions({ type: params.type }, page);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Interactions</h1>
-        <p className="text-sm text-stone-500 dark:text-stone-400">{total} interaction(s)</p>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Historique"
+        title="Interactions"
+        description={`${total} interaction${total !== 1 ? "s" : ""} consignée${total !== 1 ? "s" : ""} (appels, emails, visites, notes).`}
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8L3 20l1.3-3.39A7.96 7.96 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+        }
+      />
 
       {items.length === 0 ? (
         <EmptyState title="Aucune interaction" description="Les appels, emails, visites et notes apparaitront ici." />

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { DEAL_STAGE_LABELS } from "@/lib/constants";
 
 interface KanbanDeal {
@@ -102,33 +103,37 @@ export default function PipelinePage() {
   const totalValue = deals.reduce((sum, d) => sum + (d.estimatedValue || 0), 0);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Pipeline</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">
-            {loading ? "Chargement..." : `${deals.length} dossier${deals.length !== 1 ? "s" : ""} actifs — ${fmtPrice(totalValue)}`}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href="/dashboard/dossiers">
-            <Button variant="outline" size="sm">
-              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-              </svg>
-              Vue liste
-            </Button>
-          </Link>
-          <Link href="/dashboard/dossiers/nouveau">
-            <Button size="sm">
-              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-              Nouveau
-            </Button>
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Pipeline"
+        title="Kanban"
+        description={loading ? "Chargement..." : `${deals.length} dossier${deals.length !== 1 ? "s" : ""} actifs — ${fmtPrice(totalValue)}`}
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+          </svg>
+        }
+        actions={
+          <>
+            <Link href="/dashboard/dossiers">
+              <Button variant="outline" size="sm">
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+                Vue liste
+              </Button>
+            </Link>
+            <Link href="/dashboard/dossiers/nouveau">
+              <Button size="sm">
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Nouveau
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {/* Kanban Board — Desktop drag & drop */}
       <div className="hidden sm:block overflow-x-auto pb-4">

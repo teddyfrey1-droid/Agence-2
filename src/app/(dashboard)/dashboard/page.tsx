@@ -2,6 +2,7 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
 import { formatDateShort } from "@/lib/utils";
 import { TASK_PRIORITY_LABELS, DEAL_STAGE_LABELS } from "@/lib/constants";
 import { ActivityChart } from "@/components/dashboard/activity-chart";
@@ -23,14 +24,20 @@ function KpiCard({
 }) {
   return (
     <Link href={href} className="group">
-      <div className="relative overflow-hidden rounded-xl border border-stone-200/80 bg-white p-3.5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 sm:p-4 dark:border-stone-700/50 dark:bg-anthracite-900">
-        <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${color}`}>
-            {icon}
+      <div className="relative overflow-hidden rounded-xl border border-stone-200/70 bg-white p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-200/70 hover:shadow-card-hover sm:p-5 dark:border-anthracite-800 dark:bg-anthracite-900">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-400 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-brand-100/40 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-brand-900/30" />
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0 space-y-1.5">
+            <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-stone-500 dark:text-stone-400">
+              {label}
+            </p>
+            <p className="font-display text-[1.65rem] font-bold leading-none tracking-tight text-anthracite-900 sm:text-3xl dark:text-stone-100">
+              {value}
+            </p>
           </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold tracking-tight text-anthracite-900 dark:text-stone-100">{value}</p>
-            <p className="truncate text-xs text-stone-500 dark:text-stone-400">{label}</p>
+          <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 ${color}`}>
+            {icon}
           </div>
         </div>
       </div>
@@ -131,19 +138,17 @@ export default async function DashboardHomePage() {
   }).format(now);
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <p className="text-xs font-medium capitalize text-brand-500 dark:text-brand-400">{dateStr}</p>
-        <h1 className="mt-1 text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">
-          Bonjour {session?.firstName}
-        </h1>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={dateStr}
+        title={`Bonjour ${session?.firstName ?? ""}`}
+        description="Votre vue d'ensemble du jour — pipeline, activité et prochaines actions."
+      />
 
       {/* Terrain shortcut — prominent card for field use */}
       <Link
         href="/dashboard/terrain/nouveau"
-        className="flex items-center gap-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-5 py-4 transition-all active:scale-[0.98] hover:bg-emerald-100 hover:shadow-sm dark:border-emerald-800/50 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/30"
+        className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/60 px-5 py-4 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover active:scale-[0.99] dark:border-emerald-800/50 dark:from-emerald-900/20 dark:to-emerald-900/10"
       >
         <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
           <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>

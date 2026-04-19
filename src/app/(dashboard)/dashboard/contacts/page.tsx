@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
+import { PageHeader } from "@/components/ui/page-header";
 import { prisma } from "@/lib/prisma";
 
 // Map contact emails to user accounts for activation status
@@ -58,34 +59,40 @@ export default async function ContactsPage({
   });
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Contacts</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">
-            {total} contact(s)
-            {pendingCount > 0 && (
-              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                {pendingCount} en attente d&apos;activation
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <a href="/api/export?type=contacts" download>
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-              CSV
-            </Button>
-          </a>
-          <Link href="/dashboard/contacts/nouveau">
-            <Button className="whitespace-nowrap">
-              <span className="hidden sm:inline">Nouveau contact</span>
-              <span className="sm:hidden">+ Contact</span>
-            </Button>
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Carnet d'adresses"
+        title="Contacts"
+        description={`${total} contact${total !== 1 ? "s" : ""} dans votre base.`}
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-2a4 4 0 100-8 4 4 0 000 8zm6 0a3 3 0 100-6 3 3 0 000 6zM5 10a3 3 0 100-6 3 3 0 000 6z" />
+          </svg>
+        }
+        meta={
+          pendingCount > 0 ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              {pendingCount} en attente d&apos;activation
+            </span>
+          ) : undefined
+        }
+        actions={
+          <>
+            <a href="/api/export?type=contacts" download>
+              <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                CSV
+              </Button>
+            </a>
+            <Link href="/dashboard/contacts/nouveau">
+              <Button className="whitespace-nowrap">
+                <span className="hidden sm:inline">Nouveau contact</span>
+                <span className="sm:hidden">+ Contact</span>
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       <FilterBar
         basePath="/dashboard/contacts"

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
+import { PageHeader } from "@/components/ui/page-header";
 import { InlineStatusSelect } from "@/components/inline-status-select";
 
 const SORT_OPTIONS = [
@@ -41,27 +42,33 @@ export default async function BiensListPage({
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Biens</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">{total} bien(s) au total</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <a href="/api/export?type=properties" download>
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-              CSV
-            </Button>
-          </a>
-          <Link href="/dashboard/biens/nouveau">
-            <Button className="whitespace-nowrap">
-              <span className="hidden sm:inline">Nouveau bien</span>
-              <span className="sm:hidden">+ Bien</span>
-            </Button>
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Catalogue"
+        title="Biens"
+        description={`${total} bien${total !== 1 ? "s" : ""} au total dans votre portefeuille.`}
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21" />
+          </svg>
+        }
+        actions={
+          <>
+            <a href="/api/export?type=properties" download>
+              <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                CSV
+              </Button>
+            </a>
+            <Link href="/dashboard/biens/nouveau">
+              <Button className="whitespace-nowrap">
+                <span className="hidden sm:inline">Nouveau bien</span>
+                <span className="sm:hidden">+ Bien</span>
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       <FilterBar
         basePath="/dashboard/biens"

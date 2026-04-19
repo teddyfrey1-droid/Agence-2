@@ -37,14 +37,23 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-stone-50 dark:bg-anthracite-950">
+      <div className="relative min-h-screen bg-stone-50 dark:bg-anthracite-950">
+        {/* Subtle ambient backdrop — barely visible, adds depth */}
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-0 opacity-[0.55] dark:opacity-100"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse 1100px 540px at 18% -8%, rgba(176,146,106,0.08), transparent 60%), radial-gradient(ellipse 900px 480px at 92% 110%, rgba(220,184,126,0.06), transparent 60%)",
+          }}
+        />
         <DashboardSidebar
           badges={{
             "/dashboard/taches": overdueTaskCount,
             "/dashboard/demandes": newDemandCount,
           }}
         />
-        <div className="lg:pl-64">
+        <div className="relative lg:pl-64">
           <DashboardHeader
             user={{
               firstName: session.firstName,
@@ -54,7 +63,9 @@ export default async function DashboardLayout({
           />
           <ActivityTracker />
           <PushNotifications />
-          <main className="animate-fade-in px-4 pt-4 pb-safe-or-4 sm:px-6 sm:pt-6 sm:pb-safe-or-6">{children}</main>
+          <main className="animate-fade-in mx-auto w-full max-w-[1600px] px-4 pt-5 pb-safe-or-6 sm:px-8 sm:pt-7">
+            {children}
+          </main>
         </div>
       </div>
     </SidebarProvider>

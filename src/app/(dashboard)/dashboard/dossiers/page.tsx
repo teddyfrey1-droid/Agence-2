@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function DossiersPage({
   searchParams,
@@ -21,35 +22,41 @@ export default async function DossiersPage({
   );
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Dossiers</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">{total} dossier(s)</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <a href="/api/export?type=deals" download>
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-              CSV
-            </Button>
-          </a>
-          <Link href="/dashboard/dossiers/pipeline">
-            <Button variant="outline" className="hidden sm:inline-flex">
-              <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-              </svg>
-              Pipeline
-            </Button>
-          </Link>
-          <Link href="/dashboard/dossiers/nouveau">
-            <Button className="whitespace-nowrap">
-              <span className="hidden sm:inline">Nouveau dossier</span>
-              <span className="sm:hidden">+ Dossier</span>
-            </Button>
-          </Link>
-        </div>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Pipeline"
+        title="Dossiers"
+        description={`${total} dossier${total !== 1 ? "s" : ""} de transaction en cours de suivi.`}
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+          </svg>
+        }
+        actions={
+          <>
+            <a href="/api/export?type=deals" download>
+              <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                CSV
+              </Button>
+            </a>
+            <Link href="/dashboard/dossiers/pipeline">
+              <Button variant="outline" className="hidden sm:inline-flex">
+                <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                Pipeline
+              </Button>
+            </Link>
+            <Link href="/dashboard/dossiers/nouveau">
+              <Button className="whitespace-nowrap">
+                <span className="hidden sm:inline">Nouveau dossier</span>
+                <span className="sm:hidden">+ Dossier</span>
+              </Button>
+            </Link>
+          </>
+        }
+      />
 
       {items.length === 0 ? (
         <EmptyState title="Aucun dossier" description="Creez votre premier dossier de transaction." />

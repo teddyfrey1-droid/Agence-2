@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 
 interface CalendarEvent {
   id: string;
@@ -174,21 +175,25 @@ export default function CalendrierPage() {
   const selectClass = inputClass;
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Calendrier</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">
-            {loading ? "Chargement..." : `${events.length} événement${events.length !== 1 ? "s" : ""} ce mois`}
-          </p>
-        </div>
-        <Button size="sm" onClick={() => openNewEvent(today)}>
-          <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Agenda"
+        title="Calendrier"
+        description={loading ? "Chargement..." : `${events.length} événement${events.length !== 1 ? "s" : ""} ce mois`}
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
           </svg>
-          Nouvel événement
-        </Button>
-      </div>
+        }
+        actions={
+          <Button size="sm" onClick={() => openNewEvent(today)}>
+            <svg className="mr-1.5 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Nouvel événement
+          </Button>
+        }
+      />
 
       {/* Legend */}
       <div className="flex flex-wrap gap-3 text-xs text-stone-500 dark:text-stone-400">

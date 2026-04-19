@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function DemandesPage({
   searchParams,
@@ -24,19 +25,25 @@ export default async function DemandesPage({
   const hasFilters = !!(params.status || params.search);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">Demandes de recherche</h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400">{total} demande(s)</p>
-        </div>
-        <Link href="/dashboard/demandes/nouvelle">
-          <Button className="whitespace-nowrap">
-            <span className="hidden sm:inline">Nouvelle demande</span>
-            <span className="sm:hidden">+ Demande</span>
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Acquéreurs"
+        title="Demandes"
+        description={`${total} demande${total !== 1 ? "s" : ""} de recherche enregistrée${total !== 1 ? "s" : ""}.`}
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+          </svg>
+        }
+        actions={
+          <Link href="/dashboard/demandes/nouvelle">
+            <Button className="whitespace-nowrap">
+              <span className="hidden sm:inline">Nouvelle demande</span>
+              <span className="sm:hidden">+ Demande</span>
+            </Button>
+          </Link>
+        }
+      />
 
       <FilterBar
         basePath="/dashboard/demandes"

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
 import { CONTACT_TYPE_LABELS } from "@/lib/constants";
 import { formatDateShort } from "@/lib/utils";
 
@@ -63,36 +64,34 @@ export default async function DormantsPage({
   const presetRanges = [30, 60, 90, 180];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-widest text-stone-400 dark:text-stone-500">
-            Relances
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-anthracite-900 dark:text-stone-100">
-            Contacts dormants
-          </h1>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            Contacts sans interaction depuis plus de {range} jours — relancez-les pour
-            réactiver le lien.
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 rounded-lg border border-stone-200 bg-white p-1 dark:border-anthracite-800 dark:bg-anthracite-900">
-          {presetRanges.map((d) => (
-            <Link
-              key={d}
-              href={`/dashboard/contacts/dormants?range=${d}`}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                d === range
-                  ? "bg-brand-600 text-white"
-                  : "text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-anthracite-800"
-              }`}
-            >
-              +{d}j
-            </Link>
-          ))}
-        </div>
-      </div>
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader
+        eyebrow="Relances"
+        title="Contacts dormants"
+        description={`Contacts sans interaction depuis plus de ${range} jours — relancez-les pour réactiver le lien.`}
+        icon={
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        }
+        actions={
+          <div className="flex items-center gap-1 rounded-full border border-stone-200/70 bg-white p-1 shadow-card dark:border-anthracite-800 dark:bg-anthracite-900">
+            {presetRanges.map((d) => (
+              <Link
+                key={d}
+                href={`/dashboard/contacts/dormants?range=${d}`}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  d === range
+                    ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
+                    : "text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-anthracite-800"
+                }`}
+              >
+                +{d}j
+              </Link>
+            ))}
+          </div>
+        }
+      />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <MiniStat label="Total dormants" value={contacts.length} />
