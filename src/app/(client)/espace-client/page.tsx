@@ -108,12 +108,14 @@ export default async function ClientHomePage() {
     prisma.event.findMany({
       where: {
         startAt: { gte: now },
-        OR: [
-          { contact: { email: session.email } },
-        ],
+        contact: { email: session.email },
       },
       orderBy: { startAt: "asc" },
-      take: 3,
+      take: 5,
+      include: {
+        property: { select: { id: true, reference: true, title: true } },
+        user: { select: { firstName: true, lastName: true } },
+      },
     }).catch(() => []),
   ]);
 
@@ -209,22 +211,52 @@ export default async function ClientHomePage() {
             <ul className="divide-y divide-stone-100 dark:divide-stone-700/50">
               {upcomingEvents.map((ev) => {
                 const d = new Date(ev.startAt);
+                const isVisit = ev.type === "VISITE";
                 return (
                   <li key={ev.id} className="flex items-center gap-4 px-4 py-3 sm:px-6">
-                    <div className="flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 dark:bg-brand-900/20">
-                      <span className="text-[10px] font-semibold uppercase text-brand-600 dark:text-brand-400">
+                    <div
+                      className={`flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-xl ${
+                        isVisit
+                          ? "bg-emerald-50 dark:bg-emerald-900/20"
+                          : "bg-brand-50 dark:bg-brand-900/20"
+                      }`}
+                    >
+                      <span
+                        className={`text-[10px] font-semibold uppercase ${
+                          isVisit
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-brand-600 dark:text-brand-400"
+                        }`}
+                      >
                         {d.toLocaleDateString("fr-FR", { month: "short" })}
                       </span>
-                      <span className="text-lg font-bold text-anthracite-900 dark:text-stone-100 -mt-0.5">
+                      <span className="-mt-0.5 text-lg font-bold text-anthracite-900 dark:text-stone-100">
                         {d.getDate()}
                       </span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">{ev.title}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="truncate text-sm font-medium text-anthracite-800 dark:text-stone-200">
+                          {ev.title}
+                        </p>
+                        {isVisit && (
+                          <Badge variant="success">Visite</Badge>
+                        )}
+                      </div>
                       <p className="text-xs text-stone-500 dark:text-stone-400">
-                        {ev.allDay ? "Journée entière" : d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                        {ev.description && ` — ${ev.description}`}
+                        {ev.allDay
+                          ? "Journée entière"
+                          : d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                        {ev.user && ` · avec ${ev.user.firstName} ${ev.user.lastName}`}
                       </p>
+                      {ev.property && (
+                        <Link
+                          href={`/espace-client/biens/${ev.property.id}`}
+                          className="mt-0.5 inline-block text-xs text-brand-600 hover:underline dark:text-brand-400"
+                        >
+                          {ev.property.reference} — {ev.property.title}
+                        </Link>
+                      )}
                     </div>
                   </li>
                 );
