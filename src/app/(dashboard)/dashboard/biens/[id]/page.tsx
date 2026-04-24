@@ -18,6 +18,7 @@ import { PublishButton } from "@/components/publish-button";
 import { PropertyShareButton } from "@/components/property-share-button";
 import { PropertyPanelsCard } from "@/components/property-panels-card";
 import { prisma } from "@/lib/prisma";
+import { getAgencyInfo } from "@/lib/agency";
 
 export default async function PropertyDetailPage({
   params,
@@ -25,6 +26,7 @@ export default async function PropertyDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const agency = await getAgencyInfo();
   const [property, matches, attachedPanels, availablePanels] = await Promise.all([
     findPropertyById(id),
     prisma.match.findMany({
@@ -180,6 +182,7 @@ export default async function PropertyDetailPage({
               <PhotoUploader
                 entityType="property"
                 entityId={id}
+                watermarkLabel={agency.name}
                 existingPhotos={property.media.map((m) => ({
                   id: m.id,
                   url: m.url,
