@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { watermarkAndRetouch } from "@/lib/photo-watermark";
 
 interface UploadedMedia {
   id: string;
@@ -18,6 +19,8 @@ interface PhotoUploaderProps {
   existingPhotos?: UploadedMedia[];
   maxPhotos?: number;
   onUploadComplete?: () => void;
+  /** Label to render as a watermark + apply a light auto-retouch when the toggle is on. */
+  watermarkLabel?: string;
 }
 
 // ── Read EXIF orientation from JPEG bytes (no external lib) ──
@@ -138,17 +141,22 @@ export function PhotoUploader({
   existingPhotos = [],
   maxPhotos = 20,
   onUploadComplete,
+  watermarkLabel,
 }: PhotoUploaderProps) {
   const [photos, setPhotos] = useState<UploadedMedia[]>(existingPhotos);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [enhance, setEnhance] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
 
   async function uploadFile(file: File) {
     const compressed = await compressImage(file);
+    const prepared = enhance && watermarkLabel
+      ? await watermarkAndRetouch(compressed, { text: watermarkLabel }).catch(() => compressed)
+      : compressed;
     const formData = new FormData();
-    formData.append("file", compressed);
+    formData.append("file", prepared);
     formData.append("entityType", entityType);
     formData.append("entityId", entityId);
 
@@ -224,6 +232,25 @@ export function PhotoUploader({
 
   return (
     <div className="space-y-4">
+      {watermarkLabel && (
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-stone-200 bg-stone-50/70 p-3 text-sm dark:border-stone-700 dark:bg-anthracite-800/60">
+          <input
+            type="checkbox"
+            checked={enhance}
+            onChange={(e) => setEnhance(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-stone-400 text-brand-600 focus:ring-brand-500"
+          />
+          <span>
+            <span className="block font-medium text-anthracite-800 dark:text-stone-200">
+              Retouche auto + filigrane
+            </span>
+            <span className="block text-xs text-stone-500 dark:text-stone-400">
+              Léger rehaussement du contraste et tampon « {watermarkLabel} » avant upload.
+            </span>
+          </span>
+        </label>
+      )}
+
       {/* Upload zone */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}

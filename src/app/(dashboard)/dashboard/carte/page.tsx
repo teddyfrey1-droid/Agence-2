@@ -5,6 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PROPERTY_TYPE_LABELS, TRANSACTION_TYPE_LABELS, PARIS_DISTRICTS, FIELD_SPOTTING_STATUS_LABELS } from "@/lib/constants";
+import { haptic } from "@/lib/haptics";
+import { useToast } from "@/components/ui/toast";
 
 interface MapProperty {
   id: string;
@@ -91,6 +93,10 @@ export default function CartePage() {
   const [drawMode, setDrawMode] = useState<DrawMode>("off");
   // Generic shape: polygon points used for point-in-polygon test
   const [drawnPolygon, setDrawnPolygon] = useState<{ lat: number; lng: number }[] | null>(null);
+  const [locating, setLocating] = useState(false);
+  const userMarkerRef = useRef<unknown>(null);
+  const userCircleRef = useRef<unknown>(null);
+  const { addToast } = useToast();
   const drawStartRef = useRef<{ lat: number; lng: number } | null>(null);
   const drawShapeRef = useRef<any>(null);
   const freePointsRef = useRef<{ lat: number; lng: number }[]>([]);
@@ -398,6 +404,57 @@ export default function CartePage() {
     }
   }
 
+  function findNearby(radiusMeters = 500) {
+    if (!navigator.geolocation) {
+      addToast("Géolocalisation non supportée", "error");
+      return;
+    }
+    if (!mapInstanceRef.current || !leafletRef.current) {
+      addToast("Carte non prête", "error");
+      return;
+    }
+    setLocating(true);
+    haptic("tap");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        const map = mapInstanceRef.current;
+        const L = leafletRef.current;
+        // Clean any previous user pin / radius
+        if (userMarkerRef.current) (userMarkerRef.current as { remove: () => void }).remove();
+        if (userCircleRef.current) (userCircleRef.current as { remove: () => void }).remove();
+        userMarkerRef.current = L.circleMarker([latitude, longitude], {
+          radius: 8,
+          color: "#fff",
+          weight: 2,
+          fillColor: "#3b82f6",
+          fillOpacity: 1,
+        }).addTo(map);
+        userCircleRef.current = L.circle([latitude, longitude], {
+          radius: radiusMeters,
+          color: "#3b82f6",
+          weight: 1.5,
+          fillColor: "#3b82f6",
+          fillOpacity: 0.08,
+          dashArray: "4 6",
+        }).addTo(map);
+        // Approximate degrees per metre at this latitude — good enough for a 500 m circle filter
+        const radiusLat = radiusMeters / 111_320;
+        const radiusLng = radiusMeters / (111_320 * Math.cos((latitude * Math.PI) / 180));
+        setDrawnPolygon(circleToPolygon({ lat: latitude, lng: longitude }, radiusLat, radiusLng));
+        map.flyTo([latitude, longitude], 16, { duration: 0.8 });
+        haptic("success");
+        addToast(`Filtré à ${radiusMeters} m de votre position`, "success");
+        setLocating(false);
+      },
+      () => {
+        setLocating(false);
+        addToast("Impossible de récupérer votre position", "error");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -465,6 +522,20 @@ export default function CartePage() {
               Effacer zone
             </Button>
           )}
+
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => findNearby(500)}
+            disabled={locating}
+            title="Filtrer dans un rayon de 500 m autour de moi"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            </svg>
+            {locating ? "Localisation…" : "Près de moi"}
+          </Button>
 
           <Button
             variant={activeFilterCount > 0 ? "primary" : "outline"}

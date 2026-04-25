@@ -15,6 +15,7 @@ import { QuickTaskForm } from "@/components/quick-task-form";
 import { DeleteButton } from "@/components/delete-button";
 import { PropertyShareButton } from "@/components/property-share-button";
 import { ContactAccountActions } from "@/components/contact-account-actions";
+import { ContactQuickActions } from "@/components/contact-quick-actions";
 import { prisma } from "@/lib/prisma";
 
 function formatDuration(seconds: number): string {
@@ -497,6 +498,12 @@ export default async function ContactDetailPage({
                 <div><dt className="text-stone-500 dark:text-stone-400">Source</dt><dd className="font-medium text-anthracite-800 dark:text-stone-200">{contact.source}</dd></div>
                 <div><dt className="text-stone-500 dark:text-stone-400">Créé le</dt><dd className="font-medium text-anthracite-800 dark:text-stone-200">{formatDate(contact.createdAt)}</dd></div>
               </dl>
+              <ContactQuickActions
+                contactId={id}
+                email={contact.email}
+                phone={contact.phone}
+                mobile={contact.mobile}
+              />
             </CardContent>
           </Card>
 

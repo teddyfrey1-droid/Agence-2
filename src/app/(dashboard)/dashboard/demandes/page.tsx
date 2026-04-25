@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FilterBar } from "@/components/ui/filter-bar";
 import { Pagination } from "@/components/ui/pagination";
 import { PageHeader } from "@/components/ui/page-header";
+import { DemandeSwipeCard } from "@/components/demande-swipe-card";
 
 export default async function DemandesPage({
   searchParams,
@@ -62,10 +63,18 @@ export default async function DemandesPage({
         />
       ) : (
         <>
-          {/* Mobile: card view */}
+          {/* Mobile: card view with swipe actions */}
           <div className="space-y-3 lg:hidden">
+            <p className="px-1 text-[11px] text-stone-400 dark:text-stone-500">
+              Glissez à droite pour vous attribuer la demande, à gauche pour l&apos;archiver.
+            </p>
             {items.map((request) => (
-              <Link key={request.id} href={`/dashboard/demandes/${request.id}`}>
+              <DemandeSwipeCard
+                key={request.id}
+                id={request.id}
+                href={`/dashboard/demandes/${request.id}`}
+                disabled={request.status === "ARCHIVEE"}
+              >
                 <Card className="p-4 active:bg-stone-50 transition-colors">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
@@ -105,7 +114,7 @@ export default async function DemandesPage({
                     )}
                   </div>
                 </Card>
-              </Link>
+              </DemandeSwipeCard>
             ))}
           </div>
 

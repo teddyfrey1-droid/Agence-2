@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { Confetti } from "@/components/confetti";
+import { unlockAchievement } from "@/lib/achievements";
 
 interface ConvertToPropertyButtonProps {
   spotId: string;
@@ -33,6 +35,7 @@ export function ConvertToPropertyButton({
   const router = useRouter();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [celebrate, setCelebrate] = useState(false);
 
   async function handleConvert() {
     setLoading(true);
@@ -67,7 +70,9 @@ export function ConvertToPropertyButton({
       });
 
       addToast("Repérage converti en bien", "success");
-      router.push(`/dashboard/biens/${property.id}/modifier`);
+      setCelebrate(true);
+      unlockAchievement("first_conversion");
+      setTimeout(() => router.push(`/dashboard/biens/${property.id}/modifier`), 1500);
     } catch {
       addToast("Erreur lors de la conversion", "error");
     } finally {
@@ -76,16 +81,19 @@ export function ConvertToPropertyButton({
   }
 
   return (
-    <Button
-      variant="primary"
-      className="w-full"
-      onClick={handleConvert}
-      disabled={loading}
-    >
-      <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-      </svg>
-      {loading ? "Conversion..." : "Convertir en bien"}
-    </Button>
+    <>
+      <Confetti fire={celebrate} onDone={() => setCelebrate(false)} />
+      <Button
+        variant="primary"
+        className="w-full"
+        onClick={handleConvert}
+        disabled={loading}
+      >
+        <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+        </svg>
+        {loading ? "Conversion..." : "Convertir en bien"}
+      </Button>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useUnsavedChanges } from "@/lib/hooks";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
 import { InlinePhotoPicker } from "@/components/photo-uploader";
 import { useToast } from "@/components/ui/toast";
+import { VoiceNoteRecorder } from "@/components/voice-note-recorder";
 
 // ── Transaction type squares ──
 const TERRAIN_TYPES = [
@@ -124,6 +125,19 @@ export default function NouveauTerrainPage() {
   const [addressData, setAddressData] = useState({ city: "Paris", zipCode: "", district: "", address: "" });
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const [notes, setNotes] = useState("");
+  const [aiAvailable, setAiAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/ai/status")
+      .then((r) => r.json())
+      .then((d) => !cancelled && setAiAvailable(Boolean(d?.enabled)))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleGeolocate() {
     if (!navigator.geolocation) {
@@ -183,7 +197,7 @@ export default function NouveauTerrainPage() {
           district: formData.get("district") || undefined,
           transactionType: transactionType || undefined,
           surface: formData.get("surface") ? Number(formData.get("surface")) : undefined,
-          notes: formData.get("notes") || undefined,
+          notes: notes || undefined,
           latitude: coords?.lat || undefined,
           longitude: coords?.lng || undefined,
         }),
@@ -338,7 +352,22 @@ export default function NouveauTerrainPage() {
           <CardHeader><h2 className="heading-card">Détails</h2></CardHeader>
           <CardContent className="space-y-4">
             <Input id="surface" name="surface" type="number" label="Surface estimée (m²)" min={0} />
-            <Textarea id="notes" name="notes" label="Notes / observations" rows={3} placeholder="État de la vitrine, local vide, enseigne présente..." />
+            <div className="space-y-3">
+              <Textarea
+                id="notes"
+                name="notes"
+                label="Notes / observations"
+                rows={3}
+                placeholder="État de la vitrine, local vide, enseigne présente..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+              <VoiceNoteRecorder
+                onTranscriptChange={setNotes}
+                aiEnabled={aiAvailable}
+                initialText={notes}
+              />
+            </div>
           </CardContent>
         </Card>
 

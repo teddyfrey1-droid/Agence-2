@@ -21,5 +21,28 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Repérage rapide",
+      "short_name": "Repérer",
+      "description": "Photo géolocalisée d'un local en 2 clics",
+      "url": "/dashboard/terrain/capture",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nouveau bien",
+      "short_name": "Bien",
+      "description": "Créer une fiche de bien",
+      "url": "/dashboard/biens/nouveau",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Nouveau contact",
+      "short_name": "Contact",
+      "description": "Scanner une carte de visite",
+      "url": "/dashboard/contacts/nouveau",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }

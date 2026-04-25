@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { AddressAutocomplete } from "@/components/address-autocomplete";
+import { AIListingGenerator } from "@/components/ai-listing-generator";
 import {
   PROPERTY_TYPE_LABELS,
   TRANSACTION_TYPE_LABELS,
@@ -294,6 +295,32 @@ export default function ModifierBienPage() {
                 <Select id="transactionType" name="transactionType" label="Transaction" required options={transactionTypeOptions} placeholder="Sélectionnez..." defaultValue={formValues.transactionType} />
                 <Select id="status" name="status" label="Statut" required options={propertyStatusOptions} placeholder="Sélectionnez..." defaultValue={formValues.status} />
               </div>
+              <AIListingGenerator
+                compact
+                getContext={() => {
+                  const typeEl = document.getElementById("type") as HTMLSelectElement | null;
+                  const transEl = document.getElementById("transactionType") as HTMLSelectElement | null;
+                  const surfaceEl = document.getElementById("surfaceTotal") as HTMLInputElement | null;
+                  return {
+                    type: typeEl?.value || formValues.type,
+                    transactionType: transEl?.value || formValues.transactionType,
+                    surface: surfaceEl?.value ? Number(surfaceEl.value) : formValues.surfaceTotal ?? null,
+                    district: addressData.district || formValues.district,
+                    city: addressData.city || formValues.city,
+                    hasExtraction: checkedEquipments.hasExtraction,
+                    hasTerrace: checkedEquipments.hasTerrace,
+                    hasParking: checkedEquipments.hasParking,
+                    hasLoadingDock: checkedEquipments.hasLoadingDock,
+                  };
+                }}
+                onApply={({ title, description }) => {
+                  const titleEl = document.getElementById("title") as HTMLInputElement | null;
+                  const descEl = document.getElementById("description") as HTMLTextAreaElement | null;
+                  if (titleEl) titleEl.value = title;
+                  if (descEl) descEl.value = description;
+                  setIsDirty(true);
+                }}
+              />
               <Textarea id="description" name="description" label="Description" rows={4} defaultValue={formValues.description || ""} />
             </CardContent>
           </Card>

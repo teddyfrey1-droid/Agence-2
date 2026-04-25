@@ -14,6 +14,7 @@ export default async function PerformancePage() {
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
   const [
@@ -70,6 +71,32 @@ export default async function PerformancePage() {
       select: { closedAt: true },
     }),
   ]);
+
+  // Weekly leaderboard — last 7 days vs previous 7 days
+  const weeklyStats = await Promise.all(
+    agents.map(async (agent) => {
+      const [spotsThisWeek, spotsLastWeek, visitsThisWeek, interactionsThisWeek] = await Promise.all([
+        prisma.fieldSpotting.count({ where: { assignedToId: agent.id, createdAt: { gte: sevenDaysAgo } } }),
+        prisma.fieldSpotting.count({ where: { assignedToId: agent.id, createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } } }),
+        prisma.event.count({ where: { userId: agent.id, type: "VISITE", startAt: { gte: sevenDaysAgo, lte: now } } }),
+        prisma.interaction.count({ where: { userId: agent.id, date: { gte: sevenDaysAgo } } }),
+      ]);
+      const score = spotsThisWeek * 3 + visitsThisWeek * 5 + interactionsThisWeek;
+      return {
+        id: agent.id,
+        name: `${agent.firstName} ${agent.lastName}`,
+        spots: spotsThisWeek,
+        spotsPrev: spotsLastWeek,
+        visits: visitsThisWeek,
+        interactions: interactionsThisWeek,
+        score,
+      };
+    })
+  );
+  const weeklyLeaderboard = weeklyStats
+    .filter((s) => s.score > 0 || s.spots > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10);
 
   // Conversion funnel data
   const funnelStages = ["PROSPECT", "VISITE", "NEGOCIATION", "COMPROMIS", "CLOTURE"];
@@ -169,6 +196,70 @@ export default async function PerformancePage() {
         <StatCard label="Demandes actives" value={activeSearchRequests} />
         <StatCard label="Relances en retard" value={overdueTasks} trend={overdueTasks > 0 ? "down" : "up"} change={overdueTasks > 0 ? "A traiter" : "OK"} />
       </div>
+
+      {/* Weekly leaderboard */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0" />
+              </svg>
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-anthracite-900 dark:text-stone-100">Classement de la semaine</h2>
+              <p className="text-xs text-stone-400 dark:text-stone-500">
+                Repérages × 3 + visites × 5 + interactions — sur les 7 derniers jours
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {weeklyLeaderboard.length === 0 ? (
+            <p className="px-6 py-6 text-center text-sm text-stone-400 dark:text-stone-500">
+              Pas encore d&apos;activité cette semaine.
+            </p>
+          ) : (
+            <ul className="divide-y divide-stone-100 dark:divide-stone-800">
+              {weeklyLeaderboard.map((entry, i) => {
+                const delta = entry.spots - entry.spotsPrev;
+                return (
+                  <li key={entry.id} className="flex items-center gap-3 px-5 py-3">
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                        i === 0 ? "bg-amber-400 text-white" :
+                        i === 1 ? "bg-stone-400 text-white" :
+                        i === 2 ? "bg-amber-700 text-white" :
+                        "bg-stone-100 text-stone-500 dark:bg-anthracite-800 dark:text-stone-400"
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-anthracite-800 dark:text-stone-200">{entry.name}</p>
+                      <p className="text-[11px] text-stone-400 dark:text-stone-500">
+                        {entry.spots} repérages · {entry.visits} visites · {entry.interactions} interactions
+                      </p>
+                    </div>
+                    {delta !== 0 && (
+                      <span
+                        className={`flex items-center gap-0.5 text-xs font-semibold ${
+                          delta > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-stone-400 dark:text-stone-500"
+                        }`}
+                      >
+                        {delta > 0 ? "▲" : "▼"} {Math.abs(delta)}
+                      </span>
+                    )}
+                    <span className="ml-2 rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-bold text-brand-700 dark:bg-brand-900/40 dark:text-brand-200">
+                      {entry.score}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Conversion Funnel */}
       <Card>

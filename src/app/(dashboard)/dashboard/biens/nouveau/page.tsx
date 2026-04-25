@@ -9,6 +9,7 @@ import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { useToast } from "@/components/ui/toast";
+import { AIListingGenerator } from "@/components/ai-listing-generator";
 import {
   PROPERTY_TYPE_LABELS,
   PARIS_DISTRICTS,
@@ -362,6 +363,10 @@ export default function NouveauBienPage() {
   const [zipCode, setZipCode] = useState("");
   const [district, setDistrict] = useState("");
   const [city, setCity] = useState("Paris");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [quarter, setQuarter] = useState("");
+  const [surfaceTotal, setSurfaceTotal] = useState<string>("");
 
   // Photos
   const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
@@ -600,17 +605,40 @@ export default function NouveauBienPage() {
               </div>
             </div>
 
-            <Input
-              id="title"
-              name="title"
-              label="Titre de l'annonce"
-              required
-              placeholder={
-                propertyType
-                  ? `Ex: ${PROPERTY_TYPE_LABELS[propertyType]} 45m² - Marais`
-                  : "Ex: Boutique 45m² - Marais"
-              }
-            />
+            <div className="space-y-2">
+              <Input
+                id="title"
+                name="title"
+                label="Titre de l'annonce"
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={
+                  propertyType
+                    ? `Ex: ${PROPERTY_TYPE_LABELS[propertyType]} 45m² - Marais`
+                    : "Ex: Boutique 45m² - Marais"
+                }
+              />
+              <AIListingGenerator
+                compact
+                getContext={() => ({
+                  type: propertyType || null,
+                  transactionType: transactionType || null,
+                  surface: surfaceTotal ? Number(surfaceTotal) : null,
+                  district: district || null,
+                  city: city || null,
+                  quarter: quarter || null,
+                  hasExtraction,
+                  hasTerrace,
+                  hasParking,
+                  hasLoadingDock,
+                })}
+                onApply={({ title: t, description: d }) => {
+                  setTitle(t);
+                  setDescription(d);
+                }}
+              />
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Select
@@ -628,6 +656,8 @@ export default function NouveauBienPage() {
               name="description"
               label="Description"
               rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Décrivez le bien en quelques lignes (emplacement, état, atouts...)"
             />
           </CardContent>
@@ -748,6 +778,8 @@ export default function NouveauBienPage() {
               id="quarter"
               name="quarter"
               label="Quartier"
+              value={quarter}
+              onChange={(e) => setQuarter(e.target.value)}
               placeholder="Ex: Le Marais, Saint-Germain, Opéra..."
             />
           </CardContent>
@@ -760,7 +792,16 @@ export default function NouveauBienPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-4 sm:grid-cols-4">
-              <Input id="surfaceTotal" name="surfaceTotal" type="number" label="Surface (m²)" min={0} placeholder="45" />
+              <Input
+                id="surfaceTotal"
+                name="surfaceTotal"
+                type="number"
+                label="Surface (m²)"
+                min={0}
+                placeholder="45"
+                value={surfaceTotal}
+                onChange={(e) => setSurfaceTotal(e.target.value)}
+              />
             </div>
             <div className="grid gap-4 sm:grid-cols-4">
               <Input id="floor" name="floor" type="number" label="Étage" placeholder="0 = RDC" />
