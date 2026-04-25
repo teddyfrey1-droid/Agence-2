@@ -7,6 +7,11 @@ import { USER_ROLE_LABELS } from "@/lib/constants";
 import { ActivityTracker } from "@/components/activity-tracker";
 import { PushNotifications } from "@/components/push-notifications";
 import { MobileBottomNav } from "@/components/mobile-bottom-nav";
+import { PullToRefresh } from "@/components/pull-to-refresh";
+import { OnboardingTour } from "@/components/onboarding-tour";
+import { AchievementToaster } from "@/components/achievement-toaster";
+import { ScheduledDarkMode } from "@/components/scheduled-dark-mode";
+import { OfflineSync } from "@/components/offline-sync";
 
 export default async function DashboardLayout({
   children,
@@ -64,10 +69,16 @@ export default async function DashboardLayout({
           />
           <ActivityTracker />
           <PushNotifications />
-          <main className="animate-fade-in mx-auto w-full max-w-[1600px] px-4 pt-5 pb-safe-or-6 sm:px-8 sm:pt-7">
-            {children}
-          </main>
+          <PullToRefresh>
+            <main className="animate-fade-in mx-auto w-full max-w-[1600px] px-4 pt-5 pb-safe-or-6 sm:px-8 sm:pt-7">
+              {children}
+            </main>
+          </PullToRefresh>
           <MobileBottomNav />
+          <OnboardingTour />
+          <AchievementToaster />
+          <ScheduledDarkMode />
+          <OfflineSync />
         </div>
       </div>
     </SidebarProvider>

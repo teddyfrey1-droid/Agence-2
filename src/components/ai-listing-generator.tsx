@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { unlockAchievement } from "@/lib/achievements";
 
 export interface ListingContextInput {
   type?: string | null;
@@ -83,6 +84,7 @@ export function AIListingGenerator({ getContext, onApply, compact = false }: Pro
     if (!result) return;
     onApply({ title: result.title, description: result.description });
     addToast("Annonce appliquée au formulaire", "success");
+    unlockAchievement("first_ai_listing");
     setOpen(false);
     setResult(null);
   }

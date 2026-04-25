@@ -4,6 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { haptic } from "@/lib/haptics";
+import { Confetti } from "@/components/confetti";
+import { unlockAchievement } from "@/lib/achievements";
+import { queueSpot } from "@/lib/offline-queue";
 
 type GeoStatus = "idle" | "loading" | "ready" | "denied" | "error";
 
@@ -58,6 +62,7 @@ export default function TerrainCapturePage() {
   const [photos, setPhotos] = useState<{ file: File; url: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<{ id: string; address: string } | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
 
   // Start the location lookup immediately — by the time the user tapped twice,
   // coords are ready. This is what makes the 2-click flow actually possible.
@@ -108,6 +113,7 @@ export default function TerrainCapturePage() {
       url: URL.createObjectURL(file),
     }));
     setPhotos((prev) => [...prev, ...next]);
+    haptic("success");
   }
 
   function removePhoto(i: number) {
@@ -121,19 +127,45 @@ export default function TerrainCapturePage() {
       return;
     }
     setSaving(true);
+    const address = geo?.address || "Repérage rapide";
+    const payload = {
+      address,
+      city: geo?.city || "Paris",
+      zipCode: geo?.zipCode ?? null,
+      district: geo?.district ?? null,
+      latitude: geo?.lat ?? null,
+      longitude: geo?.lng ?? null,
+    };
+
+    // No network → queue locally and replay later via OfflineSync.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      try {
+        const compressedPhotos = await Promise.all(photos.map((p) => compressImage(p.file)));
+        await queueSpot({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          payload,
+          photos: compressedPhotos,
+          createdAt: Date.now(),
+        });
+        setSaved({ id: "offline", address });
+        photos.forEach((p) => URL.revokeObjectURL(p.url));
+        setPhotos([]);
+        setCelebrate(true);
+        unlockAchievement("first_spot");
+        addToast("Hors-ligne — sera synchronisé au retour du réseau", "info");
+      } catch (err) {
+        addToast(err instanceof Error ? err.message : "Erreur queue", "error");
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+
     try {
-      const address = geo?.address || "Repérage rapide";
       const res = await fetch("/api/field-spotting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          address,
-          city: geo?.city || "Paris",
-          zipCode: geo?.zipCode,
-          district: geo?.district,
-          latitude: geo?.lat,
-          longitude: geo?.lng,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -157,9 +189,27 @@ export default function TerrainCapturePage() {
       setSaved({ id: spot.id, address });
       photos.forEach((p) => URL.revokeObjectURL(p.url));
       setPhotos([]);
+      setCelebrate(true);
+      unlockAchievement("first_spot");
       addToast("Repérage enregistré !", "success");
     } catch (err) {
-      addToast(err instanceof Error ? err.message : "Erreur", "error");
+      // Network failure mid-call — fallback to queue
+      try {
+        const compressedPhotos = await Promise.all(photos.map((p) => compressImage(p.file)));
+        await queueSpot({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          payload,
+          photos: compressedPhotos,
+          createdAt: Date.now(),
+        });
+        setSaved({ id: "offline", address });
+        photos.forEach((p) => URL.revokeObjectURL(p.url));
+        setPhotos([]);
+        setCelebrate(true);
+        addToast("Réseau capricieux — repérage mis en attente", "info");
+      } catch {
+        addToast(err instanceof Error ? err.message : "Erreur", "error");
+      }
     } finally {
       setSaving(false);
     }
@@ -207,6 +257,7 @@ export default function TerrainCapturePage() {
   if (saved) {
     return (
       <div className="mx-auto max-w-md py-8 text-center">
+        <Confetti fire={celebrate} onDone={() => setCelebrate(false)} />
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
           <svg className="h-10 w-10 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />

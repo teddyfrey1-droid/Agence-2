@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/haptics";
 
 interface Toast {
   id: string;
@@ -25,6 +26,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const addToast = useCallback((message: string, type: "success" | "error" | "info" = "success") => {
     const id = Math.random().toString(36).slice(2);
     setToasts((prev) => [...prev, { id, message, type }]);
+    haptic(type === "error" ? "error" : type === "info" ? "tap" : "success");
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3500);

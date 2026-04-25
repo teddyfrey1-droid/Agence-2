@@ -7,6 +7,7 @@ import { formatDateShort } from "@/lib/utils";
 import { TASK_PRIORITY_LABELS, DEAL_STAGE_LABELS } from "@/lib/constants";
 import { ActivityChart } from "@/components/dashboard/activity-chart";
 import { PipelineMini } from "@/components/dashboard/pipeline-mini";
+import { RecentSpotsMap } from "@/components/dashboard/recent-spots-map";
 import Link from "next/link";
 
 function KpiCard({
@@ -54,6 +55,13 @@ export default async function DashboardHomePage() {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   sevenDaysAgo.setHours(0, 0, 0, 0);
 
+  // Today window (for "Mode matin")
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
   const [
     propertyCount,
     activePropertyCount,
@@ -65,6 +73,9 @@ export default async function DashboardHomePage() {
     recentInteractions,
     weekInteractions,
     dealsByStage,
+    todaysTasks,
+    todaysVisits,
+    newHotMatches,
   ] = await Promise.all([
     prisma.property.count(),
     prisma.property.count({ where: { status: "ACTIF" } }),
@@ -108,7 +119,69 @@ export default async function DashboardHomePage() {
       where: { status: { in: ["OUVERT", "EN_COURS"] } },
       _count: true,
     }),
+    // Today's relances (tasks due today or overdue)
+    prisma.task.findMany({
+      where: {
+        status: { in: ["A_FAIRE", "EN_COURS"] },
+        dueDate: { lte: endOfToday },
+      },
+      orderBy: [{ dueDate: "asc" }, { priority: "desc" }],
+      take: 4,
+      include: {
+        contact: { select: { firstName: true, lastName: true } },
+      },
+    }),
+    // Today's visits
+    prisma.event.findMany({
+      where: {
+        type: "VISITE",
+        startAt: { gte: startOfToday, lte: endOfToday },
+      },
+      orderBy: { startAt: "asc" },
+      take: 4,
+      include: {
+        contact: { select: { firstName: true, lastName: true } },
+        property: { select: { title: true, address: true } },
+      },
+    }),
+    // New matches ≥ 75 % created in the last 24h
+    prisma.match.findMany({
+      where: {
+        score: { gte: 75 },
+        status: "SUGGERE",
+        createdAt: { gte: twentyFourHoursAgo },
+      },
+      orderBy: { score: "desc" },
+      take: 4,
+      include: {
+        property: { select: { id: true, title: true, city: true } },
+        searchRequest: {
+          select: {
+            reference: true,
+            contact: { select: { firstName: true, lastName: true } },
+          },
+        },
+      },
+    }),
   ]);
+
+  const recentSpots = await prisma.fieldSpotting.findMany({
+    where: { latitude: { not: null }, longitude: { not: null } },
+    orderBy: { createdAt: "desc" },
+    take: 30,
+    select: { id: true, latitude: true, longitude: true, address: true, createdAt: true },
+  });
+  const mapSpots = recentSpots
+    .filter((s): s is typeof s & { latitude: number; longitude: number } =>
+      s.latitude != null && s.longitude != null
+    )
+    .map((s) => ({
+      id: s.id,
+      lat: s.latitude,
+      lng: s.longitude,
+      address: s.address,
+      createdAt: s.createdAt,
+    }));
 
   // Build activity data for last 7 days
   const DAY_LABELS_SHORT = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
@@ -137,13 +210,110 @@ export default async function DashboardHomePage() {
     year: "numeric",
   }).format(now);
 
+  const hour = now.getHours();
+  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+
+  const morningItems = todaysTasks.length + todaysVisits.length + newHotMatches.length;
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow={dateStr}
-        title={`Bonjour ${session?.firstName ?? ""}`}
+        title={`${greeting} ${session?.firstName ?? ""}`}
         description="Votre vue d'ensemble du jour — pipeline, activité et prochaines actions."
       />
+
+      {/* ── Mode matin — 3 blocs actionnables ── */}
+      {morningItems > 0 && (
+        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+          <div className="flex flex-col rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-amber-100/40 p-4 dark:border-amber-900/40 dark:from-amber-900/10 dark:to-amber-900/5">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-[10.5px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">Relances</p>
+                <p className="text-xl font-bold text-amber-900 dark:text-amber-200">{todaysTasks.length}</p>
+              </div>
+            </div>
+            {todaysTasks.length === 0 ? (
+              <p className="mt-2 text-xs text-amber-700/80 dark:text-amber-300/70">Aucune relance aujourd&apos;hui.</p>
+            ) : (
+              <ul className="mt-2 space-y-1">
+                {todaysTasks.slice(0, 3).map((t) => (
+                  <li key={t.id} className="truncate text-xs text-anthracite-800 dark:text-stone-200">
+                    <span className="font-medium">{t.title}</span>
+                    {t.contact && <span className="text-stone-500 dark:text-stone-400"> · {t.contact.firstName} {t.contact.lastName}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href="/dashboard/taches" className="mt-auto pt-3 text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400">
+              Voir toutes →
+            </Link>
+          </div>
+
+          <div className="flex flex-col rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50 to-blue-100/40 p-4 dark:border-blue-900/40 dark:from-blue-900/10 dark:to-blue-900/5">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-white">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-[10.5px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400">Visites</p>
+                <p className="text-xl font-bold text-blue-900 dark:text-blue-200">{todaysVisits.length}</p>
+              </div>
+            </div>
+            {todaysVisits.length === 0 ? (
+              <p className="mt-2 text-xs text-blue-700/80 dark:text-blue-300/70">Aucune visite prévue aujourd&apos;hui.</p>
+            ) : (
+              <ul className="mt-2 space-y-1">
+                {todaysVisits.slice(0, 3).map((v) => (
+                  <li key={v.id} className="truncate text-xs text-anthracite-800 dark:text-stone-200">
+                    <span className="font-medium">{new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(v.startAt)}</span>
+                    <span className="text-stone-500 dark:text-stone-400"> · {v.property?.title || v.title}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href="/dashboard/visites" className="mt-auto pt-3 text-xs font-semibold text-blue-700 hover:underline dark:text-blue-400">
+              Voir l&apos;agenda →
+            </Link>
+          </div>
+
+          <div className="flex flex-col rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/40 p-4 dark:border-emerald-900/40 dark:from-emerald-900/10 dark:to-emerald-900/5">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <p className="text-[10.5px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Matches chauds</p>
+                <p className="text-xl font-bold text-emerald-900 dark:text-emerald-200">{newHotMatches.length}</p>
+              </div>
+            </div>
+            {newHotMatches.length === 0 ? (
+              <p className="mt-2 text-xs text-emerald-700/80 dark:text-emerald-300/70">Aucun match ≥ 75 % depuis 24 h.</p>
+            ) : (
+              <ul className="mt-2 space-y-1">
+                {newHotMatches.slice(0, 3).map((m) => (
+                  <li key={m.id} className="truncate text-xs text-anthracite-800 dark:text-stone-200">
+                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">{m.score}%</span>
+                    <span className="text-stone-500 dark:text-stone-400"> · {m.property.title}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href="/dashboard/matches" className="mt-auto pt-3 text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400">
+              Voir les matches →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Terrain shortcut — prominent card for field use */}
       <Link
@@ -238,7 +408,24 @@ export default async function DashboardHomePage() {
       </div>
 
       {/* Charts row */}
-      <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-5 lg:grid-cols-3">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+                <svg className="h-4 w-4 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+              </div>
+              <h2 className="heading-card">Sur le terrain</h2>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <RecentSpotsMap spots={mapSpots} />
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">

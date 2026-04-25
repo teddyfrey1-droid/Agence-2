@@ -7,8 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DEAL_STAGE_LABELS } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast";
+import { Confetti } from "@/components/confetti";
+import { unlockAchievement } from "@/lib/achievements";
 
 const stageOptions = Object.entries(DEAL_STAGE_LABELS).map(([value, label]) => ({ value, label }));
 
@@ -41,6 +44,7 @@ export default function ModifierDossierPage() {
   const [error, setError] = useState<string | null>(null);
   const [deal, setDeal] = useState<DealData | null>(null);
   const [status, setStatus] = useState("OUVERT");
+  const [celebrate, setCelebrate] = useState(false);
 
   useEffect(() => {
     async function fetchDeal() {
@@ -84,8 +88,15 @@ export default function ModifierDossierPage() {
         const data = await res.json();
         throw new Error(data.error || "Erreur");
       }
-      addToast("Dossier mis \u00e0 jour avec succ\u00e8s", "success");
-      router.push(`/dashboard/dossiers/${params.id}`);
+      const becameWon = formData.get("status") === "GAGNE" && deal?.status !== "GAGNE";
+      addToast(becameWon ? "Dossier gagn\u00e9 \u2014 bravo !" : "Dossier mis \u00e0 jour avec succ\u00e8s", "success");
+      if (becameWon) {
+        setCelebrate(true);
+        unlockAchievement("first_won_deal");
+        setTimeout(() => router.push(`/dashboard/dossiers/${params.id}`), 1800);
+      } else {
+        router.push(`/dashboard/dossiers/${params.id}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
       addToast("Erreur lors de la mise \u00e0 jour", "error");
@@ -98,24 +109,24 @@ export default function ModifierDossierPage() {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
-          <div className="h-8 w-48 animate-pulse rounded bg-stone-200 dark:bg-anthracite-700" />
-          <div className="mt-2 h-4 w-64 animate-pulse rounded bg-stone-100 dark:bg-anthracite-800" />
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="mt-2 h-4 w-64" />
         </div>
         <Card>
           <CardHeader>
-            <div className="h-5 w-32 animate-pulse rounded bg-stone-200 dark:bg-anthracite-700" />
+            <Skeleton className="h-5 w-32" />
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="h-10 w-full animate-pulse rounded bg-stone-100 dark:bg-anthracite-800" />
+            <Skeleton className="h-10 w-full" />
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="h-10 w-full animate-pulse rounded bg-stone-100 dark:bg-anthracite-800" />
-              <div className="h-10 w-full animate-pulse rounded bg-stone-100 dark:bg-anthracite-800" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="h-10 w-full animate-pulse rounded bg-stone-100 dark:bg-anthracite-800" />
-              <div className="h-10 w-full animate-pulse rounded bg-stone-100 dark:bg-anthracite-800" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
-            <div className="h-20 w-full animate-pulse rounded bg-stone-100 dark:bg-anthracite-800" />
+            <Skeleton className="h-20 w-full" />
           </CardContent>
         </Card>
       </div>
@@ -134,6 +145,7 @@ export default function ModifierDossierPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <Confetti fire={celebrate} onDone={() => setCelebrate(false)} count={180} />
       <div>
         <h1 className="text-2xl font-semibold text-anthracite-900 dark:text-stone-100">Modifier le dossier</h1>
         <p className="text-sm text-stone-500 dark:text-stone-400">Modifiez les informations du dossier.</p>
