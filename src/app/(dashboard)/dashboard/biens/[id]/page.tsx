@@ -17,6 +17,8 @@ import { DeleteButton } from "@/components/delete-button";
 import { PublishButton } from "@/components/publish-button";
 import { PropertyShareButton } from "@/components/property-share-button";
 import { PropertyPanelsCard } from "@/components/property-panels-card";
+import { PropertyMobileActions } from "@/components/property-mobile-actions";
+import { PropertyAiSuggestion } from "@/components/property-ai-suggestion";
 import { prisma } from "@/lib/prisma";
 import { getAgencyInfo } from "@/lib/agency";
 
@@ -69,6 +71,26 @@ export default async function PropertyDetailPage({
 
   return (
     <div className="space-y-6">
+      <PropertyMobileActions
+        propertyId={id}
+        reference={property.reference}
+        isPublished={property.isPublished}
+      />
+      <PropertyAiSuggestion
+        propertyId={id}
+        type={property.type}
+        transactionType={property.transactionType}
+        district={property.district}
+        city={property.city}
+        quarter={property.quarter}
+        surface={property.surfaceTotal}
+        hasExtraction={property.hasExtraction}
+        hasTerrace={property.hasTerrace}
+        hasParking={property.hasParking}
+        hasLoadingDock={property.hasLoadingDock}
+        hasDescription={Boolean(property.description && property.description.length > 20)}
+      />
+
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
