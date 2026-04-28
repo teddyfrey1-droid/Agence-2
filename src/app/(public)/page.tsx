@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
@@ -10,6 +11,28 @@ import {
   SAVOIR_FAIRE_CONTENT,
   CONTACT_CONTENT,
 } from "@/lib/homepage-content";
+
+export const metadata: Metadata = {
+  title: "Immobilier commercial à Paris",
+  description:
+    "Retail Avenue accompagne enseignes, investisseurs et propriétaires dans la commercialisation de locaux commerciaux et professionnels à Paris.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    title: "Retail Avenue — Immobilier commercial à Paris",
+    description:
+      "Locaux commerciaux et professionnels à Paris : sélection sur-mesure, expertise terrain, accompagnement intégré.",
+    images: ["/hero-paris.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Retail Avenue — Immobilier commercial à Paris",
+    description:
+      "Locaux commerciaux et professionnels à Paris : sélection sur-mesure, expertise terrain, accompagnement intégré.",
+    images: ["/hero-paris.jpg"],
+  },
+};
 
 /* ─────────────────────────────────────────
    PAGE

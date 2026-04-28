@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
+// Note: metadata can't be exported from a "use client" file. The static
+// metadata for /contact lives in `contact/layout.tsx`.
+
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);

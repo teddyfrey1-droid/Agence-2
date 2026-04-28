@@ -6,7 +6,8 @@ import type { NextConfig } from "next";
  * CSP is intentionally conservative but still permissive enough for the
  * stack we're using:
  *  - Next.js dev + inline styles require 'unsafe-inline' on style-src
- *  - mapbox-gl uses blob: workers + WebGL, hence worker-src blob:
+ *  - Leaflet (carte page) loads tiles from OpenStreetMap / Carto and uses
+ *    workers under blob:, hence worker-src blob:
  *  - Supabase storage is used for media -> its bucket hostname is allowed
  *    via https: and data: on img-src
  *  - Brevo tracking is not used, Google Fonts neither.
@@ -33,9 +34,6 @@ const cspDirectives: Record<string, string[]> = {
   "connect-src": [
     "'self'",
     "https://*.supabase.co",
-    "https://api.mapbox.com",
-    "https://events.mapbox.com",
-    "https://*.tiles.mapbox.com",
     // OpenStreetMap + Carto tiles used by the Leaflet carte
     "https://*.tile.openstreetmap.org",
     "https://*.basemaps.cartocdn.com",

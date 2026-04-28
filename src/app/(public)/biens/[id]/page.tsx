@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { findPropertyById } from "@/modules/properties";
@@ -9,6 +10,51 @@ import {
   PROPERTY_STATUS_LABELS,
 } from "@/lib/constants";
 import { Badge } from "@/components/ui";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const property = await findPropertyById(id);
+
+  if (!property || !property.isPublished || property.confidentiality !== "PUBLIC") {
+    return {
+      title: "Bien introuvable",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const typeLabel = PROPERTY_TYPE_LABELS[property.type] || property.type;
+  const txLabel = TRANSACTION_TYPE_LABELS[property.transactionType];
+  const location = property.district || property.city;
+  const surface = property.surfaceTotal ? ` · ${formatSurface(property.surfaceTotal)}` : "";
+  const description =
+    property.description?.slice(0, 160) ||
+    `${typeLabel} en ${txLabel.toLowerCase()} à ${location}${surface}. Découvrez ce bien sur Retail Avenue.`;
+
+  const image = property.media[0]?.url;
+
+  return {
+    title: property.title,
+    description,
+    alternates: { canonical: `/biens/${property.id}` },
+    openGraph: {
+      type: "article",
+      locale: "fr_FR",
+      title: `${property.title} — ${location}`,
+      description,
+      images: image ? [image] : ["/hero-paris.jpg"],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${property.title} — ${location}`,
+      description,
+      images: image ? [image] : ["/hero-paris.jpg"],
+    },
+  };
+}
 
 export default async function PropertyDetailPage({
   params,

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +31,7 @@ export default function RechercheLocalPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
+  const [consent, setConsent] = useState(false);
 
   function toggleType(type: string) {
     setSelectedTypes((prev) =>
@@ -60,6 +62,14 @@ export default function RechercheLocalPage() {
 
     if (selectedTypes.length === 0) {
       setError("Veuillez sélectionner au moins un type de local.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!consent) {
+      setError(
+        "Merci d'accepter la politique de confidentialité avant d'envoyer votre demande."
+      );
       setIsSubmitting(false);
       return;
     }
@@ -272,6 +282,28 @@ export default function RechercheLocalPage() {
                 <div className="hidden" aria-hidden="true">
                   <input type="text" name="website" tabIndex={-1} autoComplete="off" />
                 </div>
+
+                <label className="flex items-start gap-3 text-sm text-anthracite-600 dark:text-stone-300">
+                  <input
+                    type="checkbox"
+                    checked={consent}
+                    onChange={(e) => setConsent(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500 dark:border-stone-600 dark:bg-anthracite-800"
+                    required
+                  />
+                  <span>
+                    J&apos;accepte que les informations saisies soient utilisées
+                    pour traiter ma demande de recherche, conformément à la{" "}
+                    <Link
+                      href="/politique-confidentialite"
+                      className="text-brand-600 underline hover:text-brand-700"
+                    >
+                      politique de confidentialité
+                    </Link>
+                    . Vous disposez d&apos;un droit d&apos;accès, de rectification
+                    et de suppression de vos données.
+                  </span>
+                </label>
 
                 <Button type="submit" size="lg" isLoading={isSubmitting} className="w-full sm:w-auto">
                   Envoyer ma recherche
