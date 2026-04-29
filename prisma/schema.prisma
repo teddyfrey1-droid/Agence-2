@@ -246,6 +246,11 @@ model User {
   passwordResetToken     String?   @unique
   passwordResetExpiresAt DateTime?
 
+  // Bumped on logout / password change to invalidate every JWT issued before.
+  // The session check in getActiveSession() compares the JWT's `tv` claim
+  // against this column.
+  tokenVersion Int @default(0)
+
   // Custom permissions (JSON override per user)
   customPermissions Json?
 

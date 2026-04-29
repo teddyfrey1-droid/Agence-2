@@ -9,10 +9,10 @@ if (!process.env.JWT_SECRET) {
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
 const COOKIE_NAME = "session";
-// 1 day — short-lived session to limit the window where a revoked account
-// (isActive=false) can still use a pre-existing token. Clients refresh by
-// re-authenticating.
-const COOKIE_MAX_AGE = 60 * 60 * 24;
+// 4 hours — short-lived session to limit the window where a stolen token
+// stays valid. Combined with `tokenVersion` (bumped on logout / password
+// change) this gives us server-side revocation.
+const COOKIE_MAX_AGE = 60 * 60 * 4;
 
 export interface SessionPayload {
   userId: string;
@@ -21,6 +21,8 @@ export interface SessionPayload {
   agencyId: string;
   firstName: string;
   lastName: string;
+  /** User.tokenVersion at the time the JWT was issued. Required. */
+  tv: number;
 }
 
 /**
@@ -61,14 +63,16 @@ export async function getSession(): Promise<SessionPayload | null> {
 }
 
 /**
- * Session + live "isActive" check. Use this on sensitive endpoints (admin,
- * write actions) to immediately reject users whose accounts have been
- * deactivated, even if their JWT is still valid.
+ * Session + live "isActive" + tokenVersion check. Use this on sensitive
+ * endpoints (admin, write actions) to immediately reject users whose
+ * accounts have been deactivated or whose tokens have been revoked.
  *
  * Returns null if:
  *   - no cookie / invalid JWT
  *   - user no longer exists
  *   - user.isActive is false
+ *   - user.tokenVersion has been bumped since the JWT was issued
+ *     (logout / password change / forced re-auth)
  */
 export async function getActiveSession(): Promise<SessionPayload | null> {
   const session = await getSession();
@@ -76,15 +80,27 @@ export async function getActiveSession(): Promise<SessionPayload | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { isActive: true, role: true },
+    select: { isActive: true, role: true, tokenVersion: true },
   });
   if (!user || !user.isActive) return null;
+  if (user.tokenVersion !== session.tv) return null;
 
   // If the role changed in DB, honour the DB value (defence-in-depth)
   if (user.role !== session.role) {
     return { ...session, role: user.role };
   }
   return session;
+}
+
+/**
+ * Bump a user's tokenVersion to invalidate every JWT issued before this
+ * point. Call this from logout, password change, and admin "force logout".
+ */
+export async function bumpTokenVersion(userId: string): Promise<void> {
+  await prisma.user.update({
+    where: { id: userId },
+    data: { tokenVersion: { increment: 1 } },
+  });
 }
 
 export async function destroySession(): Promise<void> {

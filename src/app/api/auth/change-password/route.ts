@@ -35,9 +35,14 @@ export async function POST(request: NextRequest) {
     }
 
     const passwordHash = await hash(newPassword, 12);
+    // Bumping tokenVersion here invalidates every other active JWT for this
+    // user — important so a stolen cookie can't survive a password change.
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        tokenVersion: { increment: 1 },
+      },
     });
 
     await prisma.auditLog.create({

@@ -6,11 +6,9 @@ import type { NextConfig } from "next";
  * CSP is intentionally conservative but still permissive enough for the
  * stack we're using:
  *  - Next.js dev + inline styles require 'unsafe-inline' on style-src
- *  - Leaflet (carte page) loads tiles from OpenStreetMap / Carto and uses
- *    workers under blob:, hence worker-src blob:
+ *  - Leaflet (carte page) is now bundled locally; tiles still come from
+ *    OpenStreetMap / Carto, hence those hosts on connect-src + img-src
  *  - Supabase storage is used for media -> its bucket hostname is allowed
- *    via https: and data: on img-src
- *  - Brevo tracking is not used, Google Fonts neither.
  *
  * `Content-Security-Policy-Report-Only` can be toggled via the CSP_REPORT_ONLY
  * env var — useful during rollout before flipping to enforcing mode.
@@ -24,12 +22,17 @@ const cspDirectives: Record<string, string[]> = {
     // Next.js inlines bootstrapping scripts; 'unsafe-inline' is unavoidable
     // unless we wire up nonces via middleware.
     "'unsafe-inline'",
-    // Leaflet.js is loaded from unpkg by the dashboard carte page.
-    "https://unpkg.com",
     ...(isDev ? ["'unsafe-eval'"] : []),
   ],
-  "style-src": ["'self'", "'unsafe-inline'", "https://unpkg.com"],
-  "img-src": ["'self'", "data:", "blob:", "https:"],
+  "style-src": ["'self'", "'unsafe-inline'"],
+  "img-src": [
+    "'self'",
+    "data:",
+    "blob:",
+    "https://*.supabase.co",
+    "https://*.tile.openstreetmap.org",
+    "https://*.basemaps.cartocdn.com",
+  ],
   "font-src": ["'self'", "data:"],
   "connect-src": [
     "'self'",
@@ -73,14 +76,42 @@ const securityHeaders = [
   },
 ];
 
+/**
+ * Build the list of hosts allowed for `next/image` optimisation.
+ *
+ * Supabase Storage is the canonical source for property media. We extract
+ * the hostname from `NEXT_PUBLIC_SUPABASE_URL` so deployments only allow
+ * their own bucket — and never every HTTPS source on the internet.
+ *
+ * `NEXT_PUBLIC_IMAGE_HOSTS` (comma-separated) is an escape hatch for
+ * additional CDNs (e.g. legacy Cloudinary) without changing this file.
+ */
+function imageRemotePatterns() {
+  const hosts = new Set<string>();
+  try {
+    const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (supabase) hosts.add(new URL(supabase).hostname);
+  } catch {
+    /* invalid URL — ignore */
+  }
+  for (const host of (process.env.NEXT_PUBLIC_IMAGE_HOSTS ?? "").split(",")) {
+    const trimmed = host.trim();
+    if (trimmed) hosts.add(trimmed);
+  }
+  if (hosts.size === 0) {
+    // Wildcard fallback for *.supabase.co so dev/preview without env vars
+    // still load images. Production should set NEXT_PUBLIC_SUPABASE_URL.
+    hosts.add("*.supabase.co");
+  }
+  return Array.from(hosts).map((hostname) => ({
+    protocol: "https" as const,
+    hostname,
+  }));
+}
+
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**",
-      },
-    ],
+    remotePatterns: imageRemotePatterns(),
   },
   experimental: {
     serverActions: {

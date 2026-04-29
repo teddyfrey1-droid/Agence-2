@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       agencyId: user.agencyId || "",
       firstName: user.firstName,
       lastName: user.lastName,
+      tv: user.tokenVersion,
     });
 
     await updateUserLastLogin(user.id);

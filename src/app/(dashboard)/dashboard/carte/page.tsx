@@ -1,5 +1,7 @@
 "use client";
 
+import "leaflet/dist/leaflet.css";
+
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -153,22 +155,19 @@ export default function CartePage() {
   const propsWithCoords = filtered.filter((p) => p.latitude && p.longitude && inDrawnArea(p.latitude, p.longitude));
   const spotsWithCoords = spottings.filter((s) => s.latitude && s.longitude && inDrawnArea(s.latitude, s.longitude));
 
-  // Init Leaflet
+  // Init Leaflet — lazy-imported so the bundle only loads on this page,
+  // and to keep server-side rendering happy (Leaflet touches `window`).
   useEffect(() => {
     if (mapInstanceRef.current) return;
-    if (!document.getElementById("leaflet-css")) {
-      const link = document.createElement("link");
-      link.id = "leaflet-css";
-      link.rel = "stylesheet";
-      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(link);
-    }
 
-    const initMap = () => {
-      if (!mapRef.current || mapInstanceRef.current) return;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const L = (window as any).L;
-      if (!L) return;
+    let cancelled = false;
+    const ro = new ResizeObserver(() => {
+      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
+    });
+
+    (async () => {
+      const { default: L } = await import("leaflet");
+      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
       leafletRef.current = L;
 
       const isDark = document.documentElement.classList.contains("dark");
@@ -188,30 +187,12 @@ export default function CartePage() {
       // Ensure tiles render correctly after the container reaches its final size
       setTimeout(() => map.invalidateSize(), 150);
       setTimeout(() => map.invalidateSize(), 500);
-    };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((window as any).L) {
-      initMap();
-    } else {
-      let script = document.getElementById("leaflet-js") as HTMLScriptElement | null;
-      if (!script) {
-        script = document.createElement("script");
-        script.id = "leaflet-js";
-        script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-        script.async = true;
-        document.head.appendChild(script);
-      }
-      script.addEventListener("load", initMap);
-    }
-
-    // React-to-resize: some flex layouts mount the container with 0px height
-    const ro = new ResizeObserver(() => {
-      if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
-    });
-    if (mapRef.current) ro.observe(mapRef.current);
+      if (mapRef.current) ro.observe(mapRef.current);
+    })();
 
     return () => {
+      cancelled = true;
       ro.disconnect();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
+import { applyRateLimit } from "@/lib/rate-limit";
+
+// Setup is one-shot but must still be defended against brute-forcing the
+// x-setup-token header: 5 attempts / hour / IP.
+const SETUP_RATE_LIMIT = { maxRequests: 5, windowSeconds: 60 * 60 };
 
 /**
  * Setup endpoint — protected by SETUP_SECRET_TOKEN environment variable.
@@ -14,6 +19,10 @@ import { hash } from "bcryptjs";
  */
 export async function POST(request: NextRequest) {
   try {
+    // 0. Rate-limit by IP — guards the bearer token against brute force.
+    const rateLimited = await applyRateLimit("auth-setup", request.headers, SETUP_RATE_LIMIT);
+    if (rateLimited) return rateLimited;
+
     // 1. Require SETUP_SECRET_TOKEN to be configured
     const setupToken = process.env.SETUP_SECRET_TOKEN;
     if (!setupToken || setupToken.length < 16) {

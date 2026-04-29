@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { SESSION_COOKIE_OPTIONS, getSession, bumpTokenVersion } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
+  // Bump the user's tokenVersion so any other JWT issued before now (e.g.
+  // a stolen cookie still in the wild) is rejected by getActiveSession().
+  // Failure here must not block the logout itself.
+  try {
+    const session = await getSession();
+    if (session) await bumpTokenVersion(session.userId);
+  } catch {
+    /* swallow */
+  }
+
   const redirectUrl = new URL("/login", request.url);
   const response = NextResponse.redirect(redirectUrl);
 

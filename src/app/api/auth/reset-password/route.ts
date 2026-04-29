@@ -31,12 +31,15 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await hash(password, 12);
 
+    // Bumping tokenVersion invalidates any other JWT issued before the reset
+    // (e.g. a session still alive on a device the user no longer controls).
     await prisma.user.update({
       where: { id: user.id },
       data: {
         passwordHash,
         passwordResetToken: null,
         passwordResetExpiresAt: null,
+        tokenVersion: { increment: 1 },
       },
     });
 
