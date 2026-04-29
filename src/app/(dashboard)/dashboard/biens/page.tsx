@@ -1,8 +1,8 @@
 import Link from "next/link";
+import Image from "next/image";
 import { findProperties } from "@/modules/properties";
 import { formatPrice, formatSurface, formatRelativeDate } from "@/lib/utils";
 import { PROPERTY_TYPE_LABELS, PROPERTY_STATUS_LABELS, TRANSACTION_TYPE_LABELS } from "@/lib/constants";
-import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -80,22 +80,26 @@ export default async function BiensListPage({
         currentParams={params}
       />
 
-      {/* Sort bar */}
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-stone-400 dark:text-stone-500">Trier :</span>
-        {SORT_OPTIONS.map((opt) => (
-          <Link
-            key={opt.value}
-            href={sortHref(opt.value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              sort === opt.value
-                ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
-                : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-anthracite-800 dark:text-stone-400 dark:hover:bg-anthracite-700"
-            }`}
-          >
-            {opt.label}
-          </Link>
-        ))}
+      {/* Sort bar — luxe segmented control */}
+      <div className="flex items-center gap-3 text-xs">
+        <span className="font-medium uppercase tracking-[0.14em] text-stone-400 dark:text-stone-500">
+          Trier
+        </span>
+        <div className="inline-flex items-center gap-0.5 rounded-full border border-stone-200/70 bg-stone-50/60 p-1 dark:border-anthracite-800 dark:bg-anthracite-900/60">
+          {SORT_OPTIONS.map((opt) => (
+            <Link
+              key={opt.value}
+              href={sortHref(opt.value)}
+              className={`rounded-full px-3.5 py-1 font-medium transition-all duration-200 ${
+                sort === opt.value
+                  ? "bg-white text-anthracite-900 shadow-card dark:bg-anthracite-700 dark:text-stone-100"
+                  : "text-stone-500 hover:text-anthracite-800 dark:text-stone-400 dark:hover:text-stone-200"
+              }`}
+            >
+              {opt.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {properties.length === 0 ? (
@@ -112,97 +116,196 @@ export default async function BiensListPage({
         />
       ) : (
         <>
-          {/* Mobile: card view */}
+          {/* Mobile: card view with thumbnail */}
           <div className="space-y-3 lg:hidden">
-            {properties.map((property) => (
-              <Link key={property.id} href={`/dashboard/biens/${property.id}`}>
-                <Card className="p-4 active:bg-stone-50 dark:active:bg-anthracite-800 transition-colors">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-mono text-[10px] text-stone-400 dark:text-stone-500">{property.reference}</p>
-                      <p className="mt-0.5 truncate text-sm font-semibold text-anthracite-800 dark:text-stone-200">
-                        {property.title}
-                      </p>
-                      <p className="text-xs text-stone-500 dark:text-stone-400">
-                        {property.district || property.city} · {PROPERTY_TYPE_LABELS[property.type] || property.type}
-                      </p>
+            {properties.map((property) => {
+              const thumb = property.media[0]?.url;
+              return (
+                <Link key={property.id} href={`/dashboard/biens/${property.id}`}>
+                  <Card className="p-3 active:bg-stone-50 transition-colors dark:active:bg-anthracite-800" hover>
+                    <div className="flex gap-3">
+                      <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-stone-100 dark:bg-anthracite-800">
+                        {thumb ? (
+                          <Image
+                            src={thumb}
+                            alt={property.title}
+                            fill
+                            sizes="80px"
+                            className="object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-stone-300 dark:text-stone-700">
+                            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-mono text-[10px] tracking-wider text-stone-400 dark:text-stone-500">
+                              {property.reference}
+                            </p>
+                            <p className="mt-0.5 truncate text-sm font-semibold text-anthracite-800 dark:text-stone-200">
+                              {property.title}
+                            </p>
+                            <p className="text-xs text-stone-500 dark:text-stone-400">
+                              {property.district || property.city} · {PROPERTY_TYPE_LABELS[property.type] || property.type}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center gap-3 text-xs">
+                          <span className="text-stone-500 dark:text-stone-400">
+                            {TRANSACTION_TYPE_LABELS[property.transactionType]}
+                          </span>
+                          {property.surfaceTotal && (
+                            <span className="text-stone-500 dark:text-stone-400">
+                              {formatSurface(property.surfaceTotal)}
+                            </span>
+                          )}
+                          <span className="ml-auto font-display text-sm font-bold tabular-nums text-anthracite-900 dark:text-stone-100">
+                            {property.transactionType === "LOCATION"
+                              ? formatPrice(property.rentMonthly)
+                              : formatPrice(property.price)}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <InlineStatusSelect
-                      propertyId={property.id}
-                      currentStatus={property.status}
-                      isCoMandat={property.isCoMandat}
-                    />
-                  </div>
-                  <div className="mt-3 flex items-center gap-4 text-sm">
-                    <span className="text-stone-500 dark:text-stone-400">{TRANSACTION_TYPE_LABELS[property.transactionType]}</span>
-                    {property.surfaceTotal && (
-                      <span className="text-stone-500 dark:text-stone-400">{formatSurface(property.surfaceTotal)}</span>
-                    )}
-                    <span className="ml-auto font-semibold text-anthracite-800 dark:text-stone-200">
-                      {property.transactionType === "LOCATION"
-                        ? formatPrice(property.rentMonthly)
-                        : formatPrice(property.price)}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-between text-xs text-stone-400 dark:text-stone-500">
-                    <span>{formatRelativeDate(property.updatedAt)}</span>
-                    <span>{property._count.matches} match{property._count.matches !== 1 ? "es" : ""}</span>
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-
-          {/* Desktop: table view */}
-          <Card className="hidden overflow-hidden lg:block">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-stone-100 bg-stone-50/50 dark:border-stone-700/50 dark:bg-anthracite-800/50">
-                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Référence</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Titre</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Type</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Transaction</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Surface</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Prix/Loyer</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Statut</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Mis à jour</th>
-                    <th className="px-4 py-3 text-left font-medium text-stone-500 dark:text-stone-400">Matches</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100 dark:divide-stone-700/50">
-                  {properties.map((property) => (
-                    <tr key={property.id} className="hover:bg-stone-50 dark:hover:bg-anthracite-800/50 transition-colors">
-                      <td className="px-4 py-3">
-                        <Link href={`/dashboard/biens/${property.id}`} className="font-mono text-xs text-brand-600 hover:underline dark:text-brand-400">
-                          {property.reference}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link href={`/dashboard/biens/${property.id}`} className="font-medium text-anthracite-800 hover:text-brand-700 dark:text-stone-200 dark:hover:text-brand-400">
-                          {property.title}
-                        </Link>
-                        <p className="text-xs text-stone-400 dark:text-stone-500">{property.district || property.city}</p>
-                      </td>
-                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{PROPERTY_TYPE_LABELS[property.type] || property.type}</td>
-                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{TRANSACTION_TYPE_LABELS[property.transactionType]}</td>
-                      <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{formatSurface(property.surfaceTotal)}</td>
-                      <td className="px-4 py-3 font-medium text-anthracite-800 dark:text-stone-200">
-                        {property.transactionType === "LOCATION" ? formatPrice(property.rentMonthly) : formatPrice(property.price)}
-                      </td>
-                      <td className="px-4 py-3">
+                    <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-2.5 dark:border-anthracite-800">
+                      <div onClick={(e) => e.stopPropagation()}>
                         <InlineStatusSelect
                           propertyId={property.id}
                           currentStatus={property.status}
                           isCoMandat={property.isCoMandat}
                         />
-                      </td>
-                      <td className="px-4 py-3 text-xs text-stone-400 dark:text-stone-500" title={property.updatedAt ? new Date(property.updatedAt).toLocaleString("fr-FR") : ""}>
-                        {formatRelativeDate(property.updatedAt)}
-                      </td>
-                      <td className="px-4 py-3 text-center text-stone-500 dark:text-stone-400">{property._count.matches}</td>
-                    </tr>
-                  ))}
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px] text-stone-400 dark:text-stone-500">
+                        {property._count.matches > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                            <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 8 8" aria-hidden="true">
+                              <circle cx="4" cy="4" r="3" />
+                            </svg>
+                            {property._count.matches}
+                          </span>
+                        )}
+                        <span>{formatRelativeDate(property.updatedAt)}</span>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Desktop: table view with thumbnails */}
+          <Card className="hidden overflow-hidden lg:block">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stone-200/70 bg-stone-50/60 dark:border-anthracite-800 dark:bg-anthracite-800/40">
+                    <th className="px-4 py-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">Bien</th>
+                    <th className="px-4 py-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">Type</th>
+                    <th className="px-4 py-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">Surface</th>
+                    <th className="px-4 py-3 text-right text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">Prix / Loyer</th>
+                    <th className="px-4 py-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">Statut</th>
+                    <th className="px-4 py-3 text-center text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">Matches</th>
+                    <th className="px-4 py-3 text-right text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">MAJ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100 dark:divide-anthracite-800">
+                  {properties.map((property) => {
+                    const thumb = property.media[0]?.url;
+                    const matches = property._count.matches;
+                    return (
+                      <tr
+                        key={property.id}
+                        className="group/row transition-colors hover:bg-brand-50/40 dark:hover:bg-brand-900/10"
+                      >
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/dashboard/biens/${property.id}`}
+                            className="flex items-center gap-3"
+                          >
+                            <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-stone-100 ring-1 ring-stone-200/70 dark:bg-anthracite-800 dark:ring-anthracite-700">
+                              {thumb ? (
+                                <Image
+                                  src={thumb}
+                                  alt=""
+                                  fill
+                                  sizes="48px"
+                                  className="object-cover transition-transform duration-300 group-hover/row:scale-105"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-stone-300 dark:text-stone-700">
+                                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-mono text-[10px] tracking-wider text-stone-400 dark:text-stone-500">
+                                {property.reference}
+                              </p>
+                              <p className="mt-0.5 truncate font-medium text-anthracite-800 transition-colors group-hover/row:text-brand-700 dark:text-stone-200 dark:group-hover/row:text-brand-400">
+                                {property.title}
+                              </p>
+                              <p className="text-xs text-stone-500 dark:text-stone-400">
+                                {property.district || property.city}
+                              </p>
+                            </div>
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3">
+                          <p className="text-anthracite-800 dark:text-stone-200">
+                            {PROPERTY_TYPE_LABELS[property.type] || property.type}
+                          </p>
+                          <p className="text-xs text-stone-400 dark:text-stone-500">
+                            {TRANSACTION_TYPE_LABELS[property.transactionType]}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 tabular-nums text-stone-600 dark:text-stone-400">
+                          {formatSurface(property.surfaceTotal)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <p className="font-display text-base font-semibold tabular-nums text-anthracite-900 dark:text-stone-100">
+                            {property.transactionType === "LOCATION" ? formatPrice(property.rentMonthly) : formatPrice(property.price)}
+                          </p>
+                          {property.transactionType === "LOCATION" && (
+                            <p className="text-[10px] text-stone-400 dark:text-stone-500">/ mois</p>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <InlineStatusSelect
+                            propertyId={property.id}
+                            currentStatus={property.status}
+                            isCoMandat={property.isCoMandat}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {matches > 0 ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                              <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 8 8" aria-hidden="true">
+                                <circle cx="4" cy="4" r="3" />
+                              </svg>
+                              {matches}
+                            </span>
+                          ) : (
+                            <span className="text-stone-300 dark:text-stone-600">—</span>
+                          )}
+                        </td>
+                        <td
+                          className="px-4 py-3 text-right text-xs text-stone-400 dark:text-stone-500"
+                          title={property.updatedAt ? new Date(property.updatedAt).toLocaleString("fr-FR") : ""}
+                        >
+                          {formatRelativeDate(property.updatedAt)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

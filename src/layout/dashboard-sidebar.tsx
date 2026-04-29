@@ -125,8 +125,11 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
+        {/* Subtle brand glow at the top — luxe accent */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-[radial-gradient(ellipse_60%_120%_at_50%_0%,rgba(176,146,106,0.18),transparent_70%)]" />
+
         {/* Logo */}
-        <div className="border-b border-white/[0.06] px-4 pt-safe">
+        <div className="relative border-b border-white/[0.06] px-4 pt-safe">
           <div className="flex h-16 items-center justify-between">
             <Logo size="sm" />
             <button
@@ -141,33 +144,41 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="scrollbar-sidebar flex-1 overflow-y-auto px-3 py-4">
+        <nav className="scrollbar-sidebar relative flex-1 overflow-y-auto px-3 py-4">
           {navGroups.map((group, gi) => (
-            <div key={group.label} className={cn(gi > 0 && "mt-5")}>
-              <p className="mb-1.5 px-3 text-[9.5px] font-bold uppercase tracking-[0.14em] text-white/25">
-                {group.label}
-              </p>
+            <div key={group.label} className={cn(gi > 0 && "mt-6")}>
+              <div className="mb-2 flex items-center gap-2 px-3">
+                <span className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-white/30">
+                  {group.label}
+                </span>
+                <span className="h-px flex-1 bg-gradient-to-r from-white/[0.08] to-transparent" />
+              </div>
               <ul className="space-y-0.5">
                 {group.items.map((item) => {
                   const isActive = item.href === activeHref;
+                  const badge = badges[item.href];
                   return (
                     <li key={item.name}>
                       <Link
                         href={item.href}
                         onClick={close}
                         className={cn(
-                          "group/nav relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-150",
+                          "group/nav relative flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200",
                           isActive
-                            ? "bg-[rgba(176,146,106,0.18)] text-brand-200 shadow-[inset_2px_0_0_0_theme(colors.brand.500)]"
-                            : "text-white/55 hover:bg-white/[0.06] hover:text-white/85 active:bg-white/[0.1]"
+                            ? "bg-gradient-to-r from-brand-500/[0.18] via-brand-500/[0.08] to-transparent text-brand-100"
+                            : "text-white/55 hover:bg-white/[0.05] hover:text-white/90 active:bg-white/[0.1]"
                         )}
                       >
+                        {/* Active left bar — luxe gold */}
+                        {isActive && (
+                          <span className="pointer-events-none absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 rounded-full bg-gradient-to-b from-champagne-300 via-brand-400 to-brand-600" />
+                        )}
                         <svg
                           className={cn(
                             "h-[17px] w-[17px] flex-shrink-0 transition-colors",
                             isActive
-                              ? "text-brand-400"
-                              : "text-white/35 group-hover/nav:text-white/70"
+                              ? "text-brand-300"
+                              : "text-white/40 group-hover/nav:text-white/75"
                           )}
                           fill="none"
                           viewBox="0 0 24 24"
@@ -177,9 +188,16 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
                           <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
                         </svg>
                         <span className="flex-1 leading-none">{item.name}</span>
-                        {badges[item.href] != null && badges[item.href] > 0 && (
-                          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[9.5px] font-bold text-white">
-                            {badges[item.href]}
+                        {badge != null && badge > 0 && (
+                          <span
+                            className={cn(
+                              "flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[9.5px] font-bold tabular-nums",
+                              isActive
+                                ? "bg-brand-500 text-anthracite-950"
+                                : "bg-red-500 text-white",
+                            )}
+                          >
+                            {badge > 99 ? "99+" : badge}
                           </span>
                         )}
                       </Link>
@@ -191,17 +209,29 @@ export function DashboardSidebar({ badges = {} }: SidebarProps) {
           ))}
         </nav>
 
-        {/* Bottom */}
-        <div className="border-t border-white/[0.06] p-4 pb-safe">
+        {/* Bottom — public site link, refined */}
+        <div className="border-t border-white/[0.06] p-3 pb-safe">
           <Link
             href="/"
             onClick={close}
-            className="flex items-center gap-2 text-xs text-white/25 hover:text-white/50 transition-colors"
+            className="group/back flex items-center gap-3 rounded-lg px-3 py-2.5 text-xs text-white/35 transition-all hover:bg-white/[0.04] hover:text-white/70"
           >
-            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-white/[0.04] transition-colors group-hover/back:bg-white/[0.08]">
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </span>
+            <div className="flex-1 leading-tight">
+              <p className="font-sans text-[10.5px] font-medium uppercase tracking-[0.14em]">
+                Site public
+              </p>
+              <p className="mt-0.5 font-sans text-[10px] text-white/25">
+                retail-avenue.fr
+              </p>
+            </div>
+            <svg className="h-3 w-3 text-white/25 transition-all group-hover/back:translate-x-0.5 group-hover/back:text-white/50" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
             </svg>
-            Voir le site public
           </Link>
         </div>
       </aside>

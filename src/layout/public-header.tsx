@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { Logo } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
@@ -27,10 +28,17 @@ function UserIcon({ className }: { className?: string }) {
 }
 
 export function PublicHeader({ user }: { user?: PublicHeaderUser | null }) {
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen,   setUserMenuOpen]   = useState(false);
   const [scrolled,       setScrolled]       = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  /* Active route — exact match on "/", prefix match elsewhere */
+  function isActive(href: string) {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(href + "/");
+  }
 
   /* ── Scroll-aware header ── */
   useEffect(() => {
@@ -94,27 +102,42 @@ export function PublicHeader({ user }: { user?: PublicHeaderUser | null }) {
           {/* Logo */}
           <Logo size="md" />
 
-          {/* Desktop nav — centred links */}
-          <div className="hidden items-center gap-8 lg:flex">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="nav-luxury"
-              >
-                {link.label}
-              </Link>
-            ))}
+          {/* Desktop nav — centred links with active underline */}
+          <div className="hidden items-center gap-7 lg:flex">
+            {navLinks.map((link) => {
+              const active = isActive(link.href);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "group relative font-sans text-[11px] tracking-[0.2em] uppercase transition-colors duration-300",
+                    active
+                      ? "text-anthracite-900 dark:text-stone-100"
+                      : "text-stone-500 hover:text-anthracite-900 dark:text-stone-400 dark:hover:text-stone-100",
+                  )}
+                >
+                  {link.label}
+                  <span
+                    className={cn(
+                      "pointer-events-none absolute -bottom-2 left-0 h-px bg-brand-500 transition-all duration-500 ease-out dark:bg-brand-400",
+                      active ? "w-full" : "w-0 group-hover:w-full",
+                    )}
+                  />
+                </Link>
+              );
+            })}
           </div>
 
           {/* Right action area */}
           <div className="flex items-center gap-4">
 
-            {/* Primary CTA — desktop only */}
+            {/* Primary CTA — desktop only, with chevron slide on hover */}
             <Link
               href="/recherche-local"
               className={cn(
-                "hidden lg:inline-flex items-center gap-2",
+                "group/cta hidden lg:inline-flex items-center gap-2",
                 "border border-anthracite-900 px-6 py-2.5",
                 "font-sans text-[10px] tracking-[0.25em] uppercase text-anthracite-900",
                 "transition-all duration-300",
@@ -123,6 +146,9 @@ export function PublicHeader({ user }: { user?: PublicHeaderUser | null }) {
               )}
             >
               Rechercher un bien
+              <svg className="h-2.5 w-2.5 transition-transform duration-300 group-hover/cta:translate-x-0.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
+              </svg>
             </Link>
 
             {/* Authenticated user menu */}
