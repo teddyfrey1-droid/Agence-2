@@ -357,6 +357,7 @@ export async function runMatchingForProperty(propertyId: string) {
   if (newResults.length > 0) {
     const { notifyMatchFound } = await import("@/modules/notifications");
     const notifiedUsers = new Set<string>();
+    const requestById = new Map(requests.map((r) => [r.id, r]));
 
     for (const result of newResults) {
       // The property's assigned agent
@@ -375,7 +376,7 @@ export async function runMatchingForProperty(propertyId: string) {
       }
 
       // The search request's assigned agent (if different)
-      const requestAgent = requests.find((r) => r.id === result.searchRequestId)?.assignedToId;
+      const requestAgent = requestById.get(result.searchRequestId)?.assignedToId;
       if (
         requestAgent &&
         requestAgent !== property.assignedToId &&
@@ -442,8 +443,9 @@ export async function runMatchingForSearchRequest(searchRequestId: string) {
   // Notify the request's agent about new matches
   if (newResults.length > 0 && request.assignedToId) {
     const { notifyMatchFound } = await import("@/modules/notifications");
+    const propertyById = new Map(properties.map((p) => [p.id, p]));
     for (const result of newResults) {
-      const property = properties.find((p) => p.id === result.propertyId);
+      const property = propertyById.get(result.propertyId);
       try {
         await notifyMatchFound({
           userId: request.assignedToId,

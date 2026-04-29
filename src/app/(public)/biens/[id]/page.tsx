@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { findPropertyById } from "@/modules/properties";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatSurface, formatDate } from "@/lib/utils";
@@ -99,12 +100,15 @@ export default async function PropertyDetailPage({
           {/* Main content */}
           <div className="lg:col-span-2">
             {/* Gallery */}
-            <div className="aspect-[16/9] overflow-hidden rounded-premium bg-stone-100">
+            <div className="relative aspect-[16/9] overflow-hidden rounded-premium bg-stone-100">
               {property.media.length > 0 ? (
-                <img
+                <Image
                   src={property.media[0].url}
                   alt={property.title}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(min-width: 1024px) 66vw, 100vw"
+                  className="object-cover"
+                  priority
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-stone-300">

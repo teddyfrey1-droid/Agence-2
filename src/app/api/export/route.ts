@@ -5,29 +5,64 @@ import { hasMinimumRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 
-function escapeCsv(val: string | number | null | undefined): string {
+function escapeCsv(val: string | number | Date | null | undefined): string {
   if (val == null) return "";
-  const str = String(val);
+  const str = val instanceof Date ? val.toISOString().split("T")[0] : String(val);
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
 }
 
-function toCsv(headers: string[], rows: (string | number | null | undefined)[][]): string {
-  const bom = "\uFEFF"; // UTF-8 BOM for Excel compatibility
-  const headerLine = headers.map(escapeCsv).join(",");
-  const dataLines = rows.map((row) => row.map(escapeCsv).join(","));
-  return bom + [headerLine, ...dataLines].join("\n");
+function toCsvLine(row: (string | number | Date | null | undefined)[]): string {
+  return row.map(escapeCsv).join(",");
 }
 
-function csvResponse(csv: string, filename: string): NextResponse {
-  return new NextResponse(csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="${filename}_${new Date().toISOString().split("T")[0]}.csv"`,
+const BATCH_SIZE = 1000;
+const MAX_ROWS = 50_000;
+
+function csvHeaders(filename: string): HeadersInit {
+  return {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": `attachment; filename="${filename}_${new Date().toISOString().split("T")[0]}.csv"`,
+    "Cache-Control": "no-store",
+  };
+}
+
+/**
+ * Stream CSV in batches to avoid loading the full dataset in memory.
+ * Each batch is fetched with a (skip, take) cursor and serialised to bytes
+ * before yielding the next batch.
+ */
+function streamCsv<T>(
+  filename: string,
+  headerRow: string[],
+  fetchBatch: (skip: number, take: number) => Promise<T[]>,
+  rowMapper: (row: T) => (string | number | Date | null | undefined)[]
+): NextResponse {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        // UTF-8 BOM for Excel compatibility + header line
+        controller.enqueue(encoder.encode("﻿" + toCsvLine(headerRow) + "\n"));
+        let skip = 0;
+        while (skip < MAX_ROWS) {
+          const batch = await fetchBatch(skip, BATCH_SIZE);
+          if (batch.length === 0) break;
+          const chunk = batch.map((r) => toCsvLine(rowMapper(r))).join("\n") + "\n";
+          controller.enqueue(encoder.encode(chunk));
+          if (batch.length < BATCH_SIZE) break;
+          skip += BATCH_SIZE;
+        }
+        controller.close();
+      } catch (err) {
+        controller.error(err);
+      }
     },
   });
+
+  return new NextResponse(stream, { headers: csvHeaders(filename) });
 }
 
 export async function GET(request: NextRequest) {
@@ -58,19 +93,22 @@ export async function GET(request: NextRequest) {
             ],
           };
 
-      const contacts = await prisma.contact.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-      });
-      const csv = toCsv(
+      return streamCsv(
+        "contacts",
         ["Prénom", "Nom", "Email", "Téléphone", "Mobile", "Type", "Société", "Poste", "Source", "Ville", "Créé le"],
-        contacts.map((c) => [
+        (skip, take) =>
+          prisma.contact.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            skip,
+            take,
+          }),
+        (c) => [
           c.firstName, c.lastName, c.email, c.phone, c.mobile,
           c.type, c.company, c.position, c.source, c.city,
-          c.createdAt.toISOString().split("T")[0],
-        ])
+          c.createdAt,
+        ]
       );
-      return csvResponse(csv, "contacts");
     }
 
     if (type === "properties") {
@@ -88,20 +126,23 @@ export async function GET(request: NextRequest) {
             ],
           };
 
-      const properties = await prisma.property.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-      });
-      const csv = toCsv(
+      return streamCsv(
+        "biens",
         ["Référence", "Titre", "Type", "Transaction", "Statut", "Adresse", "Ville", "Arrondissement", "Surface (m²)", "Prix (€)", "Loyer (€/mois)", "Charges (€/mois)", "Créé le"],
-        properties.map((p) => [
+        (skip, take) =>
+          prisma.property.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            skip,
+            take,
+          }),
+        (p) => [
           p.reference, p.title, p.type, p.transactionType, p.status,
           p.address, p.city, p.district, p.surfaceTotal, p.price,
           p.rentMonthly, p.charges,
-          p.createdAt.toISOString().split("T")[0],
-        ])
+          p.createdAt,
+        ]
       );
-      return csvResponse(csv, "biens");
     }
 
     if (type === "deals") {
@@ -120,27 +161,30 @@ export async function GET(request: NextRequest) {
             ],
           };
 
-      const deals = await prisma.deal.findMany({
-        where,
-        include: {
-          property: { select: { title: true, reference: true } },
-          contact: { select: { firstName: true, lastName: true } },
-          assignedTo: { select: { firstName: true, lastName: true } },
-        },
-        orderBy: { createdAt: "desc" },
-      });
-      const csv = toCsv(
+      return streamCsv(
+        "dossiers",
         ["Référence", "Titre", "Étape", "Statut", "Valeur estimée (€)", "Commission (€)", "Bien", "Contact", "Assigné à", "Créé le"],
-        deals.map((d) => [
+        (skip, take) =>
+          prisma.deal.findMany({
+            where,
+            include: {
+              property: { select: { title: true, reference: true } },
+              contact: { select: { firstName: true, lastName: true } },
+              assignedTo: { select: { firstName: true, lastName: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            skip,
+            take,
+          }),
+        (d) => [
           d.reference, d.title, d.stage, d.status, d.estimatedValue,
           d.commission,
           d.property ? `${d.property.reference} - ${d.property.title}` : "",
           d.contact ? `${d.contact.firstName} ${d.contact.lastName}` : "",
           d.assignedTo ? `${d.assignedTo.firstName} ${d.assignedTo.lastName}` : "",
-          d.createdAt.toISOString().split("T")[0],
-        ])
+          d.createdAt,
+        ]
       );
-      return csvResponse(csv, "dossiers");
     }
 
     return NextResponse.json({ error: "Type d'export invalide. Utilisez: contacts, properties, deals" }, { status: 400 });

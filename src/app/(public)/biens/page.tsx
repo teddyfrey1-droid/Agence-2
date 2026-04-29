@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { findPublishedProperties } from "@/modules/properties";
 import { formatPrice, formatSurface } from "@/lib/utils";
 import { PROPERTY_TYPE_LABELS, TRANSACTION_TYPE_LABELS } from "@/lib/constants";
@@ -64,12 +65,15 @@ export default async function BiensPage({
                     className="group overflow-hidden rounded-premium border border-stone-200 bg-white shadow-card transition-all hover:shadow-card-hover"
                   >
                     {/* Image placeholder */}
-                    <div className="aspect-[4/3] bg-stone-100">
+                    <div className="relative aspect-[4/3] bg-stone-100">
                       {property.media[0] ? (
-                        <img
+                        <Image
                           src={property.media[0].url}
                           alt={property.title}
-                          className="h-full w-full object-cover"
+                          fill
+                          sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                          className="object-cover"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center text-stone-300">
