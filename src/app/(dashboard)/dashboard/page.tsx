@@ -3,48 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { formatDateShort } from "@/lib/utils";
 import { TASK_PRIORITY_LABELS, DEAL_STAGE_LABELS } from "@/lib/constants";
 import { ActivityChart } from "@/components/dashboard/activity-chart";
 import { PipelineMini } from "@/components/dashboard/pipeline-mini";
 import { RecentSpotsMap } from "@/components/dashboard/recent-spots-map";
 import Link from "next/link";
-
-function KpiCard({
-  label,
-  value,
-  icon,
-  color,
-  href,
-}: {
-  label: string;
-  value: number;
-  icon: React.ReactNode;
-  color: string;
-  href: string;
-}) {
-  return (
-    <Link href={href} className="group">
-      <div className="relative overflow-hidden rounded-xl border border-stone-200/70 bg-white p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-200/70 hover:shadow-card-hover sm:p-5 dark:border-anthracite-800 dark:bg-anthracite-900">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand-400 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-brand-100/40 opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100 dark:bg-brand-900/30" />
-        <div className="relative flex items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1.5">
-            <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-stone-500 dark:text-stone-400">
-              {label}
-            </p>
-            <p className="font-display text-[1.65rem] font-bold leading-none tracking-tight text-anthracite-900 sm:text-3xl dark:text-stone-100">
-              {value}
-            </p>
-          </div>
-          <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl transition-transform duration-300 group-hover:scale-105 ${color}`}>
-            {icon}
-          </div>
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 export default async function DashboardHomePage() {
   const session = await getSession();
@@ -54,6 +19,9 @@ export default async function DashboardHomePage() {
   const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   sevenDaysAgo.setHours(0, 0, 0, 0);
+  const fourteenDaysAgo = new Date(now);
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 13);
+  fourteenDaysAgo.setHours(0, 0, 0, 0);
 
   // Today window (for "Mode matin")
   const startOfToday = new Date(now);
@@ -61,6 +29,7 @@ export default async function DashboardHomePage() {
   const endOfToday = new Date(now);
   endOfToday.setHours(23, 59, 59, 999);
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
   const [
     propertyCount,
@@ -69,6 +38,18 @@ export default async function DashboardHomePage() {
     searchRequestCount,
     openDealCount,
     overdueTasks,
+    propertiesNew7d,
+    propertiesNew7to14d,
+    contactsNew7d,
+    contactsNew7to14d,
+    requestsNew7d,
+    requestsNew7to14d,
+    dealsNew7d,
+    dealsNew7to14d,
+    propertyDailyCounts,
+    contactDailyCounts,
+    requestDailyCounts,
+    dealDailyCounts,
     recentTasks,
     recentInteractions,
     weekInteractions,
@@ -91,6 +72,40 @@ export default async function DashboardHomePage() {
         status: { in: ["A_FAIRE", "EN_COURS"] },
         dueDate: { lt: now },
       },
+    }),
+    // Δ — items created in the last 7 days vs the previous 7 days
+    prisma.property.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    prisma.property.count({
+      where: { createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } },
+    }),
+    prisma.contact.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    prisma.contact.count({
+      where: { createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } },
+    }),
+    prisma.searchRequest.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    prisma.searchRequest.count({
+      where: { createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } },
+    }),
+    prisma.deal.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    prisma.deal.count({
+      where: { createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } },
+    }),
+    // Sparklines — daily creation counts for last 7 days
+    prisma.property.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { createdAt: true },
+    }),
+    prisma.contact.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { createdAt: true },
+    }),
+    prisma.searchRequest.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { createdAt: true },
+    }),
+    prisma.deal.findMany({
+      where: { createdAt: { gte: sevenDaysAgo } },
+      select: { createdAt: true },
     }),
     prisma.task.findMany({
       where: { status: { in: ["A_FAIRE", "EN_COURS"] } },
@@ -165,6 +180,27 @@ export default async function DashboardHomePage() {
     }),
   ]);
 
+  // Quietly avoids unused-warnings — the 48h marker is reused below.
+  void fortyEightHoursAgo;
+
+  // Build daily count series for sparklines (Sun..Sat for last 7 days, oldest → today)
+  function dailySeries(rows: { createdAt: Date }[]) {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(sevenDaysAgo);
+      d.setDate(d.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      return rows.filter((r) => r.createdAt.toISOString().slice(0, 10) === key).length;
+    });
+  }
+  const propertySpark = dailySeries(propertyDailyCounts);
+  const contactSpark = dailySeries(contactDailyCounts);
+  const requestSpark = dailySeries(requestDailyCounts);
+  const dealSpark = dailySeries(dealDailyCounts);
+
+  function delta(curr: number, prev: number) {
+    return curr - prev;
+  }
+
   const recentSpots = await prisma.fieldSpotting.findMany({
     where: { latitude: { not: null }, longitude: { not: null } },
     orderBy: { createdAt: "desc" },
@@ -215,191 +251,297 @@ export default async function DashboardHomePage() {
 
   const morningItems = todaysTasks.length + todaysVisits.length + newHotMatches.length;
 
+  // Hero summary stats — compact actionable counters next to the greeting
+  const summaryItems = [
+    {
+      label: "Visites aujourd’hui",
+      value: todaysVisits.length,
+      tone: "text-blue-600 dark:text-blue-400",
+    },
+    {
+      label: "Relances dues",
+      value: todaysTasks.length,
+      tone: todaysTasks.length > 0 ? "text-amber-600 dark:text-amber-400" : "text-stone-500 dark:text-stone-400",
+    },
+    {
+      label: "Matches chauds 24 h",
+      value: newHotMatches.length,
+      tone: newHotMatches.length > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-stone-500 dark:text-stone-400",
+    },
+    {
+      label: "Retards",
+      value: overdueTasks,
+      tone: overdueTasks > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow={dateStr}
         title={`${greeting} ${session?.firstName ?? ""}`}
         description="Votre vue d'ensemble du jour — pipeline, activité et prochaines actions."
+        meta={
+          <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            {summaryItems.map((s) => (
+              <div key={s.label} className="flex items-baseline gap-2">
+                <dt className="text-[11px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
+                  {s.label}
+                </dt>
+                <dd className={`font-display text-lg font-semibold tabular-nums ${s.tone}`}>
+                  {s.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        }
       />
 
       {/* ── Mode matin — 3 blocs actionnables ── */}
       {morningItems > 0 && (
-        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
-          <div className="flex flex-col rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50 to-amber-100/40 p-4 dark:border-amber-900/40 dark:from-amber-900/10 dark:to-amber-900/5">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500 text-white">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <p className="text-[10.5px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">Relances</p>
-                <p className="text-xl font-bold text-amber-900 dark:text-amber-200">{todaysTasks.length}</p>
-              </div>
-            </div>
-            {todaysTasks.length === 0 ? (
-              <p className="mt-2 text-xs text-amber-700/80 dark:text-amber-300/70">Aucune relance aujourd&apos;hui.</p>
-            ) : (
-              <ul className="mt-2 space-y-1">
-                {todaysTasks.slice(0, 3).map((t) => (
-                  <li key={t.id} className="truncate text-xs text-anthracite-800 dark:text-stone-200">
-                    <span className="font-medium">{t.title}</span>
-                    {t.contact && <span className="text-stone-500 dark:text-stone-400"> · {t.contact.firstName} {t.contact.lastName}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Link href="/dashboard/taches" className="mt-auto pt-3 text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400">
-              Voir toutes →
-            </Link>
+        <section aria-label="Mode matin — actions du jour">
+          <div className="mb-2 flex items-center gap-2 px-1">
+            <span className="label-overline">Mode matin</span>
+            <span className="h-px flex-1 bg-gradient-to-r from-brand-300/60 via-stone-200 to-transparent dark:from-brand-700/40 dark:via-anthracite-800" />
+            <span className="text-[10.5px] font-medium uppercase tracking-wider text-stone-400">
+              {morningItems} action{morningItems > 1 ? "s" : ""}
+            </span>
           </div>
 
-          <div className="flex flex-col rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50 to-blue-100/40 p-4 dark:border-blue-900/40 dark:from-blue-900/10 dark:to-blue-900/5">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500 text-white">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                </svg>
+          <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+            {/* Relances — amber accent (urgence) */}
+            <Link
+              href="/dashboard/taches"
+              className="group flex flex-col rounded-2xl border border-stone-200/70 bg-white p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300/60 hover:shadow-card-hover dark:border-anthracite-800 dark:bg-anthracite-900 dark:hover:border-amber-700/40"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-900/30">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
+                    Relances
+                  </p>
+                  <p className="font-display text-2xl font-bold leading-none tracking-tight text-anthracite-900 dark:text-stone-100">
+                    {todaysTasks.length}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-[10.5px] font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-400">Visites</p>
-                <p className="text-xl font-bold text-blue-900 dark:text-blue-200">{todaysVisits.length}</p>
-              </div>
-            </div>
-            {todaysVisits.length === 0 ? (
-              <p className="mt-2 text-xs text-blue-700/80 dark:text-blue-300/70">Aucune visite prévue aujourd&apos;hui.</p>
-            ) : (
-              <ul className="mt-2 space-y-1">
-                {todaysVisits.slice(0, 3).map((v) => (
-                  <li key={v.id} className="truncate text-xs text-anthracite-800 dark:text-stone-200">
-                    <span className="font-medium">{new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(v.startAt)}</span>
-                    <span className="text-stone-500 dark:text-stone-400"> · {v.property?.title || v.title}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Link href="/dashboard/visites" className="mt-auto pt-3 text-xs font-semibold text-blue-700 hover:underline dark:text-blue-400">
-              Voir l&apos;agenda →
+              {todaysTasks.length === 0 ? (
+                <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Aucune relance aujourd&apos;hui.</p>
+              ) : (
+                <ul className="mt-3 space-y-1.5">
+                  {todaysTasks.slice(0, 3).map((t) => (
+                    <li key={t.id} className="flex items-baseline gap-2 truncate text-xs text-anthracite-700 dark:text-stone-300">
+                      <span className="h-1 w-1 flex-shrink-0 rounded-full bg-amber-500" />
+                      <span className="truncate font-medium">{t.title}</span>
+                      {t.contact && (
+                        <span className="truncate text-stone-400 dark:text-stone-500">
+                          · {t.contact.firstName} {t.contact.lastName}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <span className="mt-auto pt-3 text-xs font-medium text-amber-700 transition-colors group-hover:text-amber-800 dark:text-amber-400">
+                Voir toutes →
+              </span>
             </Link>
-          </div>
 
-          <div className="flex flex-col rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/40 p-4 dark:border-emerald-900/40 dark:from-emerald-900/10 dark:to-emerald-900/5">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            {/* Visites — blue accent (planning) */}
+            <Link
+              href="/dashboard/visites"
+              className="group flex flex-col rounded-2xl border border-stone-200/70 bg-white p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300/60 hover:shadow-card-hover dark:border-anthracite-800 dark:bg-anthracite-900 dark:hover:border-blue-700/40"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:ring-blue-900/30">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
+                    Visites du jour
+                  </p>
+                  <p className="font-display text-2xl font-bold leading-none tracking-tight text-anthracite-900 dark:text-stone-100">
+                    {todaysVisits.length}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1">
-                <p className="text-[10.5px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Matches chauds</p>
-                <p className="text-xl font-bold text-emerald-900 dark:text-emerald-200">{newHotMatches.length}</p>
+              {todaysVisits.length === 0 ? (
+                <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Aucune visite prévue aujourd&apos;hui.</p>
+              ) : (
+                <ul className="mt-3 space-y-1.5">
+                  {todaysVisits.slice(0, 3).map((v) => (
+                    <li key={v.id} className="flex items-baseline gap-2 truncate text-xs text-anthracite-700 dark:text-stone-300">
+                      <span className="font-mono text-[11px] font-semibold tabular-nums text-blue-700 dark:text-blue-400">
+                        {new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(v.startAt)}
+                      </span>
+                      <span className="truncate text-stone-500 dark:text-stone-400">
+                        · {v.property?.title || v.title}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <span className="mt-auto pt-3 text-xs font-medium text-blue-700 transition-colors group-hover:text-blue-800 dark:text-blue-400">
+                Voir l&apos;agenda →
+              </span>
+            </Link>
+
+            {/* Matches chauds — emerald accent (succès) */}
+            <Link
+              href="/dashboard/matches"
+              className="group flex flex-col rounded-2xl border border-stone-200/70 bg-white p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300/60 hover:shadow-card-hover dark:border-anthracite-800 dark:bg-anthracite-900 dark:hover:border-emerald-700/40"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-900/30">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
+                    Matches chauds
+                  </p>
+                  <p className="font-display text-2xl font-bold leading-none tracking-tight text-anthracite-900 dark:text-stone-100">
+                    {newHotMatches.length}
+                  </p>
+                </div>
               </div>
-            </div>
-            {newHotMatches.length === 0 ? (
-              <p className="mt-2 text-xs text-emerald-700/80 dark:text-emerald-300/70">Aucun match ≥ 75 % depuis 24 h.</p>
-            ) : (
-              <ul className="mt-2 space-y-1">
-                {newHotMatches.slice(0, 3).map((m) => (
-                  <li key={m.id} className="truncate text-xs text-anthracite-800 dark:text-stone-200">
-                    <span className="font-semibold text-emerald-700 dark:text-emerald-400">{m.score}%</span>
-                    <span className="text-stone-500 dark:text-stone-400"> · {m.property.title}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <Link href="/dashboard/matches" className="mt-auto pt-3 text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400">
-              Voir les matches →
+              {newHotMatches.length === 0 ? (
+                <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Aucun match ≥ 75 % depuis 24 h.</p>
+              ) : (
+                <ul className="mt-3 space-y-1.5">
+                  {newHotMatches.slice(0, 3).map((m) => (
+                    <li key={m.id} className="flex items-baseline gap-2 truncate text-xs text-anthracite-700 dark:text-stone-300">
+                      <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] font-bold tabular-nums text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        {m.score}%
+                      </span>
+                      <span className="truncate text-stone-500 dark:text-stone-400">{m.property.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <span className="mt-auto pt-3 text-xs font-medium text-emerald-700 transition-colors group-hover:text-emerald-800 dark:text-emerald-400">
+                Voir les matches →
+              </span>
             </Link>
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Terrain shortcut — prominent card for field use */}
-      <Link
-        href="/dashboard/terrain/nouveau"
-        className="group relative flex items-center gap-4 overflow-hidden rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/60 px-5 py-4 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover active:scale-[0.99] dark:border-emerald-800/50 dark:from-emerald-900/20 dark:to-emerald-900/10"
-      >
-        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-          </svg>
+      {/* Quick actions — terrain en avant, créations à droite */}
+      <section aria-label="Actions rapides">
+        <div className="mb-2 flex items-center gap-2 px-1">
+          <span className="label-overline">Actions rapides</span>
+          <span className="h-px flex-1 bg-gradient-to-r from-brand-300/60 via-stone-200 to-transparent dark:from-brand-700/40 dark:via-anthracite-800" />
         </div>
-        <div className="min-w-0">
-          <p className="text-base font-bold text-emerald-800 dark:text-emerald-300">Nouveau repérage terrain</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-500">GPS · photos · notes — tout en un formulaire</p>
+        <div className="grid gap-3 lg:grid-cols-5">
+          {/* Terrain — primary action, larger */}
+          <Link
+            href="/dashboard/terrain/nouveau"
+            className="group relative col-span-1 flex items-center gap-4 overflow-hidden rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-emerald-100/50 px-5 py-4 shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover active:scale-[0.99] lg:col-span-2 dark:border-emerald-800/50 dark:from-emerald-900/20 dark:to-emerald-900/10"
+          >
+            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Repérage terrain</p>
+              <p className="mt-0.5 text-[11px] text-emerald-600/90 dark:text-emerald-500/90">
+                GPS · photos · notes en un seul formulaire
+              </p>
+            </div>
+            <svg className="ml-auto h-4 w-4 flex-shrink-0 text-emerald-400 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+            </svg>
+          </Link>
+
+          {[
+            { href: "/dashboard/biens/nouveau", label: "Nouveau bien", iconPath: "M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21" },
+            { href: "/dashboard/contacts/nouveau", label: "Nouveau contact", iconPath: "M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" },
+            { href: "/dashboard/demandes/nouvelle", label: "Nouvelle demande", iconPath: "M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" },
+            { href: "/dashboard/dossiers/nouveau", label: "Nouveau dossier", iconPath: "M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" },
+          ].map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="group flex items-center gap-3 rounded-2xl border border-stone-200/70 bg-white px-4 py-3.5 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-200/70 hover:shadow-card-hover dark:border-anthracite-800 dark:bg-anthracite-900 dark:hover:border-brand-700/40"
+            >
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600 ring-1 ring-brand-100 transition-transform group-hover:scale-105 dark:bg-brand-900/30 dark:text-brand-400 dark:ring-brand-900/40">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d={a.iconPath} />
+                </svg>
+              </div>
+              <span className="flex-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">{a.label}</span>
+              <svg className="h-4 w-4 flex-shrink-0 text-stone-300 transition-all group-hover:translate-x-0.5 group-hover:text-brand-500 dark:text-stone-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </Link>
+          ))}
         </div>
-        <svg className="ml-auto h-5 w-5 flex-shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
-      </Link>
+      </section>
 
-      {/* Other quick actions — scrollable horizontally on small screens */}
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-        <Link href="/dashboard/biens/nouveau" className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-medium text-brand-700 transition-colors active:bg-brand-100 hover:bg-brand-100 dark:border-brand-800 dark:bg-brand-900/20 dark:text-brand-300 dark:hover:bg-brand-900/40">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
-          Nouveau bien
-        </Link>
-        <Link href="/dashboard/contacts/nouveau" className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-anthracite-600 transition-colors active:bg-stone-100 hover:bg-stone-50 dark:border-stone-700 dark:bg-anthracite-800 dark:text-stone-300 dark:hover:bg-anthracite-700">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" /></svg>
-          Nouveau contact
-        </Link>
-        <Link href="/dashboard/demandes/nouvelle" className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-anthracite-600 transition-colors active:bg-stone-100 hover:bg-stone-50 dark:border-stone-700 dark:bg-anthracite-800 dark:text-stone-300 dark:hover:bg-anthracite-700">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-          Nouvelle demande
-        </Link>
-        <Link href="/dashboard/dossiers/nouveau" className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-medium text-anthracite-600 transition-colors active:bg-stone-100 hover:bg-stone-50 dark:border-stone-700 dark:bg-anthracite-800 dark:text-stone-300 dark:hover:bg-anthracite-700">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>
-          Nouveau dossier
-        </Link>
-      </div>
-
-      {/* KPIs */}
+      {/* KPIs — overview at-a-glance, with 7d delta + sparkline */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        <KpiCard
+        <StatCard
           label="Biens totaux"
           value={propertyCount}
           href="/dashboard/biens"
-          color="bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400"
-          icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" /></svg>}
+          tone="blue"
+          delta={delta(propertiesNew7d, propertiesNew7to14d)}
+          deltaLabel="vs 7j"
+          sparkline={propertySpark}
+          icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21" /></svg>}
         />
-        <KpiCard
+        <StatCard
           label="Biens actifs"
           value={activePropertyCount}
           href="/dashboard/biens?status=ACTIF"
-          color="bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
+          tone="emerald"
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         />
-        <KpiCard
+        <StatCard
           label="Contacts"
           value={contactCount}
           href="/dashboard/contacts"
-          color="bg-violet-50 text-violet-600 dark:bg-violet-900/20 dark:text-violet-400"
+          tone="violet"
+          delta={delta(contactsNew7d, contactsNew7to14d)}
+          deltaLabel="vs 7j"
+          sparkline={contactSpark}
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" /></svg>}
         />
-        <KpiCard
+        <StatCard
           label="Demandes actives"
           value={searchRequestCount}
           href="/dashboard/demandes"
-          color="bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+          tone="amber"
+          delta={delta(requestsNew7d, requestsNew7to14d)}
+          deltaLabel="vs 7j"
+          sparkline={requestSpark}
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>}
         />
-        <KpiCard
+        <StatCard
           label="Dossiers ouverts"
           value={openDealCount}
           href="/dashboard/dossiers"
-          color="bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400"
+          tone="brand"
+          delta={delta(dealsNew7d, dealsNew7to14d)}
+          deltaLabel="vs 7j"
+          sparkline={dealSpark}
           icon={<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>}
         />
-        <KpiCard
+        <StatCard
           label={overdueTasks > 0 ? "Relances en retard" : "Tout est à jour"}
           value={overdueTasks}
           href="/dashboard/taches"
-          color={overdueTasks > 0
-            ? "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
-            : "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400"
-          }
+          tone={overdueTasks > 0 ? "red" : "emerald"}
           icon={overdueTasks > 0
             ? <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" /></svg>
             : <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
