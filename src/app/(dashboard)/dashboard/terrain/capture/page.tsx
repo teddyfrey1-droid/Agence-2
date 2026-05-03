@@ -8,8 +8,18 @@ import { haptic } from "@/lib/haptics";
 import { Confetti } from "@/components/confetti";
 import { unlockAchievement } from "@/lib/achievements";
 import { queueSpot } from "@/lib/offline-queue";
+import { AddressAutocomplete } from "@/components/address-autocomplete";
 
 type GeoStatus = "idle" | "loading" | "ready" | "denied" | "error";
+
+type PropertyType =
+  | "BOUTIQUE"
+  | "BUREAU"
+  | "LOCAL_COMMERCIAL"
+  | "RESTAURANT"
+  | "ENTREPOT";
+
+type TransactionType = "LOCATION" | "VENTE" | "CESSION_BAIL" | "FOND_DE_COMMERCE";
 
 interface GeoInfo {
   lat: number;
@@ -25,16 +35,34 @@ interface DetailsInfo {
   surface?: string;
   facadeLength?: string;
   ceilingHeight?: string;
-  transactionType?: "" | "LOCATION" | "VENTE" | "CESSION_BAIL" | "FOND_DE_COMMERCE";
+  transactionType?: "" | TransactionType;
+  propertyType?: "" | PropertyType;
   notes?: string;
 }
 
-const TX_OPTIONS: { value: NonNullable<DetailsInfo["transactionType"]>; label: string }[] = [
+const TX_OPTIONS: { value: TransactionType; label: string }[] = [
   { value: "LOCATION", label: "Location" },
   { value: "VENTE", label: "Vente" },
   { value: "CESSION_BAIL", label: "Bail à céder" },
   { value: "FOND_DE_COMMERCE", label: "Fonds" },
 ];
+
+const PROPERTY_TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
+  { value: "BOUTIQUE", label: "Boutique" },
+  { value: "BUREAU", label: "Bureau" },
+  { value: "RESTAURANT", label: "Restaurant" },
+  { value: "LOCAL_COMMERCIAL", label: "Local com." },
+  { value: "ENTREPOT", label: "Entrepôt" },
+];
+
+const DRAFT_KEY = "terrain-capture-draft";
+
+function accuracyTone(accuracy: number | undefined) {
+  if (accuracy == null) return { label: "", tone: "neutral" } as const;
+  if (accuracy <= 30) return { label: "GPS précis", tone: "emerald" } as const;
+  if (accuracy <= 100) return { label: "GPS moyen", tone: "amber" } as const;
+  return { label: "GPS approximatif", tone: "red" } as const;
+}
 
 async function compressImage(file: File, maxWidth = 1920, quality = 0.82): Promise<File> {
   if (file.type === "image/heic" || file.type === "image/heif") return file;
@@ -126,6 +154,30 @@ export default function TerrainCapturePage() {
     );
   }, []);
 
+  // Restore details from sessionStorage so a refresh doesn't drop typed data.
+  // (Photos & geo aren't persisted — they require fresh File handles & GPS.)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as DetailsInfo;
+        if (parsed && typeof parsed === "object") setDetails(parsed);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const hasContent = Object.values(details).some((v) => v && String(v).trim());
+      if (hasContent) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(details));
+      else sessionStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, [details]);
+
   function onFiles(files: FileList | null) {
     if (!files || !files.length) return;
     const next = Array.from(files).slice(0, 10 - photos.length).map((file) => ({
@@ -163,6 +215,7 @@ export default function TerrainCapturePage() {
       facadeLength: details.facadeLength ? Number(details.facadeLength) : undefined,
       ceilingHeight: details.ceilingHeight ? Number(details.ceilingHeight) : undefined,
       transactionType: details.transactionType || undefined,
+      propertyType: details.propertyType || undefined,
       notes: details.notes || undefined,
     };
 
@@ -218,6 +271,8 @@ export default function TerrainCapturePage() {
       setSaved({ id: spot.id, address });
       photos.forEach((p) => URL.revokeObjectURL(p.url));
       setPhotos([]);
+      setDetails({});
+      try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
       setCelebrate(true);
       unlockAchievement("first_spot");
       addToast("Repérage enregistré !", "success");
@@ -295,7 +350,10 @@ export default function TerrainCapturePage() {
     (details.facadeLength ? 1 : 0) +
     (details.ceilingHeight ? 1 : 0) +
     (details.transactionType ? 1 : 0) +
+    (details.propertyType ? 1 : 0) +
     (details.notes ? 1 : 0);
+
+  const acc = accuracyTone(geo?.accuracy);
 
   return (
     <div className="mx-auto max-w-md space-y-5 pb-10">
@@ -335,10 +393,23 @@ export default function TerrainCapturePage() {
               <p className="truncate text-sm font-semibold text-emerald-900 dark:text-emerald-200">
                 {geo.address || `${geo.lat.toFixed(5)}, ${geo.lng.toFixed(5)}`}
               </p>
-              <p className="text-xs text-emerald-700/80 dark:text-emerald-300/70">
-                {geo.city} {geo.zipCode}
-                {geo.accuracy ? ` · précision ±${Math.round(geo.accuracy)} m` : ""}
-              </p>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-emerald-700/80 dark:text-emerald-300/70">
+                <span>{[geo.city, geo.zipCode].filter(Boolean).join(" ")}</span>
+                {geo.accuracy != null && (
+                  <span
+                    className={
+                      acc.tone === "emerald"
+                        ? "inline-flex items-center gap-1 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+                        : acc.tone === "amber"
+                        ? "inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+                        : "inline-flex items-center gap-1 rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                    }
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    ±{Math.round(geo.accuracy)} m
+                  </span>
+                )}
+              </div>
             </>
           )}
           {geoStatus === "denied" && (
@@ -482,6 +553,18 @@ export default function TerrainCapturePage() {
       {previewIndex !== null && (
         <PreviewEditor
           photo={previewIndex >= 0 ? photos[previewIndex] : null}
+          photoIndex={previewIndex >= 0 ? previewIndex : null}
+          photoCount={photos.length}
+          onPrev={
+            previewIndex > 0
+              ? () => setPreviewIndex(previewIndex - 1)
+              : undefined
+          }
+          onNext={
+            previewIndex >= 0 && previewIndex < photos.length - 1
+              ? () => setPreviewIndex(previewIndex + 1)
+              : undefined
+          }
           geo={geo}
           geoStatus={geoStatus}
           details={details}
@@ -505,6 +588,10 @@ export default function TerrainCapturePage() {
 
 interface PreviewEditorProps {
   photo: { file: File; url: string } | null;
+  photoIndex: number | null;
+  photoCount: number;
+  onPrev?: () => void;
+  onNext?: () => void;
   geo: GeoInfo | null;
   geoStatus: GeoStatus;
   details: DetailsInfo;
@@ -517,6 +604,10 @@ interface PreviewEditorProps {
 
 function PreviewEditor({
   photo,
+  photoIndex,
+  photoCount,
+  onPrev,
+  onNext,
   geo,
   geoStatus,
   details,
@@ -541,6 +632,17 @@ function PreviewEditor({
       document.body.style.overflow = "";
     };
   }, []);
+
+  // Keyboard nav: Escape closes, arrow keys cycle photos
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft" && onPrev) onPrev();
+      if (e.key === "ArrowRight" && onNext) onNext();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose, onPrev, onNext]);
 
   function refreshLocation() {
     if (!navigator.geolocation) return;
@@ -615,6 +717,41 @@ function PreviewEditor({
           {photo && (
             <div className="relative aspect-[4/3] w-full bg-stone-900">
               <img src={photo.url} alt="" className="absolute inset-0 h-full w-full object-contain" />
+
+              {/* Counter */}
+              {photoCount > 1 && photoIndex !== null && (
+                <span className="absolute left-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[11px] font-semibold text-white backdrop-blur">
+                  {photoIndex + 1} / {photoCount}
+                </span>
+              )}
+
+              {/* Prev */}
+              {onPrev && (
+                <button
+                  type="button"
+                  onClick={onPrev}
+                  aria-label="Photo précédente"
+                  className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition-colors hover:bg-black/80"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                  </svg>
+                </button>
+              )}
+              {/* Next */}
+              {onNext && (
+                <button
+                  type="button"
+                  onClick={onNext}
+                  aria-label="Photo suivante"
+                  className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur transition-colors hover:bg-black/80"
+                >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                  </svg>
+                </button>
+              )}
+
               {onRemovePhoto && (
                 <button
                   type="button"
@@ -699,13 +836,35 @@ function PreviewEditor({
                 </button>
               ) : (
                 <div className="mt-2 space-y-2 rounded-xl border border-brand-200 bg-brand-50/40 p-3 dark:border-brand-800/50 dark:bg-brand-900/10">
-                  <input
-                    type="text"
-                    value={addressDraft.address}
-                    onChange={(e) => setAddressDraft((p) => ({ ...p, address: e.target.value }))}
+                  <AddressAutocomplete
+                    id="capture-address"
+                    name="capture-address"
                     placeholder="Numéro et rue"
-                    className="block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-anthracite-900 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 dark:border-stone-600 dark:bg-anthracite-800 dark:text-stone-100"
-                    autoFocus
+                    value={addressDraft.address}
+                    onSelect={(result) => {
+                      const arrNum = result.postcode.startsWith("75")
+                        ? result.postcode.slice(-2)
+                        : "";
+                      setAddressDraft({
+                        address: result.label,
+                        city: result.city,
+                        zipCode: result.postcode,
+                      });
+                      // Persist coords if the BAN result includes them
+                      if (result.x && result.y) {
+                        onChangeGeo({
+                          lat: result.y,
+                          lng: result.x,
+                          accuracy: undefined,
+                          address: result.label,
+                          city: result.city,
+                          zipCode: result.postcode,
+                          district: arrNum
+                            ? `${parseInt(arrNum)}${parseInt(arrNum) === 1 ? "er" : "e"} arrondissement`
+                            : undefined,
+                        });
+                      }
+                    }}
                   />
                   <div className="grid grid-cols-2 gap-2">
                     <input
@@ -777,6 +936,34 @@ function PreviewEditor({
                   value={details.ceilingHeight ?? ""}
                   onChange={(v) => onChangeDetails({ ...details, ceilingHeight: v })}
                 />
+              </div>
+
+              <div className="mt-3">
+                <p className="mb-1.5 text-[11px] font-medium text-stone-500 dark:text-stone-400">Type de local</p>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {PROPERTY_TYPE_OPTIONS.map((opt) => {
+                    const active = details.propertyType === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() =>
+                          onChangeDetails({
+                            ...details,
+                            propertyType: active ? "" : opt.value,
+                          })
+                        }
+                        className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                          active
+                            ? "border-brand-500 bg-brand-500 text-white"
+                            : "border-stone-200 bg-white text-anthracite-700 hover:border-brand-300 hover:bg-brand-50 dark:border-anthracite-800 dark:bg-anthracite-800 dark:text-stone-200 dark:hover:border-brand-700 dark:hover:bg-brand-900/20"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="mt-3">

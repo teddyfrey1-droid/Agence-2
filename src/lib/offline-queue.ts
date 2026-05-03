@@ -19,7 +19,23 @@ export interface QueuedSpot {
     district?: string | null;
     latitude?: number | null;
     longitude?: number | null;
-    notes?: string | null;
+    notes?: string;
+    surface?: number;
+    facadeLength?: number;
+    ceilingHeight?: number;
+    transactionType?: "VENTE" | "LOCATION" | "CESSION_BAIL" | "FOND_DE_COMMERCE";
+    propertyType?:
+      | "BOUTIQUE"
+      | "BUREAU"
+      | "LOCAL_COMMERCIAL"
+      | "LOCAL_ACTIVITE"
+      | "RESTAURANT"
+      | "HOTEL"
+      | "ENTREPOT"
+      | "PARKING"
+      | "TERRAIN"
+      | "IMMEUBLE"
+      | "AUTRE";
   };
   photos: Blob[]; // raw image blobs to upload after the spotting is created
   createdAt: number;

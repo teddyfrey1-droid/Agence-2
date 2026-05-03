@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { findFieldSpottingById } from "@/modules/field-spotting";
 import { formatDate } from "@/lib/utils";
-import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
+import { PROPERTY_TYPE_LABELS, TRANSACTION_TYPE_LABELS } from "@/lib/constants";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -83,11 +83,35 @@ export default async function TerrainDetailPage({
                   </dd>
                 </div>
               )}
+              {spot.transactionType && (
+                <div>
+                  <dt className="text-caption">Transaction</dt>
+                  <dd className="mt-0.5 text-sm font-medium text-anthracite-800 dark:text-stone-200">
+                    {TRANSACTION_TYPE_LABELS[spot.transactionType] || spot.transactionType}
+                  </dd>
+                </div>
+              )}
               {spot.surface && (
                 <div>
                   <dt className="text-caption">Surface estimée</dt>
                   <dd className="mt-0.5 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                     {spot.surface} m²
+                  </dd>
+                </div>
+              )}
+              {spot.facadeLength && (
+                <div>
+                  <dt className="text-caption">Linéaire de façade</dt>
+                  <dd className="mt-0.5 text-sm font-medium text-anthracite-800 dark:text-stone-200">
+                    {spot.facadeLength} m
+                  </dd>
+                </div>
+              )}
+              {spot.ceilingHeight && (
+                <div>
+                  <dt className="text-caption">Hauteur sous plafond</dt>
+                  <dd className="mt-0.5 text-sm font-medium text-anthracite-800 dark:text-stone-200">
+                    {spot.ceilingHeight} m
                   </dd>
                 </div>
               )}
@@ -149,7 +173,10 @@ export default async function TerrainDetailPage({
               zipCode={spot.zipCode}
               district={spot.district}
               propertyType={spot.propertyType}
+              transactionType={spot.transactionType}
               surface={spot.surface}
+              facadeLength={spot.facadeLength}
+              ceilingHeight={spot.ceilingHeight}
               latitude={spot.latitude}
               longitude={spot.longitude}
               notes={spot.notes}

@@ -239,7 +239,20 @@ export default async function DashboardHomePage() {
   }));
 
   const hour = now.getHours();
-  const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
+  const dayOfWeek = now.getDay(); // 0 = Sun
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const greeting =
+    hour < 6
+      ? "Bonne nuit"
+      : hour < 12
+      ? isWeekend
+        ? "Bon week-end"
+        : "Bonjour"
+      : hour < 18
+      ? "Bon après-midi"
+      : hour < 22
+      ? "Bonsoir"
+      : "Bonne soirée";
 
   const dateLabel = new Intl.DateTimeFormat("fr-FR", {
     weekday: "long",
@@ -399,6 +412,28 @@ export default async function DashboardHomePage() {
           })}
         </div>
       </section>
+
+      {/* ── Empty state — calm day ── */}
+      {morningItems === 0 && overdueTasks === 0 && (
+        <section
+          aria-label="Aucune action urgente"
+          className="flex items-center gap-4 rounded-2xl border border-emerald-200/70 bg-emerald-50/50 p-5 dark:border-emerald-800/40 dark:bg-emerald-900/10"
+        >
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+              Tout est calme aujourd&apos;hui.
+            </p>
+            <p className="mt-0.5 text-xs text-emerald-700/80 dark:text-emerald-300/70">
+              Profitez-en pour faire un repérage terrain ou prospecter de nouveaux contacts.
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* ── Mode matin — 3 blocs actionnables avec aperçu ── */}
       {morningItems > 0 && (

@@ -14,7 +14,10 @@ interface ConvertToPropertyButtonProps {
   zipCode: string | null;
   district: string | null;
   propertyType: string | null;
+  transactionType?: string | null;
   surface: number | null;
+  facadeLength?: number | null;
+  ceilingHeight?: number | null;
   latitude: number | null;
   longitude: number | null;
   notes: string | null;
@@ -27,7 +30,10 @@ export function ConvertToPropertyButton({
   zipCode,
   district,
   propertyType,
+  transactionType,
   surface,
+  facadeLength,
+  ceilingHeight,
   latitude,
   longitude,
   notes,
@@ -47,12 +53,14 @@ export function ConvertToPropertyButton({
         body: JSON.stringify({
           title: address,
           type: propertyType || "LOCAL_COMMERCIAL",
-          transactionType: "LOCATION",
+          transactionType: transactionType || "LOCATION",
           address,
           city,
           zipCode: zipCode || undefined,
           district: district || undefined,
           surfaceTotal: surface || undefined,
+          facadeLength: facadeLength || undefined,
+          ceilingHeight: ceilingHeight || undefined,
           latitude: latitude || undefined,
           longitude: longitude || undefined,
           description: notes || undefined,
