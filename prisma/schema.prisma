@@ -536,6 +536,8 @@ model FieldSpotting {
   propertyType     PropertyType?
   transactionType  TransactionType?
   surface          Float?
+  facadeLength     Float?
+  ceilingHeight    Float?
   assignedToId String?
   convertedPropertyId String?
   createdAt    DateTime            @default(now())

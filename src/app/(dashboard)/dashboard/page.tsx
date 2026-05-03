@@ -2,7 +2,6 @@ import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
-import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { formatDateShort } from "@/lib/utils";
 import { TASK_PRIORITY_LABELS, DEAL_STAGE_LABELS } from "@/lib/constants";
@@ -239,73 +238,174 @@ export default async function DashboardHomePage() {
     count: dealsByStage.find((d) => d.stage === stage)?._count || 0,
   }));
 
-  const dateStr = new Intl.DateTimeFormat("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(now);
-
   const hour = now.getHours();
   const greeting = hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
-  const morningItems = todaysTasks.length + todaysVisits.length + newHotMatches.length;
+  const dateLabel = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(now);
+  const datePretty = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
 
-  // Hero summary stats — compact actionable counters next to the greeting
-  const summaryItems = [
-    {
-      label: "Visites aujourd’hui",
-      value: todaysVisits.length,
-      tone: "text-blue-600 dark:text-blue-400",
-    },
+  // Hero focus tiles — 4 actionable counters that drive the day
+  const focusTiles = [
     {
       label: "Relances dues",
       value: todaysTasks.length,
-      tone: todaysTasks.length > 0 ? "text-amber-600 dark:text-amber-400" : "text-stone-500 dark:text-stone-400",
+      href: "/dashboard/taches",
+      tone: todaysTasks.length > 0 ? "amber" : "neutral",
+      iconPath:
+        "M12 8v4l2.5 2.5M12 21a9 9 0 110-18 9 9 0 010 18z",
+    },
+    {
+      label: "Visites aujourd’hui",
+      value: todaysVisits.length,
+      href: "/dashboard/visites",
+      tone: "blue",
+      iconPath:
+        "M6.75 3v2.25M17.25 3v2.25M3 9h18M5.25 5.25h13.5A2.25 2.25 0 0121 7.5v11.25A2.25 2.25 0 0118.75 21H5.25A2.25 2.25 0 013 18.75V7.5a2.25 2.25 0 012.25-2.25z",
     },
     {
       label: "Matches chauds 24 h",
       value: newHotMatches.length,
-      tone: newHotMatches.length > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-stone-500 dark:text-stone-400",
+      href: "/dashboard/matches",
+      tone: newHotMatches.length > 0 ? "emerald" : "neutral",
+      iconPath:
+        "M11.49 3.17l1.78 3.61 3.99.58a1 1 0 01.55 1.71l-2.88 2.81.68 3.97a1 1 0 01-1.45 1.05l-3.57-1.88-3.57 1.88a1 1 0 01-1.45-1.05l.68-3.97-2.88-2.81a1 1 0 01.55-1.71l3.99-.58 1.78-3.61a1 1 0 011.79 0z",
     },
     {
       label: "Retards",
       value: overdueTasks,
-      tone: overdueTasks > 0 ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400",
+      href: "/dashboard/taches?status=retard",
+      tone: overdueTasks > 0 ? "red" : "emerald",
+      iconPath: overdueTasks > 0
+        ? "M12 9v3.75M12 17.25h.01M2.7 16.13L10.95 3.38a1.2 1.2 0 012.1 0l8.25 12.75a1.2 1.2 0 01-1.05 1.87H3.75a1.2 1.2 0 01-1.05-1.87z"
+        : "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
     },
-  ];
+  ] as const;
+
+  const TILE_TONE: Record<string, { ring: string; bg: string; iconBg: string; iconText: string; value: string }> = {
+    amber: {
+      ring: "hover:border-amber-300/70 dark:hover:border-amber-700/50",
+      bg: "bg-white dark:bg-anthracite-900",
+      iconBg: "bg-amber-50 dark:bg-amber-900/20 ring-amber-100 dark:ring-amber-900/30",
+      iconText: "text-amber-600 dark:text-amber-400",
+      value: "text-amber-600 dark:text-amber-400",
+    },
+    blue: {
+      ring: "hover:border-blue-300/70 dark:hover:border-blue-700/50",
+      bg: "bg-white dark:bg-anthracite-900",
+      iconBg: "bg-blue-50 dark:bg-blue-900/20 ring-blue-100 dark:ring-blue-900/30",
+      iconText: "text-blue-600 dark:text-blue-400",
+      value: "text-blue-600 dark:text-blue-400",
+    },
+    emerald: {
+      ring: "hover:border-emerald-300/70 dark:hover:border-emerald-700/50",
+      bg: "bg-white dark:bg-anthracite-900",
+      iconBg: "bg-emerald-50 dark:bg-emerald-900/20 ring-emerald-100 dark:ring-emerald-900/30",
+      iconText: "text-emerald-600 dark:text-emerald-400",
+      value: "text-emerald-600 dark:text-emerald-400",
+    },
+    red: {
+      ring: "hover:border-red-300/70 dark:hover:border-red-700/50",
+      bg: "bg-white dark:bg-anthracite-900",
+      iconBg: "bg-red-50 dark:bg-red-900/20 ring-red-100 dark:ring-red-900/30",
+      iconText: "text-red-600 dark:text-red-400",
+      value: "text-red-600 dark:text-red-400",
+    },
+    neutral: {
+      ring: "hover:border-stone-300/70 dark:hover:border-stone-600/40",
+      bg: "bg-white dark:bg-anthracite-900",
+      iconBg: "bg-stone-100 dark:bg-anthracite-800 ring-stone-200 dark:ring-anthracite-700",
+      iconText: "text-stone-500 dark:text-stone-400",
+      value: "text-stone-500 dark:text-stone-400",
+    },
+  };
+
+  const morningItems = todaysTasks.length + todaysVisits.length + newHotMatches.length;
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow={dateStr}
-        title={`${greeting} ${session?.firstName ?? ""}`}
-        description="Votre vue d'ensemble du jour — pipeline, activité et prochaines actions."
-        meta={
-          <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-            {summaryItems.map((s) => (
-              <div key={s.label} className="flex items-baseline gap-2">
-                <dt className="text-[11px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
-                  {s.label}
-                </dt>
-                <dd className={`font-display text-lg font-semibold tabular-nums ${s.tone}`}>
-                  {s.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        }
-      />
+      {/* ── Hero — clear greeting, primary CTA, focus counters ── */}
+      <section
+        aria-label="Tableau de bord du jour"
+        className="overflow-hidden rounded-3xl border border-stone-200/70 bg-gradient-to-br from-white via-white to-brand-50/30 p-5 shadow-card sm:p-7 dark:border-anthracite-800 dark:from-anthracite-900 dark:via-anthracite-900 dark:to-brand-900/10"
+      >
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-600/90 dark:text-brand-400/90">
+              {datePretty}
+            </p>
+            <h1
+              className="mt-1.5 leading-tight tracking-tight text-anthracite-900 dark:text-stone-100"
+              style={{
+                fontFamily: "'DM Serif Display', serif",
+                fontSize: "clamp(1.75rem, 3vw, 2.4rem)",
+              }}
+            >
+              {greeting} {session?.firstName ?? ""}
+            </h1>
+            <p className="mt-2 max-w-xl text-sm text-stone-500 dark:text-stone-400">
+              Voici ce qui mérite votre attention aujourd&apos;hui.
+            </p>
+          </div>
 
-      {/* ── Mode matin — 3 blocs actionnables ── */}
+          <div className="flex flex-shrink-0 items-center gap-2">
+            <Link
+              href="/dashboard/terrain/capture"
+              className="group inline-flex items-center gap-2 rounded-2xl bg-anthracite-900 px-4 py-3 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-[0.98] dark:bg-brand-500 dark:text-anthracite-950"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6.83 6.18A2.31 2.31 0 015.19 7.23q-.57.08-1.13.18C3 7.58 2.25 8.5 2.25 9.57V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.57c0-1.07-.75-1.99-1.8-2.16q-.57-.1-1.14-.18a2.31 2.31 0 01-1.64-1.05l-.82-1.32a2.19 2.19 0 00-1.74-1.04q-2.61-.16-5.23 0a2.19 2.19 0 00-1.74 1.04z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+              </svg>
+              Repérer un local
+            </Link>
+            <Link
+              href="/dashboard/dossiers/pipeline"
+              className="hidden items-center gap-2 rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm font-semibold text-anthracite-700 backdrop-blur transition-all hover:bg-white sm:inline-flex dark:border-anthracite-700 dark:bg-anthracite-800/70 dark:text-stone-200 dark:hover:bg-anthracite-800"
+            >
+              Pipeline
+            </Link>
+          </div>
+        </div>
+
+        {/* Focus tiles — clear, big, tap-friendly */}
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          {focusTiles.map((t) => {
+            const c = TILE_TONE[t.tone];
+            return (
+              <Link
+                key={t.label}
+                href={t.href}
+                className={`group flex items-center gap-3 rounded-2xl border border-stone-200/70 px-4 py-3.5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-card-hover sm:gap-4 sm:px-5 sm:py-4 dark:border-anthracite-800 ${c.bg} ${c.ring}`}
+              >
+                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ring-1 ${c.iconBg} ${c.iconText}`}>
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={t.iconPath} />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <p className={`font-display text-2xl font-bold leading-none tabular-nums sm:text-[1.7rem] ${c.value}`}>
+                    {t.value}
+                  </p>
+                  <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                    {t.label}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Mode matin — 3 blocs actionnables avec aperçu ── */}
       {morningItems > 0 && (
         <section aria-label="Mode matin — actions du jour">
-          <div className="mb-2 flex items-center gap-2 px-1">
-            <span className="label-overline">Mode matin</span>
+          <div className="mb-3 flex items-center gap-2 px-1">
+            <span className="label-overline">À traiter aujourd’hui</span>
             <span className="h-px flex-1 bg-gradient-to-r from-brand-300/60 via-stone-200 to-transparent dark:from-brand-700/40 dark:via-anthracite-800" />
-            <span className="text-[10.5px] font-medium uppercase tracking-wider text-stone-400">
-              {morningItems} action{morningItems > 1 ? "s" : ""}
-            </span>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
@@ -314,28 +414,21 @@ export default async function DashboardHomePage() {
               href="/dashboard/taches"
               className="group flex flex-col rounded-2xl border border-stone-200/70 bg-white p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300/60 hover:shadow-card-hover dark:border-anthracite-800 dark:bg-anthracite-900 dark:hover:border-amber-700/40"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-600 ring-1 ring-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:ring-amber-900/30">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
-                    Relances
-                  </p>
-                  <p className="font-display text-2xl font-bold leading-none tracking-tight text-anthracite-900 dark:text-stone-100">
-                    {todaysTasks.length}
-                  </p>
-                </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
+                  Relances
+                </p>
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                  {todaysTasks.length}
+                </span>
               </div>
               {todaysTasks.length === 0 ? (
                 <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Aucune relance aujourd&apos;hui.</p>
               ) : (
-                <ul className="mt-3 space-y-1.5">
+                <ul className="mt-3 space-y-2">
                   {todaysTasks.slice(0, 3).map((t) => (
                     <li key={t.id} className="flex items-baseline gap-2 truncate text-xs text-anthracite-700 dark:text-stone-300">
-                      <span className="h-1 w-1 flex-shrink-0 rounded-full bg-amber-500" />
+                      <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-500" />
                       <span className="truncate font-medium">{t.title}</span>
                       {t.contact && (
                         <span className="truncate text-stone-400 dark:text-stone-500">
@@ -356,25 +449,18 @@ export default async function DashboardHomePage() {
               href="/dashboard/visites"
               className="group flex flex-col rounded-2xl border border-stone-200/70 bg-white p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300/60 hover:shadow-card-hover dark:border-anthracite-800 dark:bg-anthracite-900 dark:hover:border-blue-700/40"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:ring-blue-900/30">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
-                  </svg>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
-                    Visites du jour
-                  </p>
-                  <p className="font-display text-2xl font-bold leading-none tracking-tight text-anthracite-900 dark:text-stone-100">
-                    {todaysVisits.length}
-                  </p>
-                </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
+                  Visites du jour
+                </p>
+                <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                  {todaysVisits.length}
+                </span>
               </div>
               {todaysVisits.length === 0 ? (
                 <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Aucune visite prévue aujourd&apos;hui.</p>
               ) : (
-                <ul className="mt-3 space-y-1.5">
+                <ul className="mt-3 space-y-2">
                   {todaysVisits.slice(0, 3).map((v) => (
                     <li key={v.id} className="flex items-baseline gap-2 truncate text-xs text-anthracite-700 dark:text-stone-300">
                       <span className="font-mono text-[11px] font-semibold tabular-nums text-blue-700 dark:text-blue-400">
@@ -397,25 +483,18 @@ export default async function DashboardHomePage() {
               href="/dashboard/matches"
               className="group flex flex-col rounded-2xl border border-stone-200/70 bg-white p-4 shadow-card transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300/60 hover:shadow-card-hover dark:border-anthracite-800 dark:bg-anthracite-900 dark:hover:border-emerald-700/40"
             >
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:ring-emerald-900/30">
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
-                    Matches chauds
-                  </p>
-                  <p className="font-display text-2xl font-bold leading-none tracking-tight text-anthracite-900 dark:text-stone-100">
-                    {newHotMatches.length}
-                  </p>
-                </div>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
+                  Matches chauds
+                </p>
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  {newHotMatches.length}
+                </span>
               </div>
               {newHotMatches.length === 0 ? (
                 <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Aucun match ≥ 75 % depuis 24 h.</p>
               ) : (
-                <ul className="mt-3 space-y-1.5">
+                <ul className="mt-3 space-y-2">
                   {newHotMatches.slice(0, 3).map((m) => (
                     <li key={m.id} className="flex items-baseline gap-2 truncate text-xs text-anthracite-700 dark:text-stone-300">
                       <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 font-mono text-[10px] font-bold tabular-nums text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">

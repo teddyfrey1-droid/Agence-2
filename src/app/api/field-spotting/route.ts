@@ -64,6 +64,8 @@ export async function POST(request: NextRequest) {
       propertyType: (data.propertyType as never) ?? null,
       transactionType: (data.transactionType as never) ?? null,
       surface: data.surface ?? null,
+      facadeLength: data.facadeLength ?? null,
+      ceilingHeight: data.ceilingHeight ?? null,
       status: "REPERE",
       ...(data.assignedToId
         ? { assignedTo: { connect: { id: data.assignedToId } } }
