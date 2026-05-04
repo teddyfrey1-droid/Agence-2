@@ -1,6 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 
+const PROPERTY_STATUSES = [
+  "BROUILLON", "ACTIF", "EN_NEGOCIATION", "PRENEUR_TROUVE", "SOUS_COMPROMIS",
+  "VENDU", "LOUE", "RETIRE", "ARCHIVE",
+] as const;
+const PROPERTY_TYPES = [
+  "BOUTIQUE", "BUREAU", "LOCAL_COMMERCIAL", "LOCAL_ACTIVITE",
+  "RESTAURANT", "HOTEL", "ENTREPOT", "PARKING", "TERRAIN", "IMMEUBLE", "AUTRE",
+] as const;
+const TRANSACTION_TYPES = [
+  "VENTE", "LOCATION", "CESSION_BAIL", "FOND_DE_COMMERCE",
+] as const;
+
 export type PropertyWithRelations = Prisma.PropertyGetPayload<{
   include: {
     owner: true;
@@ -37,10 +49,20 @@ export async function findProperties(
 ) {
   const where: Prisma.PropertyWhereInput = {};
 
-  if (filters.status) where.status = filters.status as Prisma.EnumPropertyStatusFilter;
-  if (filters.type) where.type = filters.type as Prisma.EnumPropertyTypeFilter;
-  if (filters.transactionType)
+  // Sanitize enum filters — silently drop invalid values rather than letting
+  // Prisma throw on a malformed querystring.
+  if (filters.status && (PROPERTY_STATUSES as readonly string[]).includes(filters.status)) {
+    where.status = filters.status as Prisma.EnumPropertyStatusFilter;
+  }
+  if (filters.type && (PROPERTY_TYPES as readonly string[]).includes(filters.type)) {
+    where.type = filters.type as Prisma.EnumPropertyTypeFilter;
+  }
+  if (
+    filters.transactionType &&
+    (TRANSACTION_TYPES as readonly string[]).includes(filters.transactionType)
+  ) {
     where.transactionType = filters.transactionType as Prisma.EnumTransactionTypeFilter;
+  }
   if (filters.city) where.city = filters.city;
   if (filters.district) where.district = filters.district;
   if (filters.isPublished !== undefined) where.isPublished = filters.isPublished;
