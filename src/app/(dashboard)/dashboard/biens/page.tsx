@@ -25,10 +25,27 @@ export default async function BiensListPage({
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
   const sort = params.sort || "newest";
-  const { items: properties, total, totalPages } = await findProperties(
-    { status: params.status, type: params.type, search: params.search, sort },
-    page
-  );
+
+  // Defensive: never let a Prisma hiccup take down the whole page. We log the
+  // root cause server-side and render an inline notice in the UI instead.
+  let properties: Awaited<ReturnType<typeof findProperties>>["items"] = [];
+  let total = 0;
+  let totalPages = 1;
+  let loadError: { message: string } | null = null;
+  try {
+    const result = await findProperties(
+      { status: params.status, type: params.type, search: params.search, sort },
+      page
+    );
+    properties = result.items;
+    total = result.total;
+    totalPages = result.totalPages;
+  } catch (err) {
+    console.error("[/dashboard/biens] findProperties threw", err);
+    loadError = {
+      message: err instanceof Error ? err.message : "Erreur inconnue",
+    };
+  }
 
   const hasFilters = !!(params.status || params.type || params.search);
 
@@ -102,10 +119,34 @@ export default async function BiensListPage({
         </div>
       </div>
 
+      {loadError && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-200">
+          <p className="font-semibold">Chargement partiel</p>
+          <p className="mt-1 text-xs text-amber-800/90 dark:text-amber-300/80">
+            La liste n&apos;a pas pu être récupérée correctement. Réessayez ou
+            réinitialisez les filtres. Détail technique : {loadError.message}
+          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Link href="/dashboard/biens">
+              <Button variant="outline" size="sm">Effacer les filtres</Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="ghost" size="sm">Retour au tableau de bord</Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {properties.length === 0 ? (
         <EmptyState
-          title={hasFilters ? "Aucun résultat" : "Aucun bien"}
-          description={hasFilters ? "Aucun bien ne correspond à vos filtres." : "Commencez par ajouter votre premier bien immobilier."}
+          title={loadError ? "Liste indisponible" : hasFilters ? "Aucun résultat" : "Aucun bien"}
+          description={
+            loadError
+              ? "Réessayez dans un instant ou contactez l'administrateur si le problème persiste."
+              : hasFilters
+                ? "Aucun bien ne correspond à vos filtres."
+                : "Commencez par ajouter votre premier bien immobilier."
+          }
           action={
             hasFilters ? (
               <Link href="/dashboard/biens"><Button variant="secondary">Effacer les filtres</Button></Link>
@@ -119,7 +160,8 @@ export default async function BiensListPage({
           {/* Mobile: card view with thumbnail */}
           <div className="space-y-3 lg:hidden">
             {properties.map((property) => {
-              const thumb = property.media[0]?.url;
+              const thumb = property.media?.[0]?.url;
+              const matchCount = property._count?.matches ?? 0;
               return (
                 <Link key={property.id} href={`/dashboard/biens/${property.id}`}>
                   <Card className="p-3 active:bg-stone-50 transition-colors dark:active:bg-anthracite-800" hover>
@@ -182,12 +224,12 @@ export default async function BiensListPage({
                         />
                       </div>
                       <div className="flex items-center gap-3 text-[11px] text-stone-400 dark:text-stone-500">
-                        {property._count.matches > 0 && (
+                        {matchCount > 0 && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
                             <svg className="h-2.5 w-2.5" fill="currentColor" viewBox="0 0 8 8" aria-hidden="true">
                               <circle cx="4" cy="4" r="3" />
                             </svg>
-                            {property._count.matches}
+                            {matchCount}
                           </span>
                         )}
                         <span>{formatRelativeDate(property.updatedAt)}</span>
@@ -216,8 +258,8 @@ export default async function BiensListPage({
                 </thead>
                 <tbody className="divide-y divide-stone-100 dark:divide-anthracite-800">
                   {properties.map((property) => {
-                    const thumb = property.media[0]?.url;
-                    const matches = property._count.matches;
+                    const thumb = property.media?.[0]?.url;
+                    const matches = property._count?.matches ?? 0;
                     return (
                       <tr
                         key={property.id}

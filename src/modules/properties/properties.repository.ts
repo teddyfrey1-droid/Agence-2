@@ -82,22 +82,35 @@ export async function findProperties(
         ? { updatedAt: "desc" }
         : { createdAt: "desc" }; // default: newest first
 
-  const [items, total] = await Promise.all([
-    prisma.property.findMany({
-      where,
-      include: {
-        media: { where: { isPrimary: true }, take: 1 },
-        assignedTo: { select: { firstName: true, lastName: true } },
-        _count: { select: { matches: true } },
-      },
-      orderBy,
-      skip: (page - 1) * perPage,
-      take: perPage,
-    }),
-    prisma.property.count({ where }),
-  ]);
+  try {
+    const [items, total] = await Promise.all([
+      prisma.property.findMany({
+        where,
+        include: {
+          media: { where: { isPrimary: true }, take: 1 },
+          assignedTo: { select: { firstName: true, lastName: true } },
+          _count: { select: { matches: true } },
+        },
+        orderBy,
+        skip: (page - 1) * perPage,
+        take: perPage,
+      }),
+      prisma.property.count({ where }),
+    ]);
 
-  return { items, total, page, perPage, totalPages: Math.ceil(total / perPage) };
+    return { items, total, page, perPage, totalPages: Math.ceil(total / perPage) };
+  } catch (err) {
+    // Surface the underlying cause in the Vercel logs so we can debug
+    // production failures without losing the entire request.
+    console.error("[findProperties] failed", {
+      filters,
+      page,
+      perPage,
+      message: err instanceof Error ? err.message : String(err),
+      code: (err as { code?: string }).code,
+    });
+    throw err;
+  }
 }
 
 export async function findPropertyById(id: string) {
