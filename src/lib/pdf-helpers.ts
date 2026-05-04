@@ -25,7 +25,7 @@ export async function loadLogoDataUrl(targetWidth = 720): Promise<string | null>
   if (logoCache) return logoCache;
   if (typeof window === "undefined") return null;
   try {
-    const res = await fetch("/logo-mark.svg");
+    const res = await fetch("/logo-mark.svg", { cache: "no-store" });
     if (!res.ok) return null;
     const svgText = await res.text();
     const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });

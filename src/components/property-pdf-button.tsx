@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/toast";
 import { BRAND, loadLogoDataUrl, fmtEUR, todayFR } from "@/lib/pdf-helpers";
 
 interface PropertyForPdf {
@@ -113,13 +114,36 @@ async function loadImageAsDataUrl(url: string): Promise<{ dataUrl: string; w: nu
 
 export function PropertyPdfButton({ propertyId }: { propertyId: string }) {
   const [loading, setLoading] = useState(false);
+  const { addToast } = useToast();
 
   async function generatePdf() {
     setLoading(true);
     try {
-      const res = await fetch(`/api/properties/${propertyId}/pdf`);
-      if (!res.ok) return;
-      const { property, agency }: PdfPayload = await res.json();
+      // Bypass HTTP & service-worker cache so an old auth-error response
+      // can never come back to bite us.
+      const res = await fetch(`/api/properties/${propertyId}/pdf`, {
+        cache: "no-store",
+        credentials: "include",
+        headers: { "Cache-Control": "no-cache" },
+      });
+      if (res.status === 401) {
+        addToast("Session expirée — reconnectez-vous puis réessayez.", "error");
+        return;
+      }
+      if (res.status === 404) {
+        addToast("Bien introuvable.", "error");
+        return;
+      }
+      if (!res.ok) {
+        addToast("Impossible de récupérer la fiche du bien.", "error");
+        return;
+      }
+      const payload = await res.json().catch(() => null);
+      if (!payload || !payload.property || !payload.agency) {
+        addToast("Réponse serveur invalide.", "error");
+        return;
+      }
+      const { property, agency }: PdfPayload = payload;
 
       const jspdfModule = await import("jspdf");
       const jsPDF = jspdfModule.default;
@@ -411,8 +435,13 @@ export function PropertyPdfButton({ propertyId }: { propertyId: string }) {
       }
 
       doc.save(`Fiche-${property.reference}.pdf`);
+      addToast("Fiche PDF générée.", "success");
     } catch (err) {
       console.error("PDF generation error:", err);
+      addToast(
+        err instanceof Error ? `PDF : ${err.message}` : "Erreur lors de la génération du PDF.",
+        "error"
+      );
     } finally {
       setLoading(false);
     }
