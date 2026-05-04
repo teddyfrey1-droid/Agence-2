@@ -216,13 +216,11 @@ export default async function BiensListPage({
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between border-t border-stone-100 pt-2.5 dark:border-anthracite-800">
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <InlineStatusSelect
-                          propertyId={property.id}
-                          currentStatus={property.status}
-                          isCoMandat={property.isCoMandat}
-                        />
-                      </div>
+                      <InlineStatusSelect
+                        propertyId={property.id}
+                        currentStatus={property.status}
+                        isCoMandat={property.isCoMandat}
+                      />
                       <div className="flex items-center gap-3 text-[11px] text-stone-400 dark:text-stone-500">
                         {matchCount > 0 && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
