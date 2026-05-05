@@ -64,16 +64,24 @@ const config: Config = {
         },
       },
       fontFamily: {
-        /* display — luxury editorial headlines (maps to CSS var set by next/font, falls back to Georgia) */
+        /* display & serif — luxury editorial headlines (Cormorant via next/font) */
         display: [
-          "var(--font-display, Georgia)",
+          "var(--font-display)",
           "Georgia",
           "Cambria",
           "Times New Roman",
           "serif",
         ],
-        serif: ["Georgia", "Cambria", "Times New Roman", "serif"],
+        serif: [
+          "var(--font-display)",
+          "Georgia",
+          "Cambria",
+          "Times New Roman",
+          "serif",
+        ],
+        /* sans — UI body (Inter via next/font) */
         sans: [
+          "var(--font-sans)",
           "Inter",
           "system-ui",
           "-apple-system",

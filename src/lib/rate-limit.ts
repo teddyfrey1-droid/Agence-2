@@ -49,6 +49,33 @@ const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 const useRedis = !!(UPSTASH_URL && UPSTASH_TOKEN);
 
 /**
+ * In production we refuse the in-memory fallback: each serverless instance
+ * keeps its own Map, so the limit can be bypassed by fanning requests
+ * across cold starts. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN,
+ * or explicitly opt in with ALLOW_INMEMORY_RATE_LIMIT=true (single-instance
+ * deployments only).
+ *
+ * Lazy: enforced at first call rather than module load, so the build step
+ * (which loads route modules with NODE_ENV=production) can succeed without
+ * Upstash creds being injected as build-time env vars.
+ */
+let prodEnforcementChecked = false;
+function enforceProdBackend() {
+  if (prodEnforcementChecked) return;
+  prodEnforcementChecked = true;
+  if (
+    process.env.NODE_ENV === "production" &&
+    !useRedis &&
+    process.env.ALLOW_INMEMORY_RATE_LIMIT !== "true"
+  ) {
+    throw new Error(
+      "Rate limiting requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in production. " +
+        "Set ALLOW_INMEMORY_RATE_LIMIT=true to override (single-instance only)."
+    );
+  }
+}
+
+/**
  * Lightweight Upstash Redis REST client — avoids importing @upstash/redis
  * so the package is truly optional.  Uses a sliding-window counter stored
  * as a single key with a TTL equal to the rate-limit window.
@@ -169,6 +196,7 @@ export async function checkRateLimit(
   identifier: string,
   config: RateLimitConfig
 ): Promise<RateLimitResult> {
+  enforceProdBackend();
   if (useRedis) {
     return redisCheckRateLimit(identifier, config);
   }

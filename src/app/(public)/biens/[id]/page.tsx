@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -9,6 +10,101 @@ import {
   PROPERTY_TYPE_LABELS,
   TRANSACTION_TYPE_LABELS,
 } from "@/lib/constants";
+
+const SITE_URL = process.env.APP_URL || "https://retail-avenue.fr";
+
+type PropertyForLd = NonNullable<Awaited<ReturnType<typeof findPropertyById>>>;
+
+function buildPropertyJsonLd(property: PropertyForLd) {
+  const isLocation = property.transactionType === "LOCATION";
+  const url = `${SITE_URL}/biens/${property.id}`;
+  const images = property.media
+    .map((m: { url: string }) => m.url)
+    .filter(Boolean);
+  const offerPrice = isLocation ? property.rentMonthly : property.price;
+
+  // schema.org: RealEstateListing covers both sale and rent. We surface
+  // the offer with priceSpecification (UnitPriceSpecification + MONTH for
+  // rentals) — Google's rich-result tester accepts this shape.
+  const offer = offerPrice
+    ? {
+        "@type": "Offer",
+        url,
+        priceCurrency: "EUR",
+        availability:
+          property.status === "ACTIF"
+            ? "https://schema.org/InStock"
+            : "https://schema.org/OutOfStock",
+        ...(isLocation
+          ? {
+              priceSpecification: {
+                "@type": "UnitPriceSpecification",
+                price: offerPrice,
+                priceCurrency: "EUR",
+                unitCode: "MON",
+                referenceQuantity: { "@type": "QuantitativeValue", value: 1, unitCode: "MON" },
+              },
+            }
+          : { price: offerPrice }),
+      }
+    : undefined;
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    "@id": url,
+    url,
+    name: property.title,
+    description: property.description ?? undefined,
+    image: images.length > 0 ? images : [`${SITE_URL}/hero-paris.jpg`],
+    datePosted: property.publishedAt
+      ? new Date(property.publishedAt).toISOString()
+      : undefined,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: property.city ?? "Paris",
+      addressRegion: property.district ?? undefined,
+      postalCode: property.zipCode ?? undefined,
+      addressCountry: "FR",
+    },
+    floorSize: property.surfaceTotal
+      ? {
+          "@type": "QuantitativeValue",
+          value: property.surfaceTotal,
+          unitCode: "MTK",
+        }
+      : undefined,
+    numberOfRooms: undefined,
+    offers: offer,
+  };
+}
+
+function buildBreadcrumbJsonLd(property: PropertyForLd) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Accueil",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Nos biens",
+        item: `${SITE_URL}/biens`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: property.title,
+        item: `${SITE_URL}/biens/${property.id}`,
+      },
+    ],
+  };
+}
 
 export async function generateMetadata({
   params,
@@ -104,8 +200,24 @@ export default async function PropertyDetailPage({
     keyFacts.push({ label: "H. sous plafond", value: `${property.ceilingHeight} m` });
   }
 
+  // schema.org structured data (RealEstateListing + BreadcrumbList) for
+  // Google rich snippets. Nonce is set by middleware so it survives CSP.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const propertyLd = buildPropertyJsonLd(property);
+  const breadcrumbLd = buildBreadcrumbJsonLd(property);
+
   return (
     <article className="bg-white pb-24 dark:bg-anthracite-950">
+      <script
+        type="application/ld+json"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(propertyLd) }}
+      />
+      <script
+        type="application/ld+json"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       {/* ── Gallery — full-bleed, sober ── */}
       <section className="relative">
         <div className="relative grid gap-1 overflow-hidden bg-stone-100 sm:grid-cols-4 sm:grid-rows-2 dark:bg-anthracite-900">

@@ -63,20 +63,33 @@ npm install
 cp .env.example .env
 # Modifier .env avec vos valeurs (DATABASE_URL, JWT_SECRET, etc.)
 
-# 4. Initialiser la base de données
-npx prisma db push
-npm run db:seed
+# 4. Initialiser la base de données (dev)
+npx prisma migrate deploy
+SEED_ADMIN_PASSWORD='<choisir un mdp fort>' \
+SEED_AGENT_PASSWORD='<choisir un mdp fort>' \
+  npm run db:seed
 
 # 5. Lancer le serveur de développement
 npm run dev
 ```
 
-## Comptes par défaut (seed)
+## Comptes par défaut (seed — dev uniquement)
 
-| Rôle | Email | Mot de passe |
-|------|-------|-------------|
-| Super Admin | admin@agence-immo.fr | admin123 |
-| Agent | agent@agence-immo.fr | agent123 |
+Le seed est **désactivé en production** (`NODE_ENV=production`) sauf si
+`FORCE_SEED=true` est explicitement fourni.
+
+Les emails par défaut sont `admin@agence-immo.fr` et `agent@agence-immo.fr`,
+**modifiables** via les variables `SEED_ADMIN_EMAIL` et `SEED_AGENT_EMAIL`.
+
+Les mots de passe **ne sont plus définis en clair** : si
+`SEED_ADMIN_PASSWORD` / `SEED_AGENT_PASSWORD` ne sont pas fournis, un mot de
+passe aléatoire est généré à chaque seed et imprimé une seule fois dans la
+console — note-le immédiatement. Pour un environnement reproductible, fixe
+ces variables (≥ 12 caractères, mix majuscule/minuscule/chiffre).
+
+Pour le bootstrap de la production, n'utilise **pas** le seed : passe par
+l'endpoint sécurisé `POST /api/setup` (header `x-setup-token` =
+`SETUP_SECRET_TOKEN`, body avec admin email + password fort).
 
 ## Fonctionnalités
 
@@ -114,10 +127,26 @@ npm run dev
 2. Connecter le repo dans Vercel
 3. Configurer les variables d'environnement :
    - `DATABASE_URL` (PostgreSQL — ex: Neon, Supabase)
+   - `DIRECT_URL` (connexion non-poolée, requise par Prisma migrate)
    - `JWT_SECRET` (chaîne aléatoire 32+ caractères)
-   - `NEXT_PUBLIC_MAPBOX_TOKEN` (optionnel, pour la carte)
+   - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (rate-limiting prod)
    - `NEXT_PUBLIC_APP_URL` (URL de production)
 4. Déployer
+
+### Migration depuis un déploiement initial via `prisma db push`
+
+Le script `build` utilise `prisma migrate deploy`. Si la base de prod
+existe déjà (créée précédemment par `db push`), il faut **baseline** la
+migration `0_init` une seule fois :
+
+```bash
+DATABASE_URL='...' npx prisma migrate resolve --applied 0_init
+```
+
+Vérifier ensuite avec `npx prisma migrate status`.
+
+Sur une base vierge, aucune action manuelle requise — `migrate deploy`
+appliquera `0_init` directement.
 
 ## Design
 

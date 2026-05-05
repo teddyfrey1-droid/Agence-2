@@ -64,9 +64,10 @@ export default async function HomePage() {
           src="/hero-paris.jpg"
           alt="Rue commerçante parisienne"
           fill
+          sizes="100vw"
           className="object-cover object-center"
           priority
-          quality={90}
+          quality={78}
         />
 
         {/* Primary gradient veil — strengthened for text legibility */}
@@ -255,10 +256,12 @@ export default async function HomePage() {
               <Link href={`/biens/${hero.id}`} className="group mb-5 block">
                 <div className="relative overflow-hidden bg-stone-200 dark:bg-anthracite-900" style={{ aspectRatio: "21/9" }}>
                   {hero.media[0] ? (
-                    <img
+                    <Image
                       src={hero.media[0].url}
                       alt={hero.title}
-                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                      fill
+                      sizes="(min-width: 1280px) 1280px, 100vw"
+                      className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-stone-200 to-stone-300 dark:from-anthracite-800 dark:to-anthracite-700">
@@ -296,10 +299,12 @@ export default async function HomePage() {
                   <Link key={property.id} href={`/biens/${property.id}`} className="group">
                     <div className="relative overflow-hidden bg-stone-200 dark:bg-anthracite-900" style={{ aspectRatio: "3/2" }}>
                       {property.media[0] ? (
-                        <img
+                        <Image
                           src={property.media[0].url}
                           alt={property.title}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                          fill
+                          sizes="(min-width: 640px) 50vw, 100vw"
+                          className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
                         />
                       ) : (
                         <div className="h-full w-full bg-gradient-to-br from-stone-200 to-stone-300 dark:from-anthracite-800 dark:to-anthracite-700" />
@@ -332,12 +337,14 @@ export default async function HomePage() {
               <div className="grid grid-cols-2 gap-5 sm:grid-cols-4">
                 {tertiary.map((property) => (
                   <Link key={property.id} href={`/biens/${property.id}`} className="group">
-                    <div className="overflow-hidden bg-stone-200 dark:bg-anthracite-900" style={{ aspectRatio: "4/3" }}>
+                    <div className="relative overflow-hidden bg-stone-200 dark:bg-anthracite-900" style={{ aspectRatio: "4/3" }}>
                       {property.media[0] ? (
-                        <img
+                        <Image
                           src={property.media[0].url}
                           alt={property.title}
-                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.05]"
+                          fill
+                          sizes="(min-width: 640px) 25vw, 50vw"
+                          className="object-cover transition-transform duration-700 group-hover:scale-[1.05]"
                         />
                       ) : (
                         <div className="h-full w-full bg-gradient-to-br from-stone-200 to-stone-300 dark:from-anthracite-800 dark:to-anthracite-700" />

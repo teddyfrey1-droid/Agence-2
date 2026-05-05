@@ -46,6 +46,29 @@ async function main() {
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || crypto.randomBytes(16).toString("base64url");
   const agentPassword = process.env.SEED_AGENT_PASSWORD || crypto.randomBytes(16).toString("base64url");
 
+  // If a password was explicitly provided, refuse weak values. Random
+  // fallbacks are 22 chars base64url so they always pass — this only
+  // catches user-supplied env values.
+  const weakPasswords = new Set([
+    "admin123", "agent123", "password", "password123", "azerty", "azerty123",
+    "123456", "123456789", "12345678", "qwerty", "qwerty123", "letmein",
+    "admin", "agent", "test", "test123",
+  ]);
+  function assertStrong(label: string, value: string, fromEnv: boolean) {
+    if (!fromEnv) return;
+    if (value.length < 12) {
+      throw new Error(`[SEED] ${label} doit faire au moins 12 caractères`);
+    }
+    if (weakPasswords.has(value.toLowerCase())) {
+      throw new Error(`[SEED] ${label} est trop courant — choisis un mot de passe fort`);
+    }
+    if (!/[a-z]/.test(value) || !/[A-Z]/.test(value) || !/\d/.test(value)) {
+      throw new Error(`[SEED] ${label} doit mélanger majuscule, minuscule et chiffre`);
+    }
+  }
+  assertStrong("SEED_ADMIN_PASSWORD", adminPassword, !!process.env.SEED_ADMIN_PASSWORD);
+  assertStrong("SEED_AGENT_PASSWORD", agentPassword, !!process.env.SEED_AGENT_PASSWORD);
+
   // Create admin user
   const adminHash = await hash(adminPassword, 12);
   await prisma.user.upsert({

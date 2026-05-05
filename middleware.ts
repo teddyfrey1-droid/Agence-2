@@ -6,6 +6,70 @@ if (!process.env.JWT_SECRET) {
 }
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
+const isDev = process.env.NODE_ENV !== "production";
+
+/**
+ * Build a strict CSP using a per-request nonce + 'strict-dynamic'.
+ * Modern browsers ignore 'unsafe-inline' when a nonce is present, so we
+ * keep it only as a fallback for legacy browsers (CSP3 spec).
+ */
+function buildCspWithNonce(nonce: string): string {
+  const directives: Record<string, string[]> = {
+    "default-src": ["'self'"],
+    "script-src": [
+      "'self'",
+      `'nonce-${nonce}'`,
+      "'strict-dynamic'",
+      // Legacy fallback — ignored when nonce + strict-dynamic are honored
+      "'unsafe-inline'",
+      ...(isDev ? ["'unsafe-eval'"] : []),
+    ],
+    "style-src": ["'self'", "'unsafe-inline'"],
+    "img-src": [
+      "'self'",
+      "data:",
+      "blob:",
+      "https://*.supabase.co",
+      "https://*.tile.openstreetmap.org",
+      "https://*.basemaps.cartocdn.com",
+    ],
+    "font-src": ["'self'", "data:"],
+    "connect-src": [
+      "'self'",
+      "https://*.supabase.co",
+      "https://*.tile.openstreetmap.org",
+      "https://*.basemaps.cartocdn.com",
+      ...(isDev ? ["ws:", "wss:"] : []),
+    ],
+    "worker-src": ["'self'", "blob:"],
+    "frame-ancestors": ["'none'"],
+    "base-uri": ["'self'"],
+    "form-action": ["'self'"],
+    "object-src": ["'none'"],
+  };
+  return Object.entries(directives)
+    .map(([k, v]) => `${k} ${v.join(" ")}`)
+    .join("; ");
+}
+
+function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+const cspHeaderName =
+  process.env.CSP_REPORT_ONLY === "true"
+    ? "Content-Security-Policy-Report-Only"
+    : "Content-Security-Policy";
+
+function withCspNonce(response: NextResponse, nonce: string): NextResponse {
+  response.headers.set(cspHeaderName, buildCspWithNonce(nonce));
+  return response;
+}
+
 const publicPaths = [
   "/",
   "/agence",
@@ -70,14 +134,24 @@ function isPublishedPropertiesRequest(request: NextRequest): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Generate a per-request nonce. Even API responses get the header — it's
+  // harmless on JSON and keeps the code path simple. Server components read
+  // the nonce via headers().get('x-nonce').
+  const nonce = generateNonce();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  const passThrough = () =>
+    withCspNonce(NextResponse.next({ request: { headers: requestHeaders } }), nonce);
+
   // Allow public paths
   if (isPublicPath(pathname)) {
-    return NextResponse.next();
+    return passThrough();
   }
 
   // Allow published properties listing (public map data)
   if (isPublishedPropertiesRequest(request)) {
-    return NextResponse.next();
+    return passThrough();
   }
 
   // Check for session cookie on protected paths
@@ -92,7 +166,7 @@ export async function middleware(request: NextRequest) {
 
   try {
     await jwtVerify(token, JWT_SECRET);
-    return NextResponse.next();
+    return passThrough();
   } catch {
     // Invalid token
     if (pathname.startsWith("/api/")) {
