@@ -397,6 +397,8 @@ model Property {
   deposit           Float?
   fees              Float?
   pricePerSqm       Float?
+  // Régime TVA du loyer : "HT" (par défaut) ou "NON_SOUMIS".
+  rentVatRegime     String?                 @default("HT")
 
   // Commercial
   isCoMandat        Boolean                 @default(false)

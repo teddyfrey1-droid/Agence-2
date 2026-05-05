@@ -302,12 +302,14 @@ export async function sendPropertyShareEmail(params: {
   message?: string;
 }): Promise<boolean> {
   const viewUrl = `${APP_URL}/biens/partage/${params.shareToken}`;
+  const fmtNum = (n: number) =>
+    new Intl.NumberFormat("fr-FR").format(n).replace(/[  ]/g, " ");
   const priceDisplay = params.transactionType === "LOCATION"
     ? params.propertyRent
-      ? `${new Intl.NumberFormat("fr-FR").format(params.propertyRent)} € / mois HT HC`
+      ? `${fmtNum(params.propertyRent)} € / mois HT`
       : "Prix sur demande"
     : params.propertyPrice
-      ? `${new Intl.NumberFormat("fr-FR").format(params.propertyPrice)} €`
+      ? `${fmtNum(params.propertyPrice)} €`
       : "Prix sur demande";
 
   const content = `

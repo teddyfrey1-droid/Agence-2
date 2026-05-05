@@ -283,13 +283,13 @@ export default async function PropertyDetailPage({
                       {formatPrice(property.rentMonthly)}
                     </p>
                     <p className="mt-1 text-xs font-medium uppercase tracking-[0.16em] text-stone-400 dark:text-stone-500">
-                      par mois · HT HC
+                      par mois · {property.rentVatRegime === "NON_SOUMIS" ? "Non soumis à TVA" : "HT"}
                     </p>
-                    {property.charges && (
-                      <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
-                        + {formatPrice(property.charges)} de charges
-                      </p>
-                    )}
+                    <p className="mt-3 text-sm text-stone-500 dark:text-stone-400">
+                      {property.charges
+                        ? <>+ {formatPrice(property.charges)} de charges <span className="text-stone-400">(le loyer est hors charges)</span></>
+                        : <>Loyer hors charges</>}
+                    </p>
                   </>
                 ) : (
                   <>

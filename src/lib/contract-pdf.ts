@@ -303,9 +303,13 @@ export async function generateContractPdf(data: ContractFormData): Promise<Blob>
   if (p.surfaceTotal) propRows.push(["Surface", `${p.surfaceTotal} m²`]);
   if (p.floor != null) propRows.push(["Étage", p.floor === 0 ? "RDC" : `${p.floor}e étage`]);
   if (p.transactionType === "LOCATION") {
-    if (p.rentMonthly) propRows.push(["Loyer mensuel HC (demande initiale)", fmtEUR(p.rentMonthly)]);
-    if (p.rentYearly) propRows.push(["Loyer annuel HC (demande initiale)", fmtEUR(p.rentYearly)]);
-    if (p.charges) propRows.push(["Charges mensuelles", fmtEUR(p.charges)]);
+    if (p.rentMonthly) propRows.push(["Loyer mensuel (demande initiale)", fmtEUR(p.rentMonthly)]);
+    if (p.rentYearly) propRows.push(["Loyer annuel (demande initiale)", fmtEUR(p.rentYearly)]);
+    if (p.charges) {
+      propRows.push(["Charges mensuelles", `${fmtEUR(p.charges)} (le loyer est hors charges)`]);
+    } else {
+      propRows.push(["Charges mensuelles", "Le loyer est hors charges (HC)"]);
+    }
     if (p.deposit) propRows.push(["Dépôt de garantie (demande initiale)", fmtEUR(p.deposit)]);
   } else if (p.price) {
     propRows.push(["Prix (demande initiale)", fmtEUR(p.price)]);

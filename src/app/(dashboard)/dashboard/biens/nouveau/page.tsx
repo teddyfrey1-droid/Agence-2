@@ -486,6 +486,7 @@ export default function NouveauBienPage() {
         charges: formData.get("charges") ? Number(formData.get("charges")) : undefined,
         deposit: formData.get("deposit") ? Number(formData.get("deposit")) : undefined,
         fees: formData.get("fees") ? Number(formData.get("fees")) : undefined,
+        rentVatRegime: (formData.get("rentVatRegime") as string) || undefined,
       };
 
       const res = await fetch("/api/properties", {
@@ -884,15 +885,31 @@ export default function NouveauBienPage() {
             )}
 
             {(isLocation || !transactionType) && (
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Input id="rentMonthly" name="rentMonthly" type="number" label="Loyer mensuel HT (€)" min={0} placeholder="2 500" />
-                <Input id="rentYearly" name="rentYearly" type="number" label="Loyer annuel HT (€)" min={0} placeholder="30 000" />
-                <Input id="deposit" name="deposit" type="number" label="Dépôt de garantie (€)" min={0} placeholder="Optionnel" />
-              </div>
+              <>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Input id="rentMonthly" name="rentMonthly" type="number" label="Loyer mensuel (€)" min={0} placeholder="2 500" />
+                  <Input id="rentYearly" name="rentYearly" type="number" label="Loyer annuel (€)" min={0} placeholder="30 000" />
+                  <Input id="deposit" name="deposit" type="number" label="Dépôt de garantie (€)" min={0} placeholder="Optionnel" />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-anthracite-700 dark:text-stone-300">
+                    Régime TVA du loyer
+                  </label>
+                  <select
+                    id="rentVatRegime"
+                    name="rentVatRegime"
+                    defaultValue="HT"
+                    className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm text-anthracite-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-stone-600 dark:bg-anthracite-800 dark:text-stone-200 sm:max-w-xs"
+                  >
+                    <option value="HT">HT (soumis à TVA)</option>
+                    <option value="NON_SOUMIS">Non soumis à TVA</option>
+                  </select>
+                </div>
+              </>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input id="charges" name="charges" type="number" label="Charges (€/mois)" min={0} placeholder="Optionnel" />
+              <Input id="charges" name="charges" type="number" label="Charges mensuelles (€) — le loyer est hors charges" min={0} placeholder="Optionnel" />
               {!isVente && !isLocation && (
                 <Input id="feesAlt" name="fees" type="number" label="Honoraires (€)" min={0} placeholder="Optionnel" />
               )}

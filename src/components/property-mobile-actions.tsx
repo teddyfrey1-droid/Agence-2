@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/toast";
 import { haptic } from "@/lib/haptics";
 import { PropertyShareModal } from "@/components/property-share-modal";
 import { PropertyContractModal } from "@/components/property-contract-modal";
+import { generatePropertyFichePdf } from "@/lib/property-pdf";
 
 interface Props {
   propertyId: string;
@@ -20,10 +21,10 @@ interface Props {
  * XXL touch targets so the agent can act with one thumb on the road:
  *  1. Partager → opens the existing PropertyShareModal
  *  2. Contrat  → opens the existing PropertyContractModal
- *  3. PDF      → triggers the same /api/properties/[id]/pdf flow used by the desktop button
+ *  3. PDF      → renders the commercial fiche client-side (same as desktop)
  *  4. Modifier → navigates to the edit page
  */
-export function PropertyMobileActions({ propertyId, reference, isPublished }: Props) {
+export function PropertyMobileActions({ propertyId, isPublished }: Props) {
   const router = useRouter();
   const { addToast } = useToast();
   const [openShare, setOpenShare] = useState(false);
@@ -34,20 +35,10 @@ export function PropertyMobileActions({ propertyId, reference, isPublished }: Pr
     haptic("tap");
     setPdfLoading(true);
     try {
-      const res = await fetch(`/api/properties/${propertyId}/pdf`);
-      if (!res.ok) throw new Error("Erreur PDF");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${reference}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-      addToast("PDF téléchargé", "success");
-    } catch {
-      addToast("Erreur lors du téléchargement", "error");
+      await generatePropertyFichePdf(propertyId);
+      addToast("Fiche PDF générée.", "success");
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : "Erreur lors de la génération du PDF.", "error");
     } finally {
       setPdfLoading(false);
     }

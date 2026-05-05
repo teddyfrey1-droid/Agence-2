@@ -161,15 +161,26 @@ export default async function PropertyDetailPage({
                   <dt className="text-caption">Prix / Loyer</dt>
                   <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
                     {property.transactionType === "LOCATION"
-                      ? `${formatPrice(property.rentMonthly)}/mois`
+                      ? `${formatPrice(property.rentMonthly)}/mois${
+                          property.rentVatRegime === "NON_SOUMIS"
+                            ? " (non soumis à TVA)"
+                            : property.rentVatRegime === "HT"
+                              ? " HT"
+                              : ""
+                        }`
                       : formatPrice(property.price)}
                   </dd>
                 </div>
-                {property.charges && (
+                {property.transactionType === "LOCATION" && (
                   <div>
                     <dt className="text-caption">Charges</dt>
                     <dd className="mt-1 text-sm font-medium text-anthracite-800 dark:text-stone-200">
-                      {formatPrice(property.charges)}/mois
+                      {property.charges
+                        ? `${formatPrice(property.charges)}/mois`
+                        : "—"}
+                      <span className="ml-1 text-xs font-normal text-stone-500">
+                        (le loyer est hors charges)
+                      </span>
                     </dd>
                   </div>
                 )}

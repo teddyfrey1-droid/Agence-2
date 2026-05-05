@@ -37,6 +37,7 @@ export const createPropertySchema = z.object({
   charges: z.number().positive().optional(),
   deposit: z.number().positive().optional(),
   fees: z.number().positive().optional(),
+  rentVatRegime: z.enum(["HT", "NON_SOUMIS"]).optional(),
   isCoMandat: z.boolean().default(false),
   coMandatAgency: z.string().optional(),
   ownerId: z.string().optional(),

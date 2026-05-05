@@ -57,11 +57,17 @@ export async function loadLogoDataUrl(targetWidth = 720): Promise<string | null>
 
 export function fmtEUR(val: number | null | undefined): string {
   if (val == null) return "—";
+  // Intl emits U+202F (NARROW NO-BREAK SPACE) and U+00A0 (NO-BREAK SPACE) in
+  // fr-FR currency output. jsPDF's Helvetica core fonts don't ship glyphs for
+  // these codepoints, so they render as garbage ("3 / 0 0 0 €" or boxes).
+  // Normalise to a plain ASCII space so the PDF is readable everywhere.
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
-  }).format(val);
+  })
+    .format(val)
+    .replace(/[  ]/g, " ");
 }
 
 export function fmtDateFR(d: Date | string | null | undefined): string {

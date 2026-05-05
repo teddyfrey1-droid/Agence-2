@@ -29,6 +29,7 @@ interface LoadedData {
     } | null;
     isCoMandat: boolean;
     coMandatAgency: string | null;
+    rentVatRegime: string | null;
   };
   agency: {
     name: string;
@@ -213,7 +214,13 @@ export function PropertyContractModal({
         // Prefill proposed rent/price from initial demand
         setNego((n) => ({
           ...n,
-          proposedRent: d.property.rentMonthly ? `${d.property.rentMonthly} € / mois HC` : "",
+          proposedRent: d.property.rentMonthly
+            ? `${d.property.rentMonthly} € / mois${
+                d.property.rentVatRegime === "NON_SOUMIS"
+                  ? " (non soumis à TVA)"
+                  : " HT"
+              }`
+            : "",
           proposedPrice: d.property.price ? `${d.property.price} €` : "",
           deposit: d.property.deposit ? `${d.property.deposit} €` : "",
         }));
@@ -527,7 +534,7 @@ export function PropertyContractModal({
                         className={inputCls}
                         value={nego.proposedRent}
                         onChange={(e) => setNego({ ...nego, proposedRent: e.target.value })}
-                        placeholder="ex: 2 500 € / mois HC"
+                        placeholder="ex: 2 500 € / mois HT"
                       />
                     </div>
                     <div>
@@ -545,7 +552,7 @@ export function PropertyContractModal({
                         className={inputCls}
                         value={nego.deposit}
                         onChange={(e) => setNego({ ...nego, deposit: e.target.value })}
-                        placeholder="ex: 3 mois HC"
+                        placeholder="ex: 3 mois de loyer"
                       />
                     </div>
                     <div>

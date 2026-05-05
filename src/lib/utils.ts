@@ -5,18 +5,28 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Intl.NumberFormat fr-FR emits U+202F (NARROW NO-BREAK SPACE) and
+// U+00A0 (NO-BREAK SPACE) inside numbers ("3 000 €"). Some mobile webviews
+// and PDF fonts can't render those codepoints and surface them as visible
+// glyphs ("3 / 0 0 0 €"), so we normalise them to a plain ASCII space.
+function stripNarrowSpaces(s: string): string {
+  return s.replace(/[  ]/g, " ");
+}
+
 export function formatPrice(value: number | null | undefined): string {
   if (value == null) return "—";
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(value);
+  return stripNarrowSpaces(
+    new Intl.NumberFormat("fr-FR", {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0,
+    }).format(value)
+  );
 }
 
 export function formatSurface(value: number | null | undefined): string {
   if (value == null) return "—";
-  return `${new Intl.NumberFormat("fr-FR").format(value)} m²`;
+  return `${stripNarrowSpaces(new Intl.NumberFormat("fr-FR").format(value))} m²`;
 }
 
 export function formatDate(date: Date | string | null | undefined): string {

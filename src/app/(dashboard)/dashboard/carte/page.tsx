@@ -68,11 +68,15 @@ const defaultFilters: Filters = {
 
 function fmtPrice(val: number | null): string {
   if (!val) return "—";
+  // Normalise narrow / non-breaking spaces to plain ASCII so the popup HTML
+  // doesn't surface them as visible glyphs on mobile.
   return new Intl.NumberFormat("fr-FR", {
     style: "currency",
     currency: "EUR",
     maximumFractionDigits: 0,
-  }).format(val);
+  })
+    .format(val)
+    .replace(/[  ]/g, " ");
 }
 
 const COLOR_MAP: Record<string, string> = {
@@ -898,8 +902,13 @@ export default function CartePage() {
         </div>
       )}
 
-      {/* The map — fixed dvh height for stable mobile sizing */}
-      <Card className="overflow-hidden">
+      {/* The map — fixed dvh height for stable mobile sizing.
+          `isolate` creates a stacking context so Leaflet's internal panes
+          (z-index up to 700) and zoom controls (z-index 1000) cannot paint
+          above the dashboard sidebar (z-50) when the burger menu is opened
+          from the carte page. Without it the map covered the menu and the
+          user had to close the app to recover. */}
+      <Card className="relative isolate z-0 overflow-hidden">
         <div
           ref={mapRef}
           className="h-[60vh] min-h-[420px] w-full sm:h-[calc(100dvh-260px)]"

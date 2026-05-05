@@ -56,10 +56,12 @@ export default async function SharedPropertyPage({
   ].filter(Boolean) as string[];
 
   const photos = property.media.filter((m) => m.type === "PHOTO");
+  const rentVatTag =
+    property.rentVatRegime === "NON_SOUMIS" ? " (non soumis à TVA)" : " HT";
   const priceDisplay =
     property.transactionType === "LOCATION"
       ? property.rentMonthly
-        ? `${formatPrice(property.rentMonthly)}/mois HT HC`
+        ? `${formatPrice(property.rentMonthly)}/mois${rentVatTag}`
         : formatPrice(property.price)
       : formatPrice(property.price);
 

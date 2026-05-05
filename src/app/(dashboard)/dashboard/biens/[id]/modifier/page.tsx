@@ -50,6 +50,7 @@ interface PropertyData {
   price: number | null;
   rentMonthly: number | null;
   charges: number | null;
+  rentVatRegime: string | null;
   hasExtraction: boolean;
   hasTerrace: boolean;
   hasParking: boolean;
@@ -157,6 +158,7 @@ export default function ModifierBienPage() {
           price: formData.get("price") ? Number(formData.get("price")) : undefined,
           rentMonthly: formData.get("rentMonthly") ? Number(formData.get("rentMonthly")) : undefined,
           charges: formData.get("charges") ? Number(formData.get("charges")) : undefined,
+          rentVatRegime: (formData.get("rentVatRegime") as string) || undefined,
           hasExtraction: checkedEquipments.hasExtraction,
           hasTerrace: checkedEquipments.hasTerrace,
           hasParking: checkedEquipments.hasParking,
@@ -371,7 +373,23 @@ export default function ModifierBienPage() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Input id="rentMonthly" name="rentMonthly" type="number" label="Loyer mensuel (€)" min={0} defaultValue={formValues.rentMonthly ?? ""} />
-                <Input id="charges" name="charges" type="number" label="Charges (€/mois)" min={0} defaultValue={formValues.charges ?? ""} />
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-anthracite-700 dark:text-stone-300">
+                    Régime TVA du loyer
+                  </label>
+                  <select
+                    id="rentVatRegime"
+                    name="rentVatRegime"
+                    defaultValue={formValues.rentVatRegime ?? "HT"}
+                    className="h-10 w-full rounded-lg border border-stone-300 bg-white px-3 text-sm text-anthracite-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-stone-600 dark:bg-anthracite-800 dark:text-stone-200"
+                  >
+                    <option value="HT">HT (soumis à TVA)</option>
+                    <option value="NON_SOUMIS">Non soumis à TVA</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <Input id="charges" name="charges" type="number" label="Charges mensuelles (€) — le loyer est hors charges" min={0} defaultValue={formValues.charges ?? ""} />
               </div>
             </CardContent>
           </Card>

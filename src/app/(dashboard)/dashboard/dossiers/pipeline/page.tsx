@@ -32,7 +32,9 @@ const STAGE_COLORS: Record<string, string> = {
 
 function fmtPrice(val: number | null) {
   if (!val) return "";
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(val);
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })
+    .format(val)
+    .replace(/[  ]/g, " ");
 }
 
 export default function PipelinePage() {
