@@ -81,7 +81,7 @@ export function ServicesCarousel({ services }: { services: Service[] }) {
             <article
               key={s.title}
               data-card
-              className={`group relative flex min-h-[24rem] w-[85vw] max-w-md flex-none snap-center flex-col justify-between overflow-hidden border bg-white p-8 transition-all duration-700 sm:w-[26rem] sm:p-10 dark:bg-anthracite-900 ${
+              className={`group relative flex min-h-[20rem] w-[85vw] max-w-md flex-none snap-center flex-col justify-between overflow-hidden border bg-white p-8 transition-all duration-700 sm:w-[26rem] sm:p-10 dark:bg-anthracite-900 ${
                 isActive
                   ? "border-champagne-400/80 shadow-[0_30px_80px_-40px_rgba(163,129,90,0.45)] -translate-y-1 scale-[1.01]"
                   : "border-stone-200 dark:border-stone-800"
@@ -99,27 +99,30 @@ export function ServicesCarousel({ services }: { services: Service[] }) {
                 }}
               />
 
-              {/* Top — bronze numeral + label rail */}
+              {/* Top */}
               <div className="relative">
-                <div className="flex items-end justify-between">
-                  <p
-                    className="font-serif text-[5.5rem] font-light leading-none transition-colors duration-700"
-                    style={{
-                      color: isActive ? "#a3815a" : "#e8dfd2",
-                    }}
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`font-sans text-[9px] font-semibold tracking-[0.4em] uppercase transition-colors duration-700 ${
+                      isActive
+                        ? "text-brand-700 dark:text-champagne-300"
+                        : "text-stone-400 dark:text-stone-500"
+                    }`}
                   >
-                    {s.num}
-                  </p>
-                  <span className="font-sans text-[9px] font-semibold tracking-[0.4em] uppercase text-stone-400 dark:text-stone-500">
                     Savoir-faire
                   </span>
+                  <span
+                    className={`block h-1.5 w-1.5 rotate-45 transition-colors duration-700 ${
+                      isActive ? "bg-champagne-400" : "bg-stone-300 dark:bg-stone-700"
+                    }`}
+                  />
                 </div>
                 <span
-                  className={`mt-4 block h-px origin-left transition-all duration-700 ${
+                  className={`mt-6 block h-px origin-left transition-all duration-700 ${
                     isActive ? "w-24 bg-champagne-400" : "w-12 bg-brand-300"
                   }`}
                 />
-                <h3 className="mt-7 font-serif text-2xl font-semibold leading-tight text-anthracite-900 sm:text-3xl dark:text-stone-100">
+                <h3 className="mt-7 font-serif text-3xl font-semibold leading-tight text-anthracite-900 sm:text-[2rem] dark:text-stone-100">
                   {s.title}
                 </h3>
                 <p className="mt-5 font-sans text-sm leading-relaxed text-stone-600 dark:text-stone-300">
@@ -127,16 +130,20 @@ export function ServicesCarousel({ services }: { services: Service[] }) {
                 </p>
               </div>
 
-              {/* Bottom corner accent */}
-              <div className="mt-10 flex items-center justify-between">
-                <span className="font-sans text-[10px] tracking-[0.3em] uppercase text-stone-400 dark:text-stone-500">
-                  Card {String(i + 1).padStart(2, "0")} / {String(services.length).padStart(2, "0")}
+              {/* Footer */}
+              <div className="mt-10 flex items-center justify-between border-t border-stone-100 pt-6 dark:border-stone-800">
+                <span className="font-serif text-sm italic text-stone-400 dark:text-stone-500">
+                  {String(i + 1).padStart(2, "0")} / {String(services.length).padStart(2, "0")}
                 </span>
                 <span
-                  className={`block h-1.5 w-1.5 rotate-45 transition-colors duration-700 ${
-                    isActive ? "bg-champagne-400" : "bg-stone-300 dark:bg-stone-700"
+                  className={`font-sans text-[10px] tracking-[0.3em] uppercase transition-colors duration-700 ${
+                    isActive
+                      ? "text-brand-700 dark:text-champagne-300"
+                      : "text-stone-400 dark:text-stone-500"
                   }`}
-                />
+                >
+                  En savoir plus
+                </span>
               </div>
             </article>
           );

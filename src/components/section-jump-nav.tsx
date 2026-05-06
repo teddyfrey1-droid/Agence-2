@@ -16,7 +16,8 @@ export function SectionJumpNav() {
   const [active, setActive] = useState<string | null>(null);
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > window.innerHeight * 0.6);
+    const onScroll = () =>
+      setVisible(window.scrollY > window.innerHeight * 0.5);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -33,9 +34,7 @@ export function SectionJumpNav() {
         const visibleEntries = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visibleEntries[0]) {
-          setActive(visibleEntries[0].target.id);
-        }
+        if (visibleEntries[0]) setActive(visibleEntries[0].target.id);
       },
       { threshold: [0.25, 0.5, 0.75], rootMargin: "-30% 0px -30% 0px" }
     );
@@ -47,57 +46,52 @@ export function SectionJumpNav() {
     const el = document.getElementById(id);
     if (!el) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({
-      behavior: reduce ? "auto" : "smooth",
-      block: "start",
-    });
+    el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }
 
   return (
     <nav
       aria-label="Navigation rapide"
-      className={`fixed left-1/2 z-40 -translate-x-1/2 transition-all duration-700 ${
-        visible
-          ? "bottom-5 opacity-100 translate-y-0"
-          : "pointer-events-none -bottom-4 opacity-0 translate-y-2"
+      className={`pointer-events-none fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 transition-all duration-700 lg:block ${
+        visible ? "translate-x-0 opacity-100" : "translate-x-3 opacity-0"
       }`}
     >
-      <div className="relative">
-        {/* Soft champagne halo */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -inset-2 rounded-full bg-champagne-400/15 blur-xl"
-        />
-        <ul className="relative flex items-center gap-1 rounded-full border border-stone-200 bg-white/90 p-1 shadow-[0_18px_50px_-20px_rgba(15,16,20,0.35)] backdrop-blur-xl dark:border-stone-700 dark:bg-anthracite-900/90">
-          {SECTIONS.map((s) => {
-            const isActive = active === s.id;
-            return (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  onClick={() => jumpTo(s.id)}
-                  className={`relative inline-flex items-center gap-2 rounded-full px-4 py-2 font-sans text-[10px] font-semibold tracking-[0.25em] uppercase transition-colors duration-500 sm:px-5 ${
+      <ul className="pointer-events-auto flex flex-col gap-1">
+        {SECTIONS.map((s) => {
+          const isActive = active === s.id;
+          return (
+            <li key={s.id}>
+              <button
+                type="button"
+                onClick={() => jumpTo(s.id)}
+                aria-label={s.label}
+                aria-current={isActive ? "true" : undefined}
+                className="group relative flex items-center justify-end gap-3 py-1.5 pl-3 pr-1 text-right"
+              >
+                {/* Label — slides in on hover/active */}
+                <span
+                  className={`pointer-events-none whitespace-nowrap font-sans text-[10px] font-semibold tracking-[0.35em] uppercase transition-all duration-500 ${
                     isActive
-                      ? "bg-anthracite-900 text-champagne-300 dark:bg-champagne-500 dark:text-anthracite-900"
-                      : "text-stone-500 hover:text-anthracite-900 dark:text-stone-400 dark:hover:text-stone-100"
+                      ? "translate-x-0 opacity-100 text-anthracite-800 dark:text-champagne-300"
+                      : "translate-x-2 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 text-stone-500 dark:text-stone-400"
                   }`}
                 >
-                  <span
-                    aria-hidden
-                    className={`inline-block h-1.5 w-1.5 rotate-45 transition-colors duration-500 ${
-                      isActive
-                        ? "bg-champagne-400 dark:bg-anthracite-900"
-                        : "bg-stone-300 dark:bg-stone-600"
-                    }`}
-                  />
-                  <span className="hidden sm:inline">{s.label}</span>
-                  <span className="sm:hidden">{s.label.slice(0, 3)}.</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
+                  {s.label}
+                </span>
+
+                {/* Tick — short rule that grows when active */}
+                <span
+                  className={`block h-px transition-all duration-500 ${
+                    isActive
+                      ? "w-7 bg-champagne-400"
+                      : "w-3 bg-stone-300 group-hover:w-5 group-hover:bg-stone-400 dark:bg-stone-600 dark:group-hover:bg-stone-400"
+                  }`}
+                />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </nav>
   );
 }
