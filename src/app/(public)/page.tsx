@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { formatPrice, formatSurface } from "@/lib/utils";
 import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
 import { getAgencyInfo } from "@/lib/agency";
+import { HomeContactForm } from "@/components/home-contact-form";
 import {
   HERO_CONTENT,
   MANIFESTE_CONTENT,
@@ -614,55 +615,9 @@ export default async function HomePage() {
             {CONTACT_CONTENT.description}
           </p>
 
-          <div className="mt-14 flex flex-col items-center justify-center gap-5 sm:flex-row">
-            <Link
-              href="/contact"
-              className="group relative inline-flex items-center gap-3 overflow-hidden bg-champagne-500 px-12 py-4 font-sans text-[11px] tracking-[0.3em] uppercase text-anthracite-900 transition-colors duration-300 hover:bg-champagne-400"
-            >
-              <span
-                aria-hidden
-                className="animate-gleam pointer-events-none absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-white/55 to-transparent"
-              />
-              <span className="relative">{CONTACT_CONTENT.cta_primary}</span>
-              <svg
-                className="relative h-3 w-3 transition-transform duration-500 group-hover:translate-x-1"
-                viewBox="0 0 16 16"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
-              </svg>
-            </Link>
-            <Link
-              href="/recherche-local"
-              className="inline-flex items-center gap-2 font-sans text-[11px] tracking-[0.25em] uppercase text-stone-300 transition-colors duration-300 hover:text-white"
-            >
-              {CONTACT_CONTENT.cta_secondary}
-              <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
-              </svg>
-            </Link>
-          </div>
-
-          <div className="mt-20 border-t border-white/10 pt-12">
-            <p className="font-sans text-[10px] tracking-[0.3em] uppercase text-stone-400">
-              {CONTACT_CONTENT.contact_overline}
-            </p>
-            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-10">
-              <Link
-                href={CONTACT_CONTENT.phone_href}
-                className="font-sans text-base text-stone-200 transition-colors hover:text-white"
-              >
-                {CONTACT_CONTENT.phone}
-              </Link>
-              <span className="hidden h-px w-4 bg-stone-700 sm:block" />
-              <Link
-                href={CONTACT_CONTENT.email_href}
-                className="font-sans text-base text-stone-200 transition-colors hover:text-white"
-              >
-                {CONTACT_CONTENT.email}
-              </Link>
-            </div>
+          {/* Inline contact form */}
+          <div className="mx-auto mt-16 max-w-2xl text-left">
+            <HomeContactForm />
           </div>
         </div>
       </section>
