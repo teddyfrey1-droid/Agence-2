@@ -57,6 +57,7 @@ const agencySchema = z.object({
   publicationDirector: optionalString,
   mediator: optionalString,
   dpoContact: optionalString,
+  showPublicProperties: z.boolean().optional().default(false),
 });
 
 async function getOrCreatePrimaryAgency() {

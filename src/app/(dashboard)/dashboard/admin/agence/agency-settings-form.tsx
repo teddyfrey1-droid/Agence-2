@@ -33,6 +33,7 @@ function toFormState(initial: AgencyInfo): FormState {
     publicationDirector: initial.publicationDirector ?? "",
     mediator: initial.mediator ?? "",
     dpoContact: initial.dpoContact ?? "",
+    showPublicProperties: initial.showPublicProperties ?? false,
   };
 }
 
@@ -369,6 +370,40 @@ export function AgencySettingsForm({ initial }: { initial: AgencyInfo }) {
               onChange={(e) => update("dpoContact", e.target.value)}
               error={fieldErrors.dpoContact ?? undefined}
             />
+          </CardContent>
+        </Card>
+
+        {/* Site public */}
+        <Card>
+          <CardHeader>
+            <h2 className="font-semibold text-anthracite-900 dark:text-stone-100">
+              Site public
+            </h2>
+            <p className="text-sm text-stone-500 dark:text-stone-400">
+              Affichage du catalogue de biens sur le site vitrine.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 transition-colors hover:bg-stone-100 dark:border-stone-700 dark:bg-anthracite-900/40 dark:hover:bg-anthracite-900/70">
+              <input
+                type="checkbox"
+                className="mt-0.5 h-4 w-4 cursor-pointer accent-brand-600"
+                checked={form.showPublicProperties}
+                onChange={(e) =>
+                  update("showPublicProperties", e.target.checked)
+                }
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-medium text-anthracite-900 dark:text-stone-100">
+                  Afficher les biens sur le site public
+                </span>
+                <span className="mt-1 block text-xs text-stone-500 dark:text-stone-400">
+                  Active la page « Nos biens », la sélection sur la page
+                  d&apos;accueil et le lien dans la navigation. Désactivé par
+                  défaut tant que le portefeuille n&apos;est pas constitué.
+                </span>
+              </span>
+            </label>
           </CardContent>
         </Card>
 

@@ -323,6 +323,44 @@
     animation: scroll-breath 2.4s ease-in-out infinite;
   }
 
+  /* Gold gleam — slow shimmer travelling across an element */
+  @keyframes gleam-sweep {
+    0%        { transform: translateX(-120%) skewX(-18deg); opacity: 0; }
+    20%       { opacity: 0.55; }
+    60%       { opacity: 0.55; }
+    100%      { transform: translateX(220%) skewX(-18deg); opacity: 0; }
+  }
+  .animate-gleam {
+    animation: gleam-sweep 4.5s ease-in-out infinite;
+  }
+
+  /* Soft halo blink — for primary CTA backdrop */
+  @keyframes halo-pulse {
+    0%, 100% { opacity: 0.35; transform: scale(1); }
+    50%      { opacity: 0.7;  transform: scale(1.04); }
+  }
+  .animate-halo {
+    animation: halo-pulse 3.2s ease-in-out infinite;
+  }
+
+  /* Marquee — horizontal infinite scroll for trust strip */
+  @keyframes marquee-x {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  .animate-marquee {
+    animation: marquee-x 38s linear infinite;
+  }
+
+  /* Slow ken-burns on hero photograph */
+  @keyframes ken-burns {
+    0%   { transform: scale(1) translate3d(0,0,0); }
+    100% { transform: scale(1.08) translate3d(-1%, -1%, 0); }
+  }
+  .animate-ken-burns {
+    animation: ken-burns 18s ease-out forwards;
+  }
+
   /* Staggered delay helpers */
   .delay-150  { animation-delay: 150ms; }
   .delay-300  { animation-delay: 300ms; }

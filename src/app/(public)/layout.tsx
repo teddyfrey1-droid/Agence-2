@@ -3,13 +3,14 @@ import { PublicFooter } from "@/components/layout/public-footer";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
 import { getSession } from "@/lib/auth";
 import { USER_ROLE_LABELS } from "@/lib/constants";
+import { getAgencyInfo } from "@/lib/agency";
 
 export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const [session, agency] = await Promise.all([getSession(), getAgencyInfo()]);
 
   const user = session
     ? {
@@ -21,9 +22,9 @@ export default async function PublicLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <PublicHeader user={user} />
+      <PublicHeader user={user} showProperties={agency.showPublicProperties} />
       <main className="flex-1">{children}</main>
-      <PublicFooter />
+      <PublicFooter showProperties={agency.showPublicProperties} />
       <FloatingThemeToggle />
     </div>
   );
