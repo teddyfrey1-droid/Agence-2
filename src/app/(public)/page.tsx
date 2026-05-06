@@ -95,12 +95,33 @@ export default async function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_50%_50%,rgba(0,0,0,0.10)_0%,rgba(0,0,0,0.55)_100%)]" />
 
         <div className="relative z-10 w-full max-w-4xl px-6 text-center">
-          <p
-            className="animate-reveal-fade font-sans text-[10px] tracking-[0.55em] uppercase text-champagne-300"
-            style={{ textShadow: "0 1px 12px rgba(0,0,0,0.95)" }}
-          >
-            {HERO_CONTENT.eyebrow}
-          </p>
+          <div className="animate-reveal-fade flex flex-col items-center">
+            {(() => {
+              const parts = HERO_CONTENT.eyebrow.split("·").map((s) => s.trim());
+              const lieu = parts[0] ?? HERO_CONTENT.eyebrow;
+              const annee = parts[1];
+              return (
+                <div
+                  className="inline-flex items-center gap-3 sm:gap-5 border-y border-champagne-300/50 px-5 py-2.5 sm:px-7 sm:py-3 backdrop-blur-[1px]"
+                  style={{ textShadow: "0 1px 14px rgba(0,0,0,0.95)" }}
+                >
+                  <span className="block h-1.5 w-1.5 rotate-45 bg-champagne-400" />
+                  <p className="font-serif text-base font-light tracking-[0.35em] uppercase text-white sm:text-lg md:text-xl">
+                    {lieu}
+                  </p>
+                  {annee && (
+                    <>
+                      <span className="block h-px w-6 bg-champagne-400/80" />
+                      <p className="font-serif text-base italic font-light tracking-[0.2em] text-champagne-200 sm:text-lg md:text-xl">
+                        {annee}
+                      </p>
+                    </>
+                  )}
+                  <span className="block h-1.5 w-1.5 rotate-45 bg-champagne-400" />
+                </div>
+              );
+            })()}
+          </div>
 
           <h1
             className="animate-reveal-up delay-150 mt-7 font-serif text-5xl font-normal italic leading-[1.05] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-8xl"
@@ -274,23 +295,78 @@ export default async function HomePage() {
           </div>
 
           {/* Commitment pillars */}
-          <div className="mt-24 grid grid-cols-1 gap-14 border-t border-stone-200 pt-20 md:grid-cols-3 dark:border-stone-800">
-            {MANIFESTE_CONTENT.commitments.map((item, i) => (
-              <ScrollReveal
-                key={item.title}
-                variant="up"
-                delay={i * 140}
-                className="lift-card group"
-              >
-                <h3 className="font-serif text-xl font-semibold text-anthracite-900 transition-colors duration-500 group-hover:text-brand-700 dark:text-stone-100 dark:group-hover:text-brand-400">
-                  {item.title}
-                </h3>
-                <span className="rule-brand mt-5 origin-left transition-transform duration-500 group-hover:scale-x-[2.5]" />
-                <p className="mt-5 font-sans text-sm leading-relaxed text-stone-600 dark:text-stone-300">
-                  {item.description}
-                </p>
-              </ScrollReveal>
-            ))}
+          <div className="mt-24 grid grid-cols-1 gap-6 border-t border-stone-200 pt-20 md:grid-cols-3 dark:border-stone-800">
+            {MANIFESTE_CONTENT.commitments.map((item, i) => {
+              const icons: React.ReactNode[] = [
+                /* 01 — Compass / map (Expertise locale) */
+                <svg key="compass" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="24" cy="24" r="18" />
+                  <path d="M24 6v3M24 39v3M6 24h3M39 24h3" />
+                  <path d="M30 18l-4 10-10 4 4-10 10-4z" />
+                  <circle cx="24" cy="24" r="1.6" fill="currentColor" />
+                </svg>,
+                /* 02 — Concierge bell (Accompagnement dédié) */
+                <svg key="bell" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M8 34c0-9 7-16 16-16s16 7 16 16" />
+                  <path d="M6 34h36" />
+                  <path d="M24 18v-4" />
+                  <circle cx="24" cy="11" r="2" />
+                  <path d="M14 38h20" />
+                </svg>,
+                /* 03 — Network nodes (Réseau qualifié) */
+                <svg key="network" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="24" cy="10" r="3.5" />
+                  <circle cx="10" cy="34" r="3.5" />
+                  <circle cx="38" cy="34" r="3.5" />
+                  <circle cx="24" cy="26" r="2.5" />
+                  <path d="M24 13.5v10M22 28L12 32M26 28l10 4" />
+                  <path d="M13 34h22" strokeDasharray="2 3" />
+                </svg>,
+              ];
+              return (
+                <ScrollReveal
+                  key={item.title}
+                  variant="up"
+                  delay={i * 140}
+                  className="group relative flex flex-col overflow-hidden border border-stone-200 bg-white p-8 transition-all duration-500 hover:-translate-y-1 hover:border-champagne-400/70 hover:shadow-[0_28px_70px_-40px_rgba(163,129,90,0.45)] sm:p-10 dark:border-stone-800 dark:bg-anthracite-900"
+                >
+                  {/* Soft hover glow */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -right-20 -top-20 h-44 w-44 rounded-full bg-champagne-400/10 blur-3xl opacity-0 transition-opacity duration-700 group-hover:opacity-100"
+                  />
+
+                  {/* Index ribbon */}
+                  <div className="flex items-center justify-between">
+                    <span className="font-serif text-xs italic text-stone-400 dark:text-stone-500">
+                      {String(i + 1).padStart(2, "0")} — Engagement
+                    </span>
+                    <span className="block h-1.5 w-1.5 rotate-45 bg-stone-300 transition-colors duration-500 group-hover:bg-champagne-400 dark:bg-stone-700" />
+                  </div>
+
+                  {/* Icon medallion */}
+                  <div className="relative mt-7">
+                    <span
+                      aria-hidden
+                      className="absolute inset-0 rounded-full bg-champagne-400/0 blur-xl transition-all duration-700 group-hover:bg-champagne-400/15"
+                    />
+                    <span className="relative flex h-16 w-16 items-center justify-center rounded-full border border-champagne-300/70 bg-gradient-to-br from-white to-stone-50 text-brand-700 transition-all duration-500 group-hover:scale-105 group-hover:border-champagne-400 group-hover:text-champagne-600 dark:border-champagne-400/40 dark:from-anthracite-950 dark:to-anthracite-900 dark:text-champagne-400">
+                      <span className="h-8 w-8">{icons[i] ?? icons[0]}</span>
+                    </span>
+                  </div>
+
+                  <h3 className="mt-7 font-serif text-2xl font-semibold leading-tight text-anthracite-900 transition-colors duration-500 group-hover:text-brand-700 dark:text-stone-100 dark:group-hover:text-champagne-300">
+                    {item.title}
+                  </h3>
+
+                  <span className="mt-4 block h-px w-10 origin-left bg-champagne-400 transition-all duration-500 group-hover:w-20" />
+
+                  <p className="mt-5 font-sans text-sm leading-loose text-stone-600 dark:text-stone-300">
+                    {item.description}
+                  </p>
+                </ScrollReveal>
+              );
+            })}
           </div>
         </div>
       </section>
