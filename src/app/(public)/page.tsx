@@ -478,23 +478,57 @@ export default async function HomePage() {
                 qui vous correspond.
               </p>
 
-              <ul className="mt-10 space-y-4">
+              <ol className="relative mt-12 space-y-0 border-l border-champagne-300/60 pl-0 dark:border-champagne-400/30">
                 {[
-                  "Brief sur-mesure et signature d'un mandat de recherche",
-                  "Accès aux opportunités off-market et pré-marché",
-                  "Visites accompagnées et négociation menée pour vous",
-                  "Sécurisation juridique et closing",
+                  {
+                    label: "Brief",
+                    title: "Cahier des charges sur-mesure",
+                    description: "Écoute attentive de votre projet et signature d'un mandat de recherche dédié.",
+                  },
+                  {
+                    label: "Activation",
+                    title: "Réseau & off-market",
+                    description: "Accès aux opportunités off-market et pré-marché via notre réseau de propriétaires et apporteurs.",
+                  },
+                  {
+                    label: "Sélection",
+                    title: "Visites & négociation",
+                    description: "Visites accompagnées, étude fine de chaque adresse, négociation menée pour vous.",
+                  },
+                  {
+                    label: "Closing",
+                    title: "Sécurisation & signature",
+                    description: "Coordination juridique, sécurisation du dossier, accompagnement jusqu'à la remise des clés.",
+                  },
                 ].map((step, i) => (
-                  <li key={step} className="flex items-start gap-4">
-                    <span className="mt-1 flex h-7 w-7 flex-none items-center justify-center rounded-full border border-brand-300 bg-white font-serif text-xs font-semibold text-brand-700 dark:border-brand-700 dark:bg-anthracite-950 dark:text-brand-400">
-                      {String(i + 1).padStart(2, "0")}
+                  <li key={step.title} className="group relative -ml-px pl-10 pb-10 last:pb-0 sm:pl-14">
+                    {/* Numeral cap on the rail */}
+                    <span
+                      aria-hidden
+                      className="absolute -left-[1px] top-0 flex h-10 w-10 -translate-x-1/2 items-center justify-center bg-stone-50 dark:bg-anthracite-900"
+                    >
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full border border-champagne-400/60 bg-white font-serif text-sm font-semibold text-brand-700 transition-all duration-500 group-hover:scale-110 group-hover:border-champagne-400 group-hover:shadow-[0_0_0_6px_rgba(212,184,122,0.12)] dark:border-champagne-400/40 dark:bg-anthracite-950 dark:text-champagne-300">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
                     </span>
-                    <span className="font-sans text-sm leading-relaxed text-anthracite-800 dark:text-stone-200">
-                      {step}
-                    </span>
+
+                    <div className="flex items-baseline gap-3">
+                      <p className="font-sans text-[9px] font-semibold tracking-[0.4em] uppercase text-brand-600 dark:text-champagne-400">
+                        {step.label}
+                      </p>
+                      <span className="h-px flex-1 bg-stone-200 transition-colors duration-500 group-hover:bg-champagne-400/80 dark:bg-stone-800" />
+                    </div>
+
+                    <h3 className="mt-3 font-serif text-2xl font-normal italic leading-tight text-anthracite-900 transition-colors duration-500 group-hover:text-brand-700 dark:text-stone-100 dark:group-hover:text-champagne-300 sm:text-3xl">
+                      {step.title}
+                    </h3>
+
+                    <p className="mt-3 max-w-md font-sans text-sm leading-relaxed text-stone-600 dark:text-stone-300">
+                      {step.description}
+                    </p>
                   </li>
                 ))}
-              </ul>
+              </ol>
 
               <div className="mt-12 flex flex-col items-start gap-5 sm:flex-row sm:items-center">
                 <Link
@@ -633,26 +667,40 @@ export default async function HomePage() {
         />
 
         <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
-          <ScrollReveal variant="fade">
-            <p className="font-sans text-[10px] tracking-[0.55em] uppercase text-champagne-400">
+          <ScrollReveal variant="fade" className="block">
+            <span className="inline-flex items-center gap-3 font-sans text-[10px] font-semibold tracking-[0.55em] uppercase text-champagne-400">
+              <span className="h-px w-8 bg-champagne-400/70" />
               {CONTACT_CONTENT.overline}
-            </p>
+              <span className="h-px w-8 bg-champagne-400/70" />
+            </span>
           </ScrollReveal>
 
           <ScrollReveal variant="up" delay={120}>
-            <h2 className="mt-10 font-serif text-5xl font-normal italic leading-tight text-white sm:text-6xl lg:text-7xl">
+            <h2 className="mt-10 font-serif text-5xl font-light italic leading-[1.05] tracking-tight text-white sm:text-6xl lg:text-7xl">
               {CONTACT_CONTENT.headline_italic}
               <br />
-              <em className="not-italic font-semibold text-champagne-300">
-                {CONTACT_CONTENT.headline_bold}
-              </em>
+              <span className="relative inline-block">
+                <em className="relative z-10 not-italic font-semibold text-champagne-300">
+                  {CONTACT_CONTENT.headline_bold}
+                </em>
+                {/* Soft champagne glow behind the bold line */}
+                <span
+                  aria-hidden
+                  className="animate-halo pointer-events-none absolute inset-x-[-8%] inset-y-[-30%] -z-0 rounded-full bg-champagne-500/10 blur-2xl"
+                />
+              </span>
             </h2>
           </ScrollReveal>
 
-          <div className="rule-gold mx-auto mt-10" />
+          {/* Animated gold rule with diamond accent */}
+          <ScrollReveal variant="fade" delay={200} className="mx-auto mt-10 flex items-center justify-center gap-3">
+            <span className="block h-px w-10 bg-gradient-to-r from-transparent to-champagne-400" />
+            <span className="block h-1.5 w-1.5 rotate-45 bg-champagne-400" />
+            <span className="block h-px w-10 bg-gradient-to-l from-transparent to-champagne-400" />
+          </ScrollReveal>
 
-          <ScrollReveal variant="up" delay={240}>
-            <p className="mx-auto mt-10 max-w-xl font-sans text-base leading-loose text-stone-300">
+          <ScrollReveal variant="up" delay={280}>
+            <p className="mx-auto mt-10 max-w-xl font-serif text-lg italic leading-loose text-stone-200 sm:text-xl">
               {CONTACT_CONTENT.description}
             </p>
           </ScrollReveal>
