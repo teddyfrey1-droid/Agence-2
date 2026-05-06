@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { publicContactFormSchema } from "@/modules/contacts/contacts.schema";
 import { handlePublicContactForm } from "@/modules/contacts";
-import { applyRateLimit, getClientIp, PUBLIC_FORM_RATE_LIMIT } from "@/lib/rate-limit";
-import { verifyTurnstile } from "@/lib/turnstile";
+import { applyRateLimit, PUBLIC_FORM_RATE_LIMIT } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,18 +10,6 @@ export async function POST(request: NextRequest) {
     if (rateLimited) return rateLimited;
 
     const body = await request.json();
-
-    // Turnstile gate — only enforced when TURNSTILE_SECRET is set.
-    const turnstileToken =
-      body?.["cf-turnstile-response"] ?? body?.turnstileToken;
-    const turn = await verifyTurnstile(turnstileToken, getClientIp(request.headers));
-    if (!turn.success) {
-      return NextResponse.json(
-        { error: "Vérification anti-bot échouée. Réessayez." },
-        { status: 400 }
-      );
-    }
-
     const parsed = publicContactFormSchema.safeParse(body);
 
     if (!parsed.success) {

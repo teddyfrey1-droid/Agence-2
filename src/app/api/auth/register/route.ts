@@ -3,8 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { createSessionToken, SESSION_COOKIE_OPTIONS, LEGACY_COOKIE_NAMES } from "@/lib/auth";
-import { applyRateLimit, getClientIp, REGISTER_RATE_LIMIT } from "@/lib/rate-limit";
-import { verifyTurnstile } from "@/lib/turnstile";
+import { applyRateLimit, REGISTER_RATE_LIMIT } from "@/lib/rate-limit";
 
 const registerSchema = z.object({
   firstName: z.string().min(2, "Prénom requis (2 car. min)"),
@@ -22,18 +21,6 @@ export async function POST(request: NextRequest) {
     if (rateLimited) return rateLimited;
 
     const body = await request.json();
-
-    // Turnstile gate — only enforced when TURNSTILE_SECRET is set.
-    const turnstileToken =
-      body?.["cf-turnstile-response"] ?? body?.turnstileToken;
-    const turn = await verifyTurnstile(turnstileToken, getClientIp(request.headers));
-    if (!turn.success) {
-      return NextResponse.json(
-        { error: "Vérification anti-bot échouée. Réessayez." },
-        { status: 400 }
-      );
-    }
-
     const parsed = registerSchema.safeParse(body);
 
     if (!parsed.success) {

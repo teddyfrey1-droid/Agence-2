@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { TurnstileWidget } from "@/components/turnstile-widget";
 import { PROPERTY_TYPE_LABELS, TRANSACTION_TYPE_LABELS } from "@/lib/constants";
 
 const propertyTypeOptions = Object.entries(PROPERTY_TYPE_LABELS).map(
@@ -22,7 +21,6 @@ export default function ProposerBienPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState("");
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -66,7 +64,6 @@ export default function ProposerBienPage() {
             ? Number(formData.get("price"))
             : undefined,
           description: formData.get("description"),
-          "cf-turnstile-response": turnstileToken || undefined,
         }),
       });
 
@@ -205,11 +202,6 @@ export default function ProposerBienPage() {
                 <div className="hidden" aria-hidden="true">
                   <input type="text" name="website" tabIndex={-1} autoComplete="off" />
                 </div>
-
-                <TurnstileWidget
-                  onVerify={setTurnstileToken}
-                  onExpire={() => setTurnstileToken("")}
-                />
 
                 <label className="flex items-start gap-3 text-sm text-anthracite-600 dark:text-stone-300">
                   <input

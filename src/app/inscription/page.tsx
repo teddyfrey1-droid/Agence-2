@@ -6,13 +6,11 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
-import { TurnstileWidget } from "@/components/turnstile-widget";
 
 export default function InscriptionPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [turnstileToken, setTurnstileToken] = useState("");
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,7 +38,6 @@ export default function InscriptionPage() {
           phone: formData.get("phone") || undefined,
           company: formData.get("company") || undefined,
           password,
-          "cf-turnstile-response": turnstileToken || undefined,
         }),
       });
 
@@ -142,11 +139,6 @@ export default function InscriptionPage() {
               placeholder="Retapez votre mot de passe"
               autoComplete="new-password"
               minLength={8}
-            />
-
-            <TurnstileWidget
-              onVerify={setTurnstileToken}
-              onExpire={() => setTurnstileToken("")}
             />
 
             <Button

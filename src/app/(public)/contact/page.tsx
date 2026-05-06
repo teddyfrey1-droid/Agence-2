@@ -5,7 +5,6 @@ import { useState, type FormEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { TurnstileWidget } from "@/components/turnstile-widget";
 
 // Note: metadata can't be exported from a "use client" file. The static
 // metadata for /contact lives in `contact/layout.tsx`.
@@ -15,7 +14,6 @@ export default function ContactPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState("");
   // Progressive disclosure: hide identity/phone fields until the visitor
   // chooses to share them. Keeps the form to 3 fields by default.
   const [extraFields, setExtraFields] = useState(false);
@@ -53,7 +51,6 @@ export default function ContactPage() {
           phone: formData.get("phone") || undefined,
           company: formData.get("company") || undefined,
           source: "contact-page",
-          "cf-turnstile-response": turnstileToken || undefined,
         }),
       });
 
@@ -188,12 +185,6 @@ export default function ContactPage() {
                 <div className="hidden" aria-hidden="true">
                   <input type="text" name="website" tabIndex={-1} autoComplete="off" />
                 </div>
-
-                {/* Anti-bot — only renders when site key is configured */}
-                <TurnstileWidget
-                  onVerify={setTurnstileToken}
-                  onExpire={() => setTurnstileToken("")}
-                />
 
                 <label className="flex items-start gap-3 text-sm text-anthracite-600 dark:text-stone-300">
                   <input

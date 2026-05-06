@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { TurnstileWidget } from "@/components/turnstile-widget";
 
 type Props = {
   /** Where on the site this form lives — recorded with the lead */
@@ -28,7 +27,6 @@ export function InlineContactForm({
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState("");
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -52,7 +50,6 @@ export function InlineContactForm({
           email: fd.get("email"),
           message: fd.get("message"),
           source,
-          "cf-turnstile-response": turnstileToken || undefined,
         }),
       });
       if (!res.ok) {
@@ -141,13 +138,6 @@ export function InlineContactForm({
       <div className="hidden" aria-hidden="true">
         <input type="text" name="website" tabIndex={-1} autoComplete="off" />
       </div>
-
-      {/* Anti-bot — renders only when NEXT_PUBLIC_TURNSTILE_SITE_KEY is set */}
-      <TurnstileWidget
-        onVerify={setTurnstileToken}
-        onExpire={() => setTurnstileToken("")}
-        theme={isDark ? "dark" : "auto"}
-      />
 
       <label
         className={`flex items-start gap-3 text-xs leading-relaxed ${
