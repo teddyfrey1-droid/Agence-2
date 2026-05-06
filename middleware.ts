@@ -154,8 +154,15 @@ export async function middleware(request: NextRequest) {
     return passThrough();
   }
 
-  // Check for session cookie on protected paths
-  const token = request.cookies.get("session")?.value;
+  // Check for session cookie on protected paths.
+  // `__Host-session` in prod / `session` in dev — see src/lib/auth.ts.
+  // We read both during the rollout window so users with legacy cookies
+  // aren't logged out abruptly.
+  const cookieName =
+    process.env.NODE_ENV === "production" ? "__Host-session" : "session";
+  const token =
+    request.cookies.get(cookieName)?.value ??
+    request.cookies.get("session")?.value;
 
   if (!token) {
     if (pathname.startsWith("/api/")) {

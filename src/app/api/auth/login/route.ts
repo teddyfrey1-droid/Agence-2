@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { findUserByEmail, verifyPassword, updateUserLastLogin } from "@/modules/users";
-import { createSessionToken, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { createSessionToken, SESSION_COOKIE_OPTIONS, LEGACY_COOKIE_NAMES } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit, LOGIN_RATE_LIMIT } from "@/lib/rate-limit";
 
@@ -75,6 +75,13 @@ export async function POST(request: NextRequest) {
       maxAge: SESSION_COOKIE_OPTIONS.maxAge,
       path: SESSION_COOKIE_OPTIONS.path,
     });
+    // Clear any legacy cookie from before the __Host- migration so the
+    // browser doesn't end up with two competing session cookies.
+    for (const legacy of LEGACY_COOKIE_NAMES) {
+      if (legacy !== SESSION_COOKIE_OPTIONS.name) {
+        response.cookies.delete(legacy);
+      }
+    }
 
     return response;
   } catch {

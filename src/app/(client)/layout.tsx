@@ -18,7 +18,7 @@ export default async function ClientLayout({
         user={{ firstName: session.firstName, lastName: session.lastName }}
       />
       <ActivityTracker />
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+      <main id="main-content" className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         {children}
       </main>
     </div>

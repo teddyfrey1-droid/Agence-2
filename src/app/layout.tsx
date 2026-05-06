@@ -70,6 +70,12 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Retail Avenue" />
       </head>
       <body className="overscroll-none font-sans">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[1000] focus:rounded focus:bg-anthracite-900 focus:px-4 focus:py-2 focus:font-sans focus:text-sm focus:text-white focus:shadow-lg focus:outline focus:outline-2 focus:outline-offset-2 focus:outline-champagne-400"
+        >
+          Aller au contenu principal
+        </a>
         <ThemeProvider>
           <CookieConsentProvider>
             <ToastProvider>

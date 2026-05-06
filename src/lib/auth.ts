@@ -8,7 +8,15 @@ if (!process.env.JWT_SECRET) {
 }
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
-const COOKIE_NAME = "session";
+// `__Host-` prefix in production: locks the cookie to the exact host
+// (no `Domain` attribute permitted, `Path=/` mandatory, `Secure` mandatory)
+// so a sibling subdomain compromise can't drop it. In dev (HTTP localhost)
+// the prefix is incompatible with non-secure cookies, so we fall back to
+// a plain name.
+export const COOKIE_NAME =
+  process.env.NODE_ENV === "production" ? "__Host-session" : "session";
+/** Legacy cookie names cleared on auth flows during the rollout window. */
+export const LEGACY_COOKIE_NAMES = ["session"];
 // 4 hours — short-lived session to limit the window where a stolen token
 // stays valid. Combined with `tokenVersion` (bumped on logout / password
 // change) this gives us server-side revocation.
@@ -51,7 +59,16 @@ export const SESSION_COOKIE_OPTIONS = {
 
 export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
-  const token = cookieStore.get(COOKIE_NAME)?.value;
+  // Read current cookie name first; fall back to legacy names so users
+  // already logged in before the migration aren't kicked out.
+  let token = cookieStore.get(COOKIE_NAME)?.value;
+  if (!token) {
+    for (const legacy of LEGACY_COOKIE_NAMES) {
+      if (legacy === COOKIE_NAME) continue;
+      token = cookieStore.get(legacy)?.value;
+      if (token) break;
+    }
+  }
   if (!token) return null;
 
   try {
@@ -106,6 +123,10 @@ export async function bumpTokenVersion(userId: string): Promise<void> {
 export async function destroySession(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(COOKIE_NAME);
+  // Clear any legacy cookies still on the client.
+  for (const legacy of LEGACY_COOKIE_NAMES) {
+    if (legacy !== COOKIE_NAME) cookieStore.delete(legacy);
+  }
 }
 
 export function requireRole(

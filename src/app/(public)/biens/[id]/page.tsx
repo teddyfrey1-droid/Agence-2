@@ -11,6 +11,10 @@ import {
   TRANSACTION_TYPE_LABELS,
 } from "@/lib/constants";
 
+// Property detail can be cached for 5 min — admin edits propagate within
+// that window, which is acceptable for a public catalogue.
+export const revalidate = 300;
+
 const SITE_URL = process.env.APP_URL || "https://retail-avenue.fr";
 
 type PropertyForLd = NonNullable<Awaited<ReturnType<typeof findPropertyById>>>;

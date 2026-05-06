@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
-import { createSessionToken, SESSION_COOKIE_OPTIONS } from "@/lib/auth";
+import { createSessionToken, SESSION_COOKIE_OPTIONS, LEGACY_COOKIE_NAMES } from "@/lib/auth";
 import { applyRateLimit, REGISTER_RATE_LIMIT } from "@/lib/rate-limit";
 
 const registerSchema = z.object({
@@ -79,6 +79,11 @@ export async function POST(request: NextRequest) {
       maxAge: SESSION_COOKIE_OPTIONS.maxAge,
       path: SESSION_COOKIE_OPTIONS.path,
     });
+    for (const legacy of LEGACY_COOKIE_NAMES) {
+      if (legacy !== SESSION_COOKIE_OPTIONS.name) {
+        response.cookies.delete(legacy);
+      }
+    }
 
     return response;
   } catch {

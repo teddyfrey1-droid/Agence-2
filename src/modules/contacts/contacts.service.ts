@@ -10,6 +10,11 @@ export async function createNewContact(input: CreateContactInput) {
 /**
  * Handle public contact form submission.
  * Creates contact (with dedup), interaction, and follow-up task.
+ *
+ * firstName/lastName may be empty (the reduced inline form on the home
+ * page only collects email + message). When missing we fall back to a
+ * placeholder derived from the email prefix; the agent qualifies the
+ * full identity on the first call.
  */
 export async function handlePublicContactForm(input: PublicContactFormInput) {
   return prisma.$transaction(async (tx) => {
@@ -18,11 +23,15 @@ export async function handlePublicContactForm(input: PublicContactFormInput) {
       where: { email: input.email },
     });
 
+    const emailPrefix = input.email.split("@")[0] ?? "prospect";
+    const fallbackFirst = "Prospect";
+    const fallbackLast = emailPrefix.replace(/[^a-zA-Z0-9 ._-]/g, "").slice(0, 60) || "site";
+
     if (!contact) {
       contact = await tx.contact.create({
         data: {
-          firstName: input.firstName,
-          lastName: input.lastName,
+          firstName: (input.firstName || "").trim() || fallbackFirst,
+          lastName: (input.lastName || "").trim() || fallbackLast,
           email: input.email,
           phone: input.phone || null,
           company: input.company || null,
@@ -32,11 +41,13 @@ export async function handlePublicContactForm(input: PublicContactFormInput) {
       });
     }
 
+    const sourceLabel = input.source ? ` [${input.source}]` : "";
+
     // Create interaction
     await tx.interaction.create({
       data: {
         type: "EMAIL_ENTRANT",
-        subject: "Demande de contact via le site",
+        subject: `Demande de contact via le site${sourceLabel}`,
         content: input.message,
         contactId: contact.id,
       },
@@ -46,7 +57,7 @@ export async function handlePublicContactForm(input: PublicContactFormInput) {
     await tx.task.create({
       data: {
         title: `Rappeler ${contact.firstName} ${contact.lastName}`,
-        description: `Contact reçu via le site web. Message: ${input.message}`,
+        description: `Contact reçu via le site web${sourceLabel}. Message: ${input.message}`,
         priority: "NORMALE",
         status: "A_FAIRE",
         dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // +1 day

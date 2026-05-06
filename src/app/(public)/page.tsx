@@ -11,6 +11,11 @@ import {
   SAVOIR_FAIRE_CONTENT,
   CONTACT_CONTENT,
 } from "@/lib/homepage-content";
+import { InlineContactForm } from "@/components/inline-contact-form";
+
+// Refresh featured properties at most every 5 min — the home page reads
+// from Postgres on render, ISR avoids a DB round-trip on every visit.
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Immobilier commercial à Paris",
@@ -39,12 +44,17 @@ export const metadata: Metadata = {
 ───────────────────────────────────────── */
 
 export default async function HomePage() {
-  const featuredProperties = await prisma.property.findMany({
-    where: { status: "ACTIF", isPublished: true, confidentiality: "PUBLIC" },
-    include: { media: { where: { isPrimary: true }, take: 1 } },
-    orderBy: { createdAt: "desc" },
-    take: 7,
-  });
+  const [featuredProperties, activeMandatesCount] = await Promise.all([
+    prisma.property.findMany({
+      where: { status: "ACTIF", isPublished: true, confidentiality: "PUBLIC" },
+      include: { media: { where: { isPrimary: true }, take: 1 } },
+      orderBy: { createdAt: "desc" },
+      take: 7,
+    }),
+    prisma.property.count({
+      where: { status: "ACTIF", isPublished: true, confidentiality: "PUBLIC" },
+    }),
+  ]);
 
   const [hero, ...rest] = featuredProperties;
   const secondary = rest.slice(0, 2);
@@ -70,8 +80,8 @@ export default async function HomePage() {
           quality={78}
         />
 
-        {/* Primary gradient veil — strengthened for text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/40 to-black/80" />
+        {/* Primary gradient veil — uniform mid-band for WCAG AA on body copy */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/55 to-black/80" />
         {/* Secondary centre-glow — focuses the eye on content */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_80%_at_50%_50%,rgba(0,0,0,0.15)_0%,rgba(0,0,0,0.45)_100%)]" />
 
@@ -114,21 +124,37 @@ export default async function HomePage() {
             ))}
           </p>
 
-          {/* CTAs */}
+          {/* CTAs — segmented entry: preneur (CTA primaire) vs bailleur (CTA secondaire) */}
           <div className="animate-reveal-up delay-700 mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
               href="/biens"
-              className="inline-flex items-center gap-3 border border-white/70 bg-white/5 px-10 py-4 font-sans text-[11px] tracking-[0.3em] uppercase text-white backdrop-blur-sm transition-all duration-500 hover:border-white hover:bg-white/15"
+              className="inline-flex min-h-[44px] items-center gap-3 border border-white/70 bg-white/5 px-10 py-4 font-sans text-[11px] tracking-[0.3em] uppercase text-white backdrop-blur-sm transition-all duration-500 hover:border-white hover:bg-white/15"
               style={{ textShadow: "none" }}
             >
               {HERO_CONTENT.cta_primary}
+              {activeMandatesCount > 0 && (
+                <span className="ml-1 text-champagne-300">
+                  · {activeMandatesCount} bien{activeMandatesCount > 1 ? "s" : ""}
+                </span>
+              )}
             </Link>
             <Link
-              href="/contact"
-              className="inline-flex items-center gap-2 font-sans text-[11px] tracking-[0.25em] uppercase text-champagne-200 transition-colors duration-300 hover:text-champagne-100"
-              style={{ textShadow: "0 1px 10px rgba(0,0,0,0.8)" }}
+              href="/proposer-bien"
+              className="inline-flex min-h-[44px] items-center gap-3 border border-champagne-300/60 bg-champagne-500/10 px-10 py-4 font-sans text-[11px] tracking-[0.3em] uppercase text-champagne-100 backdrop-blur-sm transition-all duration-500 hover:border-champagne-300 hover:bg-champagne-500/20"
+              style={{ textShadow: "none" }}
             >
               {HERO_CONTENT.cta_secondary}
+            </Link>
+          </div>
+
+          {/* Lien tertiaire — intention "indécis ou demande de conseil" */}
+          <div className="animate-reveal-fade delay-[900ms] mt-7 flex justify-center">
+            <Link
+              href="/contact"
+              className="inline-flex min-h-[44px] items-center gap-2 px-3 font-sans text-[11px] tracking-[0.25em] uppercase text-champagne-200 underline underline-offset-[6px] decoration-champagne-300/40 transition-colors duration-300 hover:text-champagne-100 hover:decoration-champagne-100"
+              style={{ textShadow: "0 1px 10px rgba(0,0,0,0.8)" }}
+            >
+              {HERO_CONTENT.cta_tertiary}
               <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                 <path d="M6.22 3.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 01-1.06-1.06L9.94 8 6.22 4.28a.75.75 0 010-1.06z" />
               </svg>
@@ -200,6 +226,10 @@ export default async function HomePage() {
               </div>
             ))}
           </div>
+          {/* Audit caption — anchors the figures in time */}
+          <p className="mt-6 text-center font-sans text-[10px] tracking-[0.25em] uppercase text-stone-400 dark:text-stone-500">
+            {MANIFESTE_CONTENT.stats_caption}
+          </p>
 
           {/* Commitment pillars */}
           <div className="mt-24 grid grid-cols-1 gap-14 border-t border-stone-200 pt-20 md:grid-cols-3 dark:border-stone-800">
@@ -489,16 +519,19 @@ export default async function HomePage() {
             {CONTACT_CONTENT.description}
           </p>
 
-          <div className="mt-14 flex flex-col items-center justify-center gap-5 sm:flex-row">
-            <Link
-              href="/contact"
-              className="inline-flex items-center bg-champagne-500 px-12 py-4 font-sans text-[11px] tracking-[0.3em] uppercase text-anthracite-900 transition-colors duration-300 hover:bg-champagne-400"
-            >
-              {CONTACT_CONTENT.cta_primary}
-            </Link>
+          {/* Inline mini-form — removes one navigation hop to /contact */}
+          <div className="mt-14">
+            <InlineContactForm
+              source="home-inline"
+              variant="dark"
+              messagePlaceholder="Quelques mots sur votre projet (local recherché, surface, quartier…)"
+            />
+          </div>
+
+          <div className="mt-10 flex justify-center">
             <Link
               href="/biens"
-              className="inline-flex items-center gap-2 font-sans text-[11px] tracking-[0.25em] uppercase text-stone-400 transition-colors duration-300 hover:text-white"
+              className="inline-flex min-h-[44px] items-center gap-2 font-sans text-[11px] tracking-[0.25em] uppercase text-stone-400 transition-colors duration-300 hover:text-white"
             >
               {CONTACT_CONTENT.cta_secondary}
               <svg className="h-3 w-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">

@@ -24,14 +24,20 @@ export const createContactSchema = z.object({
 
 export const updateContactSchema = createContactSchema.partial();
 
-// Public form schema (site web)
+// Public form schema (site web).
+// firstName/lastName are optional — the reduced inline form on the home
+// page only collects email + message + consent. The agent qualifies
+// identity on the first call. When missing, the service derives a
+// placeholder from the email prefix.
 export const publicContactFormSchema = z.object({
-  firstName: z.string().min(1, "Le prénom est requis"),
-  lastName: z.string().min(1, "Le nom est requis"),
+  firstName: z.string().min(1).optional().or(z.literal("")),
+  lastName: z.string().min(1).optional().or(z.literal("")),
   email: z.string().email("Email invalide"),
   phone: z.string().optional(),
   company: z.string().optional(),
   message: z.string().min(10, "Le message doit contenir au moins 10 caractères"),
+  /** Where on the site the form was submitted from — for analytics */
+  source: z.enum(["contact-page", "home-inline", "biens-detail", "footer"]).optional(),
   honeypot: z.string().max(0).optional(), // Anti-spam
 });
 

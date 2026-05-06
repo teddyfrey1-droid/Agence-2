@@ -70,7 +70,7 @@ export default async function DashboardLayout({
           <ActivityTracker />
           <PushNotifications />
           <PullToRefresh>
-            <main className="animate-fade-in mx-auto w-full max-w-[1600px] px-4 pt-5 pb-safe-or-6 sm:px-8 sm:pt-7">
+            <main id="main-content" className="animate-fade-in mx-auto w-full max-w-[1600px] px-4 pt-5 pb-safe-or-6 sm:px-8 sm:pt-7">
               {children}
             </main>
           </PullToRefresh>

@@ -22,11 +22,14 @@ export const HERO_CONTENT = {
   tagline:
     "Des adresses d'exception, rigoureusement sélectionnées\npour une clientèle qui n'accepte pas le compromis.",
 
-  /** CTA principal → /biens */
-  cta_primary: "Découvrir la sélection",
+  /** CTA principal → /biens (intention "preneur") */
+  cta_primary: "Je cherche un local",
 
-  /** CTA secondaire → /contact */
-  cta_secondary: "Prendre contact",
+  /** CTA secondaire → /proposer-bien (intention "bailleur") */
+  cta_secondary: "J'ai un local à confier",
+
+  /** Lien tertiaire → /contact */
+  cta_tertiary: "Prendre contact",
 
   /** Label de l'indicateur de défilement */
   scroll_label: "Défiler",
@@ -51,6 +54,8 @@ export const MANIFESTE_CONTENT = {
     { value: "20",   line1: "Arrondissements",  line2: "couverts"      },
     { value: "98%",  line1: "Clients",          line2: "satisfaits"    },
   ],
+  /** Date d'arrêté des chiffres — affichée en caption sous la grille */
+  stats_caption: "Chiffres arrêtés au 1er mai 2026",
 
   /** Trois piliers d'engagement */
   commitments: [

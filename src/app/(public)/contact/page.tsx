@@ -14,6 +14,9 @@ export default function ContactPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
+  // Progressive disclosure: hide identity/phone fields until the visitor
+  // chooses to share them. Keeps the form to 3 fields by default.
+  const [extraFields, setExtraFields] = useState(false);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -41,12 +44,13 @@ export default function ContactPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: formData.get("firstName"),
-          lastName: formData.get("lastName"),
           email: formData.get("email"),
-          phone: formData.get("phone"),
-          company: formData.get("company"),
           message: formData.get("message"),
+          firstName: formData.get("firstName") || undefined,
+          lastName: formData.get("lastName") || undefined,
+          phone: formData.get("phone") || undefined,
+          company: formData.get("company") || undefined,
+          source: "contact-page",
         }),
       });
 
@@ -66,15 +70,16 @@ export default function ContactPage() {
 
   return (
     <>
-      <section className="bg-gradient-to-b from-white to-brand-50 py-12">
+      <section className="bg-gradient-to-b from-white to-brand-50 py-12 dark:from-anthracite-950 dark:to-anthracite-900">
         <div className="container-page">
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-medium uppercase tracking-widest text-brand-600">
+            <p className="text-sm font-medium uppercase tracking-widest text-brand-600 dark:text-brand-400">
               Contact
             </p>
             <h1 className="heading-display mt-2">Contactez-nous</h1>
-            <p className="mt-4 text-lg text-anthracite-500">
-              Une question, un projet ? Notre équipe est à votre écoute.
+            <p className="mt-4 text-lg text-anthracite-500 dark:text-stone-400">
+              Une question, un projet ? Notre équipe est à votre écoute —
+              réponse sous 24 h ouvrées.
             </p>
           </div>
         </div>
@@ -84,13 +89,13 @@ export default function ContactPage() {
         <div className="container-page">
           <div className="mx-auto max-w-2xl">
             {success ? (
-              <div className="rounded-premium border border-emerald-200 bg-emerald-50 p-8 text-center">
-                <h3 className="text-lg font-semibold text-emerald-800">
+              <div className="rounded-premium border border-emerald-200 bg-emerald-50 p-8 text-center dark:border-emerald-700/50 dark:bg-emerald-900/30">
+                <h2 className="text-lg font-semibold text-emerald-800 dark:text-emerald-200">
                   Message envoyé avec succès
-                </h3>
-                <p className="mt-2 text-sm text-emerald-600">
+                </h2>
+                <p className="mt-2 text-sm text-emerald-600 dark:text-emerald-300">
                   Nous avons bien reçu votre message. Notre équipe vous
-                  recontactera dans les plus brefs délais.
+                  recontactera sous 24 h ouvrées.
                 </p>
                 <Button
                   variant="outline"
@@ -103,51 +108,20 @@ export default function ContactPage() {
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {error && (
-                  <div className="rounded-premium border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                  <div className="rounded-premium border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">
                     {error}
                   </div>
                 )}
 
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    label="Prénom"
-                    required
-                    placeholder="Votre prénom"
-                  />
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    label="Nom"
-                    required
-                    placeholder="Votre nom"
-                  />
-                </div>
-
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    label="Email"
-                    required
-                    placeholder="votre@email.com"
-                  />
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    label="Téléphone"
-                    placeholder="01 00 00 00 00"
-                  />
-                </div>
-
+                {/* ── Required core ── */}
                 <Input
-                  id="company"
-                  name="company"
-                  label="Société / Enseigne"
-                  placeholder="Nom de votre société (facultatif)"
+                  id="email"
+                  name="email"
+                  type="email"
+                  label="Email"
+                  required
+                  autoComplete="email"
+                  placeholder="votre@email.fr"
                 />
 
                 <Textarea
@@ -155,9 +129,57 @@ export default function ContactPage() {
                   name="message"
                   label="Message"
                   required
-                  placeholder="Décrivez votre demande..."
+                  minLength={10}
+                  placeholder="Décrivez votre demande (local recherché, surface, quartier, projet de cession…)"
                   rows={5}
                 />
+
+                {/* ── Progressive disclosure: identity & phone ── */}
+                {extraFields ? (
+                  <div className="space-y-6 rounded-premium border border-stone-200 bg-stone-50/50 p-5 dark:border-anthracite-800 dark:bg-anthracite-900/40">
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      <Input
+                        id="firstName"
+                        name="firstName"
+                        label="Prénom"
+                        placeholder="Votre prénom"
+                        autoComplete="given-name"
+                      />
+                      <Input
+                        id="lastName"
+                        name="lastName"
+                        label="Nom"
+                        placeholder="Votre nom"
+                        autoComplete="family-name"
+                      />
+                    </div>
+                    <div className="grid gap-6 sm:grid-cols-2">
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        label="Téléphone"
+                        placeholder="01 00 00 00 00"
+                        autoComplete="tel"
+                      />
+                      <Input
+                        id="company"
+                        name="company"
+                        label="Société / Enseigne"
+                        placeholder="Facultatif"
+                        autoComplete="organization"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setExtraFields(true)}
+                    className="text-sm font-medium text-brand-600 underline underline-offset-4 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                  >
+                    + Vous préférez être rappelé ? Ajouter nom & téléphone
+                  </button>
+                )}
 
                 {/* Honeypot */}
                 <div className="hidden" aria-hidden="true">
@@ -177,13 +199,12 @@ export default function ContactPage() {
                     pour traiter ma demande, conformément à la{" "}
                     <Link
                       href="/politique-confidentialite"
-                      className="text-brand-600 underline hover:text-brand-700"
+                      className="text-brand-600 underline hover:text-brand-700 dark:text-brand-400"
                     >
                       politique de confidentialité
                     </Link>
-                    . Les données marquées d&apos;un astérisque sont
-                    obligatoires. Vous disposez d&apos;un droit d&apos;accès, de
-                    rectification et de suppression de vos données.
+                    . Vous disposez d&apos;un droit d&apos;accès, de rectification
+                    et de suppression de vos données.
                   </span>
                 </label>
 
