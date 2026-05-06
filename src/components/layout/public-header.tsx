@@ -70,31 +70,6 @@ export function PublicHeader({
           : "bg-white/80 backdrop-blur-sm border-b border-stone-100/50 dark:bg-anthracite-900/80 dark:border-stone-800/50",
       )}
     >
-      {/* ── Top strip — ultra-thin luxury identity line ── */}
-      <div className="hidden lg:block border-b border-stone-100/70 dark:border-stone-800/70">
-        <div className="mx-auto max-w-7xl px-8">
-          <div className="flex items-center justify-between py-2">
-            <p className="font-sans text-[9px] tracking-[0.45em] uppercase text-stone-400 dark:text-stone-500">
-              Paris &amp; Île-de-France &nbsp;·&nbsp; Immobilier d&apos;exception
-            </p>
-            <div className="flex items-center gap-6">
-              {user ? (
-                <span className="font-sans text-[9px] tracking-[0.3em] uppercase text-stone-400 dark:text-stone-500">
-                  Espace client
-                </span>
-              ) : (
-                <Link
-                  href="/login"
-                  className="font-sans text-[9px] tracking-[0.3em] uppercase text-stone-400 hover:text-anthracite-700 transition-colors dark:text-stone-500 dark:hover:text-stone-300"
-                >
-                  Se connecter
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* ── Main nav ── */}
       <nav className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="flex items-center justify-between py-4 lg:py-5">
@@ -185,14 +160,23 @@ export function PublicHeader({
                 )}
               </div>
             ) : (
-              /* Guest — minimal icon link on mobile, hidden on desktop (top strip handles it) */
-              <Link
-                href="/login"
-                className="flex items-center gap-1.5 lg:hidden text-stone-500 hover:text-anthracite-900 transition-colors dark:text-stone-400 dark:hover:text-stone-100"
-                aria-label="Se connecter"
-              >
-                <UserIcon className="h-5 w-5" />
-              </Link>
+              <>
+                {/* Desktop — discreet login link */}
+                <Link
+                  href="/login"
+                  className="hidden lg:inline-flex items-center font-sans text-[10px] tracking-[0.3em] uppercase text-stone-500 transition-colors hover:text-anthracite-900 dark:text-stone-400 dark:hover:text-stone-100"
+                >
+                  Se connecter
+                </Link>
+                {/* Mobile — minimal icon */}
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1.5 lg:hidden text-stone-500 hover:text-anthracite-900 transition-colors dark:text-stone-400 dark:hover:text-stone-100"
+                  aria-label="Se connecter"
+                >
+                  <UserIcon className="h-5 w-5" />
+                </Link>
+              </>
             )}
 
             {/* Mobile hamburger */}
