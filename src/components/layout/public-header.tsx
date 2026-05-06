@@ -11,8 +11,7 @@ export interface PublicHeaderUser {
   role: string;
 }
 
-const navLinks = [
-  { href: "/biens",          label: "Biens" },
+const baseNavLinks = [
   { href: "/agence",         label: "Services" },
   { href: "/recherche-local",label: "Expertise" },
   { href: "/contact",        label: "Contact" },
@@ -26,7 +25,16 @@ function UserIcon({ className }: { className?: string }) {
   );
 }
 
-export function PublicHeader({ user }: { user?: PublicHeaderUser | null }) {
+export function PublicHeader({
+  user,
+  showProperties = false,
+}: {
+  user?: PublicHeaderUser | null;
+  showProperties?: boolean;
+}) {
+  const navLinks = showProperties
+    ? [{ href: "/biens", label: "Biens" }, ...baseNavLinks]
+    : baseNavLinks;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen,   setUserMenuOpen]   = useState(false);
   const [scrolled,       setScrolled]       = useState(false);

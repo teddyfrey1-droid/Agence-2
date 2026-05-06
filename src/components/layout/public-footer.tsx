@@ -4,8 +4,11 @@ import { Logo } from "@/components/ui/logo";
 import { FooterCookieLink } from "@/components/footer-cookie-link";
 import { getAgencyInfo } from "@/lib/agency";
 
-export async function PublicFooter() {
+export async function PublicFooter({
+  showProperties: showPropertiesProp,
+}: { showProperties?: boolean } = {}) {
   const agency = await getAgencyInfo();
+  const showProperties = showPropertiesProp ?? agency.showPublicProperties;
   const displayName = agency.name || APP_NAME;
   const phone = agency.phone || "01 00 00 00 00";
   const email = agency.email || "contact@retailavenue.fr";
@@ -41,7 +44,7 @@ export async function PublicFooter() {
             </h4>
             <ul className="mt-4 space-y-2.5">
               {[
-                { href: "/biens", label: "Nos biens" },
+                ...(showProperties ? [{ href: "/biens", label: "Nos biens" }] : []),
                 { href: "/agence", label: "Nos services" },
                 { href: "/recherche-local", label: "Rechercher un bien" },
                 { href: "/proposer-bien", label: "Proposer un bien" },

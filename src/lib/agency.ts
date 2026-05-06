@@ -25,6 +25,7 @@ export type AgencyInfo = {
   publicationDirector: string | null;
   mediator: string | null;
   dpoContact: string | null;
+  showPublicProperties: boolean;
 };
 
 const FALLBACK: AgencyInfo = {
@@ -51,6 +52,7 @@ const FALLBACK: AgencyInfo = {
   publicationDirector: null,
   mediator: null,
   dpoContact: null,
+  showPublicProperties: false,
 };
 
 /**
@@ -98,6 +100,7 @@ export async function getAgencyInfo(): Promise<AgencyInfo> {
       publicationDirector: agency.publicationDirector,
       mediator: agency.mediator,
       dpoContact: agency.dpoContact,
+      showPublicProperties: agency.showPublicProperties ?? false,
     };
   } catch {
     return FALLBACK;

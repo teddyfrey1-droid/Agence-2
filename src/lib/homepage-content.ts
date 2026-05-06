@@ -22,8 +22,8 @@ export const HERO_CONTENT = {
   tagline:
     "Des adresses d'exception, rigoureusement sélectionnées\npour une clientèle qui n'accepte pas le compromis.",
 
-  /** CTA principal → /biens */
-  cta_primary: "Découvrir la sélection",
+  /** CTA principal — page de recherche sur-mesure */
+  cta_primary: "Demander une recherche",
 
   /** CTA secondaire → /contact */
   cta_secondary: "Prendre contact",
@@ -46,8 +46,8 @@ export const MANIFESTE_CONTENT = {
 
   /** Quatre chiffres-clés */
   stats: [
-    { value: "6+",   line1: "Années",          line2: "d'excellence"  },
-    { value: "120+", line1: "Transactions",     line2: "réalisées"     },
+    { value: "5+",   line1: "Années",          line2: "d'expérience"  },
+    { value: "200",  line1: "Transactions",     line2: "réalisées"     },
     { value: "20",   line1: "Arrondissements",  line2: "couverts"      },
     { value: "98%",  line1: "Clients",          line2: "satisfaits"    },
   ],
@@ -131,7 +131,7 @@ export const CONTACT_CONTENT = {
     "Chaque projet mérite une attention singulière. Notre équipe vous répond avec la discrétion et l'excellence qui vous sont dues — sous 24 heures.",
 
   cta_primary: "Prendre Contact",
-  cta_secondary: "Parcourir la sélection",
+  cta_secondary: "Confier une recherche",
 
   contact_overline: "Ou contactez-nous directement",
 
