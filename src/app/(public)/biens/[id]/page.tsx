@@ -175,6 +175,20 @@ export default async function PropertyDetailPage({
     notFound();
   }
 
+  // Live "interest" signal — count active matches positioned on this
+  // property in the last 14 days (suggested or qualified). Only surfaced
+  // above a threshold so a quiet listing doesn't broadcast "0 candidats".
+  const SCARCITY_THRESHOLD = 5;
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const activeInterestCount = await prisma.match.count({
+    where: {
+      propertyId: property.id,
+      status: { in: ["SUGGERE", "EN_VISITE", "RETENU"] },
+      createdAt: { gte: fourteenDaysAgo },
+    },
+  });
+  const showScarcity = activeInterestCount >= SCARCITY_THRESHOLD;
+
   const features = [
     property.hasExtraction && "Extraction",
     property.hasTerrace && "Terrasse",
@@ -452,6 +466,26 @@ export default async function PropertyDetailPage({
                   Demander un mandat
                 </Link>
               </div>
+
+              {/* Live interest signal — only when above threshold */}
+              {showScarcity && (
+                <div
+                  className="border-t border-stone-200/70 bg-amber-50/70 px-6 py-3 dark:border-anthracite-800 dark:bg-amber-900/20"
+                  role="status"
+                  aria-label={`${activeInterestCount} candidats positionnés sur ce bien`}
+                >
+                  <p className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-amber-800 dark:text-amber-300">
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500"
+                    />
+                    {activeInterestCount} candidats positionnés
+                    <span className="font-normal normal-case tracking-normal text-amber-700/80 dark:text-amber-400/80">
+                      · 14 derniers jours
+                    </span>
+                  </p>
+                </div>
+              )}
 
               {/* Reassurance footnote */}
               <div className="border-t border-stone-200/70 bg-stone-50/50 px-6 py-4 dark:border-anthracite-800 dark:bg-anthracite-800/30">

@@ -12,6 +12,11 @@ const isDev = process.env.NODE_ENV !== "production";
  * Build a strict CSP using a per-request nonce + 'strict-dynamic'.
  * Modern browsers ignore 'unsafe-inline' when a nonce is present, so we
  * keep it only as a fallback for legacy browsers (CSP3 spec).
+ *
+ * Cloudflare Turnstile (`challenges.cloudflare.com`) is whitelisted on
+ * script-src / frame-src / connect-src — only loaded when the site key
+ * env var is set, but the directive must be present so the browser can
+ * fetch the API JS even before the widget mounts.
  */
 function buildCspWithNonce(nonce: string): string {
   const directives: Record<string, string[]> = {
@@ -22,6 +27,7 @@ function buildCspWithNonce(nonce: string): string {
       "'strict-dynamic'",
       // Legacy fallback — ignored when nonce + strict-dynamic are honored
       "'unsafe-inline'",
+      "https://challenges.cloudflare.com",
       ...(isDev ? ["'unsafe-eval'"] : []),
     ],
     "style-src": ["'self'", "'unsafe-inline'"],
@@ -39,8 +45,10 @@ function buildCspWithNonce(nonce: string): string {
       "https://*.supabase.co",
       "https://*.tile.openstreetmap.org",
       "https://*.basemaps.cartocdn.com",
+      "https://challenges.cloudflare.com",
       ...(isDev ? ["ws:", "wss:"] : []),
     ],
+    "frame-src": ["'self'", "https://challenges.cloudflare.com"],
     "worker-src": ["'self'", "blob:"],
     "frame-ancestors": ["'none'"],
     "base-uri": ["'self'"],

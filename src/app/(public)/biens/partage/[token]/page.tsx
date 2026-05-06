@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { formatPrice, formatSurface, formatDate } from "@/lib/utils";
@@ -87,13 +88,15 @@ export default async function SharedPropertyPage({
 
         <div className="grid gap-10 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <div className="aspect-[16/9] overflow-hidden rounded-premium bg-stone-100">
+            <div className="relative aspect-[16/9] overflow-hidden rounded-premium bg-stone-100">
               {photos.length > 0 ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={photos[0].url}
                   alt={property.title}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="(min-width: 1024px) 66vw, 100vw"
+                  className="object-cover"
+                  priority
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-stone-300">
@@ -107,13 +110,16 @@ export default async function SharedPropertyPage({
             {photos.length > 1 && (
               <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
                 {photos.slice(1, 8).map((p) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={p.id}
-                    src={p.url}
-                    alt={p.title || property.title}
-                    className="aspect-[4/3] h-auto w-full rounded-lg object-cover"
-                  />
+                  <div key={p.id} className="relative aspect-[4/3] overflow-hidden rounded-lg">
+                    <Image
+                      src={p.url}
+                      alt={p.title || property.title}
+                      fill
+                      sizes="(min-width: 640px) 16vw, 33vw"
+                      className="object-cover"
+                      loading="lazy"
+                    />
+                  </div>
                 ))}
               </div>
             )}

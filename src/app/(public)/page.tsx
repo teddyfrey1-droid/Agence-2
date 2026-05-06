@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
@@ -12,6 +13,44 @@ import {
   CONTACT_CONTENT,
 } from "@/lib/homepage-content";
 import { InlineContactForm } from "@/components/inline-contact-form";
+
+const SITE_URL = process.env.APP_URL || "https://retail-avenue.fr";
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "Retail Avenue",
+  url: SITE_URL,
+  inLanguage: "fr-FR",
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${SITE_URL}/biens?q={search_term_string}`,
+    "query-input": "required name=search_term_string",
+  },
+};
+
+const realEstateAgentJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "RealEstateAgent",
+  "@id": `${SITE_URL}/#agent`,
+  name: "Retail Avenue",
+  url: SITE_URL,
+  image: `${SITE_URL}/hero-paris.jpg`,
+  description:
+    "Agence d'immobilier commercial à Paris : sélection sur-mesure, expertise terrain, accompagnement intégré.",
+  areaServed: {
+    "@type": "City",
+    name: "Paris",
+    "@id": "https://www.wikidata.org/wiki/Q90",
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Paris",
+    addressCountry: "FR",
+  },
+  priceRange: "€€€",
+  sameAs: [],
+};
 
 // Refresh featured properties at most every 5 min — the home page reads
 // from Postgres on render, ISR avoids a DB round-trip on every visit.
@@ -60,8 +99,22 @@ export default async function HomePage() {
   const secondary = rest.slice(0, 2);
   const tertiary  = rest.slice(2, 6);
 
+  // CSP nonce (set by middleware) — required for inline <script> tags
+  // because we serve a strict CSP with 'strict-dynamic'.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        nonce={nonce}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(realEstateAgentJsonLd) }}
+      />
       {/* ══════════════════════════════════════════════
           § 1 — HERO
           Full-viewport entrance. All text must read

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { handlePublicPropertyProposal } from "@/modules/contacts";
+import { applyRateLimit, getClientIp, PUBLIC_FORM_RATE_LIMIT } from "@/lib/rate-limit";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 const schema = z.object({
   firstName: z.string().min(1),
@@ -15,11 +17,33 @@ const schema = z.object({
   surface: z.number().positive().optional(),
   price: z.number().positive().optional(),
   description: z.string().optional(),
+  /** Anti-spam — must be empty */
+  honeypot: z.string().max(0).optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting: 5 submissions per minute per IP — was missing.
+    const rateLimited = await applyRateLimit(
+      "properties-public",
+      request.headers,
+      PUBLIC_FORM_RATE_LIMIT
+    );
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
+
+    // Turnstile gate — only enforced when TURNSTILE_SECRET is set.
+    const turnstileToken =
+      body?.["cf-turnstile-response"] ?? body?.turnstileToken;
+    const turn = await verifyTurnstile(turnstileToken, getClientIp(request.headers));
+    if (!turn.success) {
+      return NextResponse.json(
+        { error: "Vérification anti-bot échouée. Réessayez." },
+        { status: 400 }
+      );
+    }
+
     const parsed = schema.safeParse(body);
 
     if (!parsed.success) {
@@ -27,6 +51,11 @@ export async function POST(request: NextRequest) {
         { error: "Données invalides", details: parsed.error.flatten() },
         { status: 400 }
       );
+    }
+
+    // Honeypot — silent accept (don't reveal the trap)
+    if (parsed.data.honeypot) {
+      return NextResponse.json({ success: true });
     }
 
     const result = await handlePublicPropertyProposal(parsed.data);

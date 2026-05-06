@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { TurnstileWidget } from "@/components/turnstile-widget";
 import {
   PROPERTY_TYPE_LABELS,
   TRANSACTION_TYPE_LABELS,
@@ -32,6 +33,7 @@ export default function RechercheLocalPage() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedDistricts, setSelectedDistricts] = useState<string[]>([]);
   const [consent, setConsent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
 
   function toggleType(type: string) {
     setSelectedTypes((prev) =>
@@ -101,6 +103,7 @@ export default function RechercheLocalPage() {
             : undefined,
           districts: selectedDistricts,
           description: formData.get("description"),
+          "cf-turnstile-response": turnstileToken || undefined,
         }),
       });
 
@@ -282,6 +285,11 @@ export default function RechercheLocalPage() {
                 <div className="hidden" aria-hidden="true">
                   <input type="text" name="website" tabIndex={-1} autoComplete="off" />
                 </div>
+
+                <TurnstileWidget
+                  onVerify={setTurnstileToken}
+                  onExpire={() => setTurnstileToken("")}
+                />
 
                 <label className="flex items-start gap-3 text-sm text-anthracite-600 dark:text-stone-300">
                   <input
