@@ -8,6 +8,8 @@ import { getAgencyInfo } from "@/lib/agency";
 import { HomeContactForm } from "@/components/home-contact-form";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { AnimatedCounter } from "@/components/animated-counter";
+import { ServicesCarousel } from "@/components/services-carousel";
+import { SectionJumpNav } from "@/components/section-jump-nav";
 import {
   HERO_CONTENT,
   MANIFESTE_CONTENT,
@@ -202,7 +204,7 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           § 2 — MANIFESTE
       ══════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-white py-32 sm:py-40 dark:bg-anthracite-950">
+      <section id="manifeste" className="relative overflow-hidden bg-white py-32 sm:py-40 dark:bg-anthracite-950">
         {/* Ambient drifting orbs */}
         <div
           aria-hidden
@@ -444,7 +446,7 @@ export default async function HomePage() {
           § 3-bis — RECHERCHE SUR-MESURE (replaces selection when off)
       ══════════════════════════════════════════════ */}
       {!showProperties && (
-        <section className="relative overflow-hidden bg-stone-50 py-28 sm:py-36 dark:bg-anthracite-900">
+        <section id="recherche" className="relative overflow-hidden bg-stone-50 py-28 sm:py-36 dark:bg-anthracite-900">
           {/* Soft brand glow */}
           <div
             aria-hidden
@@ -593,9 +595,9 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           § 4 — SAVOIR-FAIRE
       ══════════════════════════════════════════════ */}
-      <section className="bg-white py-24 sm:py-32 dark:bg-anthracite-950">
+      <section id="savoir-faire" className="relative overflow-hidden bg-white py-24 sm:py-32 dark:bg-anthracite-950">
         <div className="mx-auto max-w-7xl px-6">
-          <ScrollReveal variant="up" className="mb-20 block">
+          <ScrollReveal variant="up" className="mb-16 block">
             <div className="flex items-center gap-4">
               <span className="rule-brand" />
               <p className="label-overline">{SAVOIR_FAIRE_CONTENT.overline}</p>
@@ -607,32 +609,14 @@ export default async function HomePage() {
             </h2>
           </ScrollReveal>
 
-          <div className="grid grid-cols-1 border-t border-stone-200 sm:grid-cols-2 lg:grid-cols-4 dark:border-stone-800">
-            {SAVOIR_FAIRE_CONTENT.services.map((service, i) => (
-              <ScrollReveal
-                key={service.title}
-                variant="up"
-                delay={i * 110}
-                className={`group relative py-12 pr-6 transition-colors duration-500 hover:bg-stone-50 dark:hover:bg-anthracite-900/40 ${
-                  i > 0 ? "sm:pl-8 sm:border-l border-stone-200 dark:border-stone-800" : "sm:pl-2"
-                }`}
-              >
-                <p
-                  className="font-serif text-6xl font-normal leading-none transition-colors duration-500 group-hover:text-brand-400"
-                  style={{ color: "#e8dfd2" }}
-                >
-                  {service.num}
-                </p>
-                <h3 className="mt-7 font-serif text-xl font-semibold text-anthracite-900 transition-colors duration-500 group-hover:text-brand-700 dark:text-stone-100 dark:group-hover:text-brand-400">
-                  {service.title}
-                </h3>
-                <span className="rule-brand mt-5 origin-left transition-transform duration-500 group-hover:scale-x-[2.5]" />
-                <p className="mt-5 font-sans text-sm leading-relaxed text-stone-600 dark:text-stone-300">
-                  {service.description}
-                </p>
-              </ScrollReveal>
-            ))}
-          </div>
+        </div>
+
+        {/* Carousel — full-bleed */}
+        <ScrollReveal variant="fade" className="block">
+          <ServicesCarousel services={SAVOIR_FAIRE_CONTENT.services} />
+        </ScrollReveal>
+
+        <div className="mx-auto max-w-7xl px-6">
 
           <div className="mt-16 border-t border-stone-200 pt-10 dark:border-stone-800">
             <Link
@@ -651,7 +635,7 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           § 5 — PRISE DE CONTACT
       ══════════════════════════════════════════════ */}
-      <section className="relative overflow-hidden bg-anthracite-950 py-40 sm:py-48">
+      <section id="contact" className="relative overflow-hidden bg-anthracite-950 py-40 sm:py-48">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.05]"
@@ -711,6 +695,8 @@ export default async function HomePage() {
           </ScrollReveal>
         </div>
       </section>
+
+      <SectionJumpNav />
     </>
   );
 }
