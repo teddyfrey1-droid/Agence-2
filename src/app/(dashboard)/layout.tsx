@@ -12,6 +12,7 @@ import { OnboardingTour } from "@/components/onboarding-tour";
 import { AchievementToaster } from "@/components/achievement-toaster";
 import { ScheduledDarkMode } from "@/components/scheduled-dark-mode";
 import { OfflineSync } from "@/components/offline-sync";
+import { IOSInstallPrompt } from "@/components/ios-install-prompt";
 
 export default async function DashboardLayout({
   children,
@@ -79,6 +80,7 @@ export default async function DashboardLayout({
           <AchievementToaster />
           <ScheduledDarkMode />
           <OfflineSync />
+          <IOSInstallPrompt />
         </div>
       </div>
     </SidebarProvider>

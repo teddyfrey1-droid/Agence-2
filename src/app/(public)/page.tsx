@@ -6,6 +6,8 @@ import { formatPrice, formatSurface } from "@/lib/utils";
 import { PROPERTY_TYPE_LABELS } from "@/lib/constants";
 import { getAgencyInfo } from "@/lib/agency";
 import { HomeContactForm } from "@/components/home-contact-form";
+import { ScrollReveal } from "@/components/scroll-reveal";
+import { AnimatedCounter } from "@/components/animated-counter";
 import {
   HERO_CONTENT,
   MANIFESTE_CONTENT,
@@ -200,9 +202,21 @@ export default async function HomePage() {
       {/* ══════════════════════════════════════════════
           § 2 — MANIFESTE
       ══════════════════════════════════════════════ */}
-      <section className="bg-white py-32 sm:py-40 dark:bg-anthracite-950">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="text-center">
+      <section className="relative overflow-hidden bg-white py-32 sm:py-40 dark:bg-anthracite-950">
+        {/* Ambient drifting orbs */}
+        <div
+          aria-hidden
+          className="animate-drift-a pointer-events-none absolute -left-32 top-20 h-96 w-96 rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, rgba(212,184,122,0.10) 0%, transparent 70%)" }}
+        />
+        <div
+          aria-hidden
+          className="animate-drift-b pointer-events-none absolute -right-40 bottom-10 h-[28rem] w-[28rem] rounded-full blur-3xl"
+          style={{ background: "radial-gradient(circle, rgba(163,129,90,0.08) 0%, transparent 70%)" }}
+        />
+
+        <div className="relative mx-auto max-w-6xl px-6">
+          <ScrollReveal variant="fade" className="text-center">
             <div className="line-vertical mx-auto mb-16 h-20" />
 
             {MANIFESTE_CONTENT.quote_italic.split("\n").map((line, i) => (
@@ -222,41 +236,58 @@ export default async function HomePage() {
             <p className="mx-auto mt-10 max-w-2xl font-sans text-base leading-loose text-stone-600 dark:text-stone-300">
               {MANIFESTE_CONTENT.description}
             </p>
-          </div>
+          </ScrollReveal>
 
           {/* Stats row */}
           <div className="mt-28 grid grid-cols-2 border-t border-stone-200 md:grid-cols-4 dark:border-stone-800">
-            {MANIFESTE_CONTENT.stats.map((stat, i) => (
-              <div
-                key={stat.line1}
-                className={`px-4 py-12 text-center ${
-                  i > 0 ? "border-l border-stone-200 dark:border-stone-800" : ""
-                }`}
-              >
-                <p className="font-serif text-5xl font-normal text-anthracite-900 lg:text-6xl dark:text-stone-100">
-                  {stat.value}
-                </p>
-                <p className="mt-4 font-sans text-[10px] tracking-[0.3em] uppercase text-stone-500 dark:text-stone-400">
-                  {stat.line1}
-                  <br />
-                  {stat.line2}
-                </p>
-              </div>
-            ))}
+            {MANIFESTE_CONTENT.stats.map((stat, i) => {
+              const match = /^(\D*)(\d+)(\D*)$/.exec(stat.value);
+              const prefix = match?.[1] ?? "";
+              const num = match ? parseInt(match[2], 10) : 0;
+              const suffix = match?.[3] ?? "";
+              return (
+                <ScrollReveal
+                  key={stat.line1}
+                  variant="up"
+                  delay={i * 120}
+                  className={`px-4 py-12 text-center ${
+                    i > 0 ? "border-l border-stone-200 dark:border-stone-800" : ""
+                  }`}
+                >
+                  <p className="font-serif text-5xl font-normal text-anthracite-900 lg:text-6xl dark:text-stone-100">
+                    {match ? (
+                      <AnimatedCounter value={num} prefix={prefix} suffix={suffix} />
+                    ) : (
+                      stat.value
+                    )}
+                  </p>
+                  <p className="mt-4 font-sans text-[10px] tracking-[0.3em] uppercase text-stone-500 dark:text-stone-400">
+                    {stat.line1}
+                    <br />
+                    {stat.line2}
+                  </p>
+                </ScrollReveal>
+              );
+            })}
           </div>
 
           {/* Commitment pillars */}
           <div className="mt-24 grid grid-cols-1 gap-14 border-t border-stone-200 pt-20 md:grid-cols-3 dark:border-stone-800">
-            {MANIFESTE_CONTENT.commitments.map((item) => (
-              <div key={item.title}>
-                <h3 className="font-serif text-xl font-semibold text-anthracite-900 dark:text-stone-100">
+            {MANIFESTE_CONTENT.commitments.map((item, i) => (
+              <ScrollReveal
+                key={item.title}
+                variant="up"
+                delay={i * 140}
+                className="lift-card group"
+              >
+                <h3 className="font-serif text-xl font-semibold text-anthracite-900 transition-colors duration-500 group-hover:text-brand-700 dark:text-stone-100 dark:group-hover:text-brand-400">
                   {item.title}
                 </h3>
-                <span className="rule-brand mt-5" />
+                <span className="rule-brand mt-5 origin-left transition-transform duration-500 group-hover:scale-x-[2.5]" />
                 <p className="mt-5 font-sans text-sm leading-relaxed text-stone-600 dark:text-stone-300">
                   {item.description}
                 </p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
@@ -428,7 +459,7 @@ export default async function HomePage() {
 
           <div className="relative mx-auto grid max-w-7xl gap-16 px-6 lg:grid-cols-2 lg:items-center">
             {/* Left — copy */}
-            <div>
+            <ScrollReveal variant="left">
               <div className="flex items-center gap-4">
                 <span className="rule-brand" />
                 <p className="label-overline">Recherche Sur-Mesure</p>
@@ -491,10 +522,10 @@ export default async function HomePage() {
                   Vous avez un bien à proposer ?
                 </Link>
               </div>
-            </div>
+            </ScrollReveal>
 
             {/* Right — visual frame */}
-            <div className="relative hidden lg:block">
+            <ScrollReveal variant="right" delay={150} className="relative hidden lg:block">
               <div className="relative aspect-[4/5] w-full overflow-hidden border border-stone-200 dark:border-stone-800">
                 <Image
                   src="/hero-paris.jpg"
@@ -518,9 +549,9 @@ export default async function HomePage() {
                 </div>
               </div>
               {/* Decorative gold corner */}
-              <div className="absolute -bottom-4 -right-4 h-24 w-24 border-b border-r border-champagne-400" />
-              <div className="absolute -top-4 -left-4 h-24 w-24 border-l border-t border-champagne-400" />
-            </div>
+              <div className="animate-float absolute -bottom-4 -right-4 h-24 w-24 border-b border-r border-champagne-400" />
+              <div className="animate-float absolute -top-4 -left-4 h-24 w-24 border-l border-t border-champagne-400" style={{ animationDelay: "1.5s" }} />
+            </ScrollReveal>
           </div>
         </section>
       )}
@@ -530,7 +561,7 @@ export default async function HomePage() {
       ══════════════════════════════════════════════ */}
       <section className="bg-white py-24 sm:py-32 dark:bg-anthracite-950">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="mb-20">
+          <ScrollReveal variant="up" className="mb-20 block">
             <div className="flex items-center gap-4">
               <span className="rule-brand" />
               <p className="label-overline">{SAVOIR_FAIRE_CONTENT.overline}</p>
@@ -540,27 +571,32 @@ export default async function HomePage() {
               <br />
               {SAVOIR_FAIRE_CONTENT.title_line2}
             </h2>
-          </div>
+          </ScrollReveal>
 
           <div className="grid grid-cols-1 border-t border-stone-200 sm:grid-cols-2 lg:grid-cols-4 dark:border-stone-800">
             {SAVOIR_FAIRE_CONTENT.services.map((service, i) => (
-              <div
+              <ScrollReveal
                 key={service.title}
-                className={`py-12 pr-6 ${
-                  i > 0 ? "sm:pl-8 sm:border-l border-stone-200 dark:border-stone-800" : ""
+                variant="up"
+                delay={i * 110}
+                className={`group relative py-12 pr-6 transition-colors duration-500 hover:bg-stone-50 dark:hover:bg-anthracite-900/40 ${
+                  i > 0 ? "sm:pl-8 sm:border-l border-stone-200 dark:border-stone-800" : "sm:pl-2"
                 }`}
               >
-                <p className="font-serif text-6xl font-normal leading-none" style={{ color: "#e8dfd2" }}>
+                <p
+                  className="font-serif text-6xl font-normal leading-none transition-colors duration-500 group-hover:text-brand-400"
+                  style={{ color: "#e8dfd2" }}
+                >
                   {service.num}
                 </p>
-                <h3 className="mt-7 font-serif text-xl font-semibold text-anthracite-900 dark:text-stone-100">
+                <h3 className="mt-7 font-serif text-xl font-semibold text-anthracite-900 transition-colors duration-500 group-hover:text-brand-700 dark:text-stone-100 dark:group-hover:text-brand-400">
                   {service.title}
                 </h3>
-                <span className="rule-brand mt-5" />
+                <span className="rule-brand mt-5 origin-left transition-transform duration-500 group-hover:scale-x-[2.5]" />
                 <p className="mt-5 font-sans text-sm leading-relaxed text-stone-600 dark:text-stone-300">
                   {service.description}
                 </p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
 
@@ -597,28 +633,34 @@ export default async function HomePage() {
         />
 
         <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
-          <p className="font-sans text-[10px] tracking-[0.55em] uppercase text-champagne-400">
-            {CONTACT_CONTENT.overline}
-          </p>
+          <ScrollReveal variant="fade">
+            <p className="font-sans text-[10px] tracking-[0.55em] uppercase text-champagne-400">
+              {CONTACT_CONTENT.overline}
+            </p>
+          </ScrollReveal>
 
-          <h2 className="mt-10 font-serif text-5xl font-normal italic leading-tight text-white sm:text-6xl lg:text-7xl">
-            {CONTACT_CONTENT.headline_italic}
-            <br />
-            <em className="not-italic font-semibold text-champagne-300">
-              {CONTACT_CONTENT.headline_bold}
-            </em>
-          </h2>
+          <ScrollReveal variant="up" delay={120}>
+            <h2 className="mt-10 font-serif text-5xl font-normal italic leading-tight text-white sm:text-6xl lg:text-7xl">
+              {CONTACT_CONTENT.headline_italic}
+              <br />
+              <em className="not-italic font-semibold text-champagne-300">
+                {CONTACT_CONTENT.headline_bold}
+              </em>
+            </h2>
+          </ScrollReveal>
 
           <div className="rule-gold mx-auto mt-10" />
 
-          <p className="mx-auto mt-10 max-w-xl font-sans text-base leading-loose text-stone-300">
-            {CONTACT_CONTENT.description}
-          </p>
+          <ScrollReveal variant="up" delay={240}>
+            <p className="mx-auto mt-10 max-w-xl font-sans text-base leading-loose text-stone-300">
+              {CONTACT_CONTENT.description}
+            </p>
+          </ScrollReveal>
 
           {/* Inline contact form */}
-          <div className="mx-auto mt-16 max-w-2xl text-left">
+          <ScrollReveal variant="up" delay={320} className="mx-auto mt-16 block max-w-2xl text-left">
             <HomeContactForm />
-          </div>
+          </ScrollReveal>
         </div>
       </section>
     </>

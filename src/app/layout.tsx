@@ -3,7 +3,6 @@ import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { PWARegister } from "@/components/pwa-register";
-import { IOSInstallPrompt } from "@/components/ios-install-prompt";
 import { CookieConsentProvider } from "@/components/cookie-consent";
 import "./globals.css";
 
@@ -55,7 +54,6 @@ export default function RootLayout({
               {children}
             </ToastProvider>
             <PWARegister />
-            <IOSInstallPrompt />
           </CookieConsentProvider>
         </ThemeProvider>
       </body>

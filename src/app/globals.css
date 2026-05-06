@@ -352,6 +352,57 @@
     animation: marquee-x 38s linear infinite;
   }
 
+  /* Soft float — for decorative dots / accents */
+  @keyframes float-soft {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+  }
+  .animate-float {
+    animation: float-soft 6s ease-in-out infinite;
+  }
+
+  /* Slow drift in random direction — for ambient gold orbs */
+  @keyframes drift-a {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50%      { transform: translate(24px,-18px) scale(1.05); }
+  }
+  @keyframes drift-b {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50%      { transform: translate(-30px,20px) scale(0.95); }
+  }
+  .animate-drift-a { animation: drift-a 14s ease-in-out infinite; }
+  .animate-drift-b { animation: drift-b 18s ease-in-out infinite; }
+
+  /* Editorial card lift — subtle, premium */
+  .lift-card {
+    @apply transition-all duration-500 ease-out;
+  }
+  .lift-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 60px -32px rgba(15, 16, 20, 0.35);
+  }
+
+  /* Animated gold underline — for editorial links */
+  .underline-grow {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    background-size: 0% 1px;
+    transition: background-size 600ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .underline-grow:hover {
+    background-size: 100% 1px;
+  }
+
+  /* Slow rotating conic glow — used as section accent */
+  @keyframes conic-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  .animate-conic {
+    animation: conic-spin 32s linear infinite;
+  }
+
   /* Slow ken-burns on hero photograph */
   @keyframes ken-burns {
     0%   { transform: scale(1) translate3d(0,0,0); }
