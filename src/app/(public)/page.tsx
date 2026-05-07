@@ -102,17 +102,17 @@ export default async function HomePage() {
               const annee = parts[1];
               return (
                 <div
-                  className="inline-flex items-center gap-3 sm:gap-5 border-y border-champagne-300/50 px-5 py-2.5 sm:px-7 sm:py-3 backdrop-blur-[1px]"
+                  className="inline-flex flex-col items-center gap-2.5 border-y border-champagne-300/55 px-7 py-3.5 backdrop-blur-[1px] sm:flex-row sm:gap-5 sm:px-8 sm:py-3"
                   style={{ textShadow: "0 1px 14px rgba(0,0,0,0.95)" }}
                 >
                   <span className="block h-1.5 w-1.5 rotate-45 bg-champagne-400" />
-                  <p className="font-serif text-base font-light tracking-[0.35em] uppercase text-white sm:text-lg md:text-xl">
+                  <p className="font-serif text-base font-light leading-none tracking-[0.32em] uppercase text-white sm:text-lg md:text-xl">
                     {lieu}
                   </p>
                   {annee && (
                     <>
-                      <span className="block h-px w-6 bg-champagne-400/80" />
-                      <p className="font-serif text-base italic font-light tracking-[0.2em] text-champagne-200 sm:text-lg md:text-xl">
+                      <span className="block h-px w-8 bg-champagne-400/80 sm:w-6" />
+                      <p className="font-serif text-sm font-light italic leading-none tracking-[0.25em] text-champagne-200 sm:text-lg md:text-xl">
                         {annee}
                       </p>
                     </>
