@@ -2,19 +2,18 @@
 
 import { useEffect, useState } from "react";
 
-type Section = { id: string; label: string; short: string };
+type Section = { id: string; label: string };
 
 const SECTIONS: Section[] = [
-  { id: "manifeste",    label: "Vision",       short: "Vis." },
-  { id: "savoir-faire", label: "Savoir-faire", short: "Sav." },
-  { id: "recherche",    label: "Recherche",    short: "Rech." },
-  { id: "contact",      label: "Contact",      short: "Cont." },
+  { id: "manifeste",    label: "Vision" },
+  { id: "savoir-faire", label: "Savoir-faire" },
+  { id: "recherche",    label: "Recherche" },
+  { id: "contact",      label: "Contact" },
 ];
 
 export function SectionJumpNav() {
   const [visible, setVisible] = useState(false);
   const [active, setActive] = useState<string | null>(null);
-  const [pulse, setPulse] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > 240);
@@ -22,14 +21,6 @@ export function SectionJumpNav() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  // Brief pulse the first time the nav appears, to draw attention
-  useEffect(() => {
-    if (!visible) return;
-    setPulse(true);
-    const t = setTimeout(() => setPulse(false), 2400);
-    return () => clearTimeout(t);
-  }, [visible]);
 
   useEffect(() => {
     const targets = SECTIONS.map((s) => document.getElementById(s.id)).filter(
@@ -57,31 +48,19 @@ export function SectionJumpNav() {
     el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
   }
 
+  // Sections rendered with always-dark backgrounds — labels need to flip light.
+  const onDarkSection = active === "contact";
+
   return (
     <nav
       aria-label="Navigation rapide"
-      className={`fixed right-3 top-1/2 z-40 -translate-y-1/2 transition-all duration-700 sm:right-4 ${
+      className={`fixed right-0 top-1/2 z-40 -translate-y-1/2 transition-all duration-700 ${
         visible
           ? "translate-x-0 opacity-100"
           : "pointer-events-none translate-x-3 opacity-0"
       }`}
     >
-      {/* Champagne halo — strengthens the pulse on appearance */}
-      <div
-        aria-hidden
-        className={`pointer-events-none absolute -inset-2 rounded-full bg-champagne-400/20 blur-2xl transition-opacity duration-700 ${
-          pulse ? "opacity-100" : "opacity-60"
-        }`}
-      />
-      {/* Outer pulsing ring — first impression only */}
-      {pulse && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-full ring-1 ring-champagne-400/60 animate-pulse-soft"
-        />
-      )}
-
-      <ul className="relative flex flex-col gap-1 rounded-full border border-stone-200 bg-white/90 p-1.5 shadow-[0_24px_60px_-30px_rgba(15,16,20,0.4)] backdrop-blur-xl dark:border-stone-700 dark:bg-anthracite-900/90">
+      <ul className="flex flex-col items-end gap-5 pr-3 sm:pr-5">
         {SECTIONS.map((s) => {
           const isActive = active === s.id;
           return (
@@ -91,24 +70,44 @@ export function SectionJumpNav() {
                 onClick={() => jumpTo(s.id)}
                 aria-label={s.label}
                 aria-current={isActive ? "true" : undefined}
-                className={`group relative flex w-full items-center gap-2 rounded-full px-3 py-2 font-sans text-[10px] font-semibold tracking-[0.25em] uppercase transition-all duration-500 sm:gap-2.5 sm:px-4 sm:tracking-[0.3em] ${
-                  isActive
-                    ? "bg-anthracite-900 text-champagne-300 shadow-[0_8px_22px_-10px_rgba(163,129,90,0.55)] dark:bg-champagne-500 dark:text-anthracite-900"
-                    : "text-stone-500 hover:bg-stone-100 hover:text-anthracite-900 dark:text-stone-400 dark:hover:bg-anthracite-800 dark:hover:text-stone-100"
-                }`}
+                className="group flex items-center gap-3 sm:gap-4"
               >
+                {/* Label — serif italic, elegant, theme-aware */}
                 <span
-                  aria-hidden
-                  className={`block h-1.5 w-1.5 flex-none rotate-45 transition-colors duration-500 ${
+                  className={`whitespace-nowrap font-serif italic transition-all duration-500 ${
                     isActive
-                      ? "bg-champagne-400 dark:bg-anthracite-900"
-                      : "bg-stone-300 group-hover:bg-stone-400 dark:bg-stone-600 dark:group-hover:bg-stone-400"
+                      ? `text-base font-medium ${
+                          onDarkSection
+                            ? "text-champagne-200"
+                            : "text-anthracite-900 dark:text-champagne-200"
+                        }`
+                      : `text-sm font-light ${
+                          onDarkSection
+                            ? "text-stone-400 group-hover:text-stone-200"
+                            : "text-stone-500 group-hover:text-anthracite-800 dark:text-stone-400 dark:group-hover:text-stone-200"
+                        }`
                   }`}
-                />
-                <span className="hidden whitespace-nowrap sm:inline">
+                >
                   {s.label}
                 </span>
-                <span className="whitespace-nowrap sm:hidden">{s.short}</span>
+
+                {/* Hairline + diamond — sits flush on the page edge */}
+                <span className="relative flex items-center">
+                  <span
+                    className={`block h-px transition-all duration-500 ${
+                      isActive
+                        ? "w-8 bg-champagne-400"
+                        : "w-3 bg-stone-300 group-hover:w-6 group-hover:bg-champagne-300/80 dark:bg-stone-600 dark:group-hover:bg-champagne-300/70"
+                    }`}
+                  />
+                  <span
+                    className={`ml-1.5 block rotate-45 transition-all duration-500 ${
+                      isActive
+                        ? "h-2 w-2 bg-champagne-400 shadow-[0_0_0_4px_rgba(212,184,122,0.18)]"
+                        : "h-1.5 w-1.5 bg-stone-300 group-hover:bg-champagne-400 dark:bg-stone-600 dark:group-hover:bg-champagne-400"
+                    }`}
+                  />
+                </span>
               </button>
             </li>
           );
