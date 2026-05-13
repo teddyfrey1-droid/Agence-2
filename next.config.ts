@@ -126,6 +126,35 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // 301 redirect the legacy domain (retail-place.com) to the canonical one
+  // (retail-avenue.fr). Tells search engines retail-avenue.fr is primary and
+  // transfers SEO equity from the old domain.
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "(www\\.)?retail-place\\.com",
+          },
+        ],
+        destination: "https://retail-avenue.fr/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "www\\.retail-avenue\\.fr",
+          },
+        ],
+        destination: "https://retail-avenue.fr/:path*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
