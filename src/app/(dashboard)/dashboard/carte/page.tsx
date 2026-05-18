@@ -13,6 +13,12 @@ import {
 } from "@/lib/constants";
 import { haptic } from "@/lib/haptics";
 import { useToast } from "@/components/ui/toast";
+import {
+  PROSPECTION_BRANDS,
+  PROSPECTION_MANDATES,
+  getBrandById,
+  type ProspectionMandate,
+} from "@/lib/prospection-data";
 
 interface MapProperty {
   id: string;
@@ -91,10 +97,13 @@ type LeafletMap = any;
 type LeafletLayer = any;
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
+type ProspectionView = "map" | "list";
+
 export default function CartePage() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<LeafletMap | null>(null);
   const markersRef = useRef<LeafletLayer[]>([]);
+  const prospectionLayersRef = useRef<LeafletLayer[]>([]);
   const leafletRef = useRef<LeafletNs | null>(null);
   const drawShapeRef = useRef<LeafletLayer | null>(null);
   const userMarkerRef = useRef<LeafletLayer | null>(null);
@@ -110,6 +119,15 @@ export default function CartePage() {
   const [drawMode, setDrawMode] = useState<DrawMode>("off");
   const [drawnPolygon, setDrawnPolygon] = useState<{ lat: number; lng: number }[] | null>(null);
   const [locating, setLocating] = useState(false);
+
+  // ── Prospection mode (mandats de recherche retail) ──
+  const [prospectionMode, setProspectionMode] = useState(false);
+  const [prospectionView, setProspectionView] = useState<ProspectionView>("map");
+  const [prospectionSearch, setProspectionSearch] = useState("");
+  const [prospectionBrand, setProspectionBrand] = useState<string>("");
+  const [prospectionDistrict, setProspectionDistrict] = useState<string>("");
+  const [selectedMandateId, setSelectedMandateId] = useState<string | null>(null);
+
   const { addToast } = useToast();
 
   // Load data — best-effort, non-blocking
@@ -472,6 +490,9 @@ export default function CartePage() {
     }
     markersRef.current = [];
 
+    // In prospection mode, hide biens/terrain markers so the map stays clean
+    if (prospectionMode) return;
+
     if (activeLayer === "biens" || activeLayer === "tous") {
       for (const p of propsWithCoords) {
         const color = COLOR_MAP[p.transactionType] || "#886a4b";
@@ -534,15 +555,149 @@ export default function CartePage() {
         markersRef.current.push(marker);
       }
     }
-  }, [propsWithCoords, spotsWithCoords, mapReady, activeLayer]);
+  }, [propsWithCoords, spotsWithCoords, mapReady, activeLayer, prospectionMode]);
+
+  // ── Prospection filtering ──
+  const filteredMandates = useMemo<ProspectionMandate[]>(() => {
+    const q = prospectionSearch.trim().toLowerCase();
+    return PROSPECTION_MANDATES.filter((m) => {
+      if (prospectionBrand && m.brandId !== prospectionBrand) return false;
+      if (prospectionDistrict && m.district !== prospectionDistrict) return false;
+      if (q) {
+        const brand = getBrandById(m.brandId);
+        const haystack = [
+          m.street,
+          m.district,
+          m.notes || "",
+          brand?.name || "",
+          brand?.sector || "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [prospectionSearch, prospectionBrand, prospectionDistrict]);
+
+  // ── Render prospection markers + polylines ──
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current || !leafletRef.current) return;
+    const L = leafletRef.current;
+    const map = mapInstanceRef.current;
+
+    // Always clear previous prospection layers
+    for (const l of prospectionLayersRef.current) {
+      try {
+        l.remove();
+      } catch {
+        /* ignore */
+      }
+    }
+    prospectionLayersRef.current = [];
+
+    if (!prospectionMode) return;
+
+    filteredMandates.forEach((m, idx) => {
+      const brand = getBrandById(m.brandId);
+      const color = brand?.color || "#886a4b";
+      const number = idx + 1;
+
+      // Polyline along the street segment
+      const line = L.polyline(m.polyline, {
+        color,
+        weight: 5,
+        opacity: 0.7,
+        lineCap: "round",
+      }).addTo(map);
+      prospectionLayersRef.current.push(line);
+
+      // Numbered pastille at center
+      const icon = L.divIcon({
+        className: "",
+        html: `<div style="width:30px;height:30px;background:${color};border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;font-family:system-ui;">${number}</div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15],
+      });
+
+      const fmtRange = (a: number, b: number, suffix: string) =>
+        `${a.toLocaleString("fr-FR")} – ${b.toLocaleString("fr-FR")} ${suffix}`;
+
+      const popup = `
+        <div style="font-family:system-ui;min-width:240px;max-width:280px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};"></span>
+            <span style="font-weight:700;font-size:13px;">${brand?.name || m.brandId}</span>
+          </div>
+          <p style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.05em;margin:0 0 6px;">${brand?.sector || ""}</p>
+          <p style="font-weight:600;font-size:13px;margin:0 0 2px;">${m.street}</p>
+          <p style="color:#666;font-size:11px;margin:0 0 6px;">n° ${m.numberFrom} – ${m.numberTo} · ${m.district}</p>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-size:11px;color:#444;">
+            <span style="color:#888;">Surface</span><span>${fmtRange(m.surfaceMin, m.surfaceMax, "m²")}</span>
+            <span style="color:#888;">Budget</span><span>${fmtRange(m.budgetMin, m.budgetMax, "€/mois")}</span>
+          </div>
+          ${m.notes ? `<p style="margin-top:8px;padding-top:6px;border-top:1px solid #eee;color:#555;font-size:11px;font-style:italic;">${m.notes}</p>` : ""}
+        </div>`;
+
+      const marker = L.marker([m.center.lat, m.center.lng], { icon })
+        .bindPopup(popup)
+        .on("popupopen", () => setSelectedMandateId(m.id))
+        .addTo(map);
+      prospectionLayersRef.current.push(marker);
+    });
+  }, [filteredMandates, prospectionMode, mapReady]);
+
+  // When activating prospection mode, suppress other layers/draw to avoid conflicts
+  useEffect(() => {
+    if (prospectionMode && drawMode !== "off") setDrawMode("off");
+  }, [prospectionMode, drawMode]);
 
   const activeFilterCount =
     Object.values(filters).filter(Boolean).length + (drawnPolygon ? 1 : 0);
+
+  const prospectionFilterCount =
+    (prospectionBrand ? 1 : 0) +
+    (prospectionDistrict ? 1 : 0) +
+    (prospectionSearch.trim() ? 1 : 0);
 
   const selectClass =
     "h-9 rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-anthracite-700 dark:bg-anthracite-900 dark:text-stone-200";
   const inputClass =
     "h-9 w-full rounded-lg border border-stone-300 bg-white px-2.5 text-sm text-anthracite-800 placeholder:text-stone-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-anthracite-700 dark:bg-anthracite-900 dark:text-stone-200 dark:placeholder:text-stone-500";
+
+  function flyToMandate(mandateId: string) {
+    const m = PROSPECTION_MANDATES.find((x) => x.id === mandateId);
+    if (!m || !mapInstanceRef.current) return;
+    setSelectedMandateId(mandateId);
+    setProspectionView("map");
+    // The map may need a frame to become visible again
+    setTimeout(() => {
+      const map = mapInstanceRef.current;
+      if (!map) return;
+      map.invalidateSize();
+      map.flyTo([m.center.lat, m.center.lng], 16, { duration: 0.8 });
+      // Open the matching marker's popup
+      const layers = prospectionLayersRef.current;
+      for (const layer of layers) {
+        if (
+          layer.getLatLng &&
+          Math.abs(layer.getLatLng().lat - m.center.lat) < 1e-6 &&
+          Math.abs(layer.getLatLng().lng - m.center.lng) < 1e-6 &&
+          layer.openPopup
+        ) {
+          layer.openPopup();
+          break;
+        }
+      }
+    }, 80);
+  }
+
+  // Recompute map size when switching back to map view (display toggling can affect Leaflet)
+  useEffect(() => {
+    if (prospectionMode && prospectionView === "map" && mapInstanceRef.current) {
+      setTimeout(() => mapInstanceRef.current?.invalidateSize(), 80);
+    }
+  }, [prospectionMode, prospectionView]);
 
   function clearDrawnZone() {
     setDrawnPolygon(null);
@@ -634,10 +789,15 @@ export default function CartePage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-xl font-semibold text-anthracite-900 sm:text-2xl dark:text-stone-100">
-            Carte
+            {prospectionMode ? "Prospection retail" : "Carte"}
           </h1>
           <p className="text-xs text-stone-500 sm:text-sm dark:text-stone-400">
-            {loading ? (
+            {prospectionMode ? (
+              <>
+                {filteredMandates.length} mandat{filteredMandates.length !== 1 ? "s" : ""} ·{" "}
+                {PROSPECTION_BRANDS.length} marques mandataires
+              </>
+            ) : loading ? (
               "Chargement…"
             ) : (
               <>
@@ -655,33 +815,171 @@ export default function CartePage() {
         {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            variant="secondary"
+            variant={prospectionMode ? "primary" : "outline"}
             size="sm"
-            onClick={() => findNearby(500)}
-            disabled={locating}
-            title="Filtrer dans un rayon de 500 m autour de moi"
+            onClick={() => {
+              setProspectionMode((v) => !v);
+              haptic("tap");
+            }}
+            title="Activer le mode Prospection (mandats retail)"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
             </svg>
-            <span className="ml-1 hidden sm:inline">{locating ? "Localisation…" : "Près de moi"}</span>
+            <span className="ml-1 hidden sm:inline">Prospection</span>
           </Button>
-          <Button
-            variant={activeFilterCount > 0 ? "primary" : "outline"}
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
-            </svg>
-            <span className="ml-1">Filtres{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</span>
-          </Button>
+          {!prospectionMode && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => findNearby(500)}
+                disabled={locating}
+                title="Filtrer dans un rayon de 500 m autour de moi"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+                <span className="ml-1 hidden sm:inline">{locating ? "Localisation…" : "Près de moi"}</span>
+              </Button>
+              <Button
+                variant={activeFilterCount > 0 ? "primary" : "outline"}
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+                </svg>
+                <span className="ml-1">Filtres{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}</span>
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Toolbar — layers & draw modes, scrollable on mobile */}
-      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1">
+      {/* Prospection toolbar */}
+      {prospectionMode && (
+        <Card className="p-3">
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* List/Map view toggle */}
+              <div className="inline-flex flex-shrink-0 rounded-lg border border-stone-200 dark:border-anthracite-800 overflow-hidden">
+                {(["map", "list"] as ProspectionView[]).map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setProspectionView(v)}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                      prospectionView === v
+                        ? "bg-anthracite-900 text-white dark:bg-brand-500 dark:text-anthracite-950"
+                        : "bg-white text-stone-600 hover:bg-stone-50 dark:bg-anthracite-900 dark:text-stone-400"
+                    }`}
+                  >
+                    {v === "map" ? "Carte" : "Liste"}
+                  </button>
+                ))}
+              </div>
+
+              {/* Search */}
+              <div className="relative flex-1 min-w-[200px]">
+                <svg
+                  className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+                <input
+                  type="text"
+                  value={prospectionSearch}
+                  onChange={(e) => setProspectionSearch(e.target.value)}
+                  placeholder="Rue, quartier, marque…"
+                  className={inputClass + " pl-8"}
+                />
+              </div>
+
+              {prospectionFilterCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setProspectionBrand("");
+                    setProspectionDistrict("");
+                    setProspectionSearch("");
+                  }}
+                >
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-stone-500 dark:text-stone-400">
+                  Marque
+                </label>
+                <select
+                  value={prospectionBrand}
+                  onChange={(e) => setProspectionBrand(e.target.value)}
+                  className={selectClass + " w-full"}
+                >
+                  <option value="">Toutes les marques</option>
+                  {PROSPECTION_BRANDS.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} — {b.sector}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-stone-500 dark:text-stone-400">
+                  Arrondissement
+                </label>
+                <select
+                  value={prospectionDistrict}
+                  onChange={(e) => setProspectionDistrict(e.target.value)}
+                  className={selectClass + " w-full"}
+                >
+                  <option value="">Tous</option>
+                  {PARIS_DISTRICTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Brand legend */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-stone-100 dark:border-stone-800/60 pt-2 text-xs text-stone-500 dark:text-stone-400">
+              {PROSPECTION_BRANDS.map((b) => (
+                <button
+                  key={b.id}
+                  onClick={() =>
+                    setProspectionBrand((curr) => (curr === b.id ? "" : b.id))
+                  }
+                  className={`flex items-center gap-1.5 transition-opacity ${
+                    prospectionBrand && prospectionBrand !== b.id ? "opacity-40" : ""
+                  } hover:opacity-100`}
+                >
+                  <span
+                    className="inline-block h-3 w-3 rounded-full"
+                    style={{ background: b.color }}
+                  />
+                  {b.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Toolbar — layers & draw modes, scrollable on mobile (hidden in prospection mode) */}
+      <div
+        className={`-mx-1 ${prospectionMode ? "hidden" : "flex"} items-center gap-2 overflow-x-auto px-1 pb-1`}
+      >
         {/* Layer toggle */}
         <div className="inline-flex flex-shrink-0 rounded-lg border border-stone-200 dark:border-anthracite-800 overflow-hidden">
           {(["tous", "biens", "terrain"] as Layer[]).map((l) => (
@@ -740,8 +1038,8 @@ export default function CartePage() {
         )}
       </div>
 
-      {/* Filters drawer */}
-      {showFilters && (
+      {/* Filters drawer (hidden in prospection mode) */}
+      {showFilters && !prospectionMode && (
         <Card className="p-4">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div>
@@ -898,8 +1196,89 @@ export default function CartePage() {
         </div>
       )}
 
-      {/* The map — fixed dvh height for stable mobile sizing */}
-      <Card className="overflow-hidden">
+      {/* Prospection list view */}
+      {prospectionMode && prospectionView === "list" && (
+        <Card className="overflow-hidden">
+          {filteredMandates.length === 0 ? (
+            <div className="p-6 text-center">
+              <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
+                Aucun mandat ne correspond à vos critères
+              </p>
+              <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                Essayez d&apos;élargir la marque, l&apos;arrondissement ou la recherche.
+              </p>
+            </div>
+          ) : (
+            <ul className="divide-y divide-stone-100 dark:divide-anthracite-800">
+              {filteredMandates.map((m, idx) => {
+                const brand = getBrandById(m.brandId);
+                const color = brand?.color || "#886a4b";
+                const isSelected = selectedMandateId === m.id;
+                return (
+                  <li key={m.id}>
+                    <button
+                      onClick={() => flyToMandate(m.id)}
+                      className={`flex w-full items-start gap-3 p-3 text-left transition-colors hover:bg-stone-50 dark:hover:bg-anthracite-800/60 ${
+                        isSelected ? "bg-brand-50/60 dark:bg-brand-950/20" : ""
+                      }`}
+                    >
+                      <span
+                        className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow"
+                        style={{ background: color }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-anthracite-900 dark:text-stone-100">
+                            {brand?.name || m.brandId}
+                          </span>
+                          <span className="text-[10px] uppercase tracking-wide text-stone-500 dark:text-stone-400">
+                            {brand?.sector}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-sm text-anthracite-800 dark:text-stone-200">
+                          {m.street}{" "}
+                          <span className="text-stone-500 dark:text-stone-400">
+                            n° {m.numberFrom}–{m.numberTo}
+                          </span>
+                        </p>
+                        <p className="text-xs text-stone-500 dark:text-stone-400">
+                          {m.district}
+                        </p>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-stone-600 dark:text-stone-300">
+                          <span>
+                            <span className="text-stone-400">Surface </span>
+                            {m.surfaceMin}–{m.surfaceMax} m²
+                          </span>
+                          <span>
+                            <span className="text-stone-400">Budget </span>
+                            {m.budgetMin.toLocaleString("fr-FR")}–
+                            {m.budgetMax.toLocaleString("fr-FR")} €/mois
+                          </span>
+                        </div>
+                        {m.notes && (
+                          <p className="mt-1 text-xs italic text-stone-500 dark:text-stone-400">
+                            {m.notes}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Card>
+      )}
+
+      {/* The map — fixed dvh height for stable mobile sizing.
+          Stays mounted at all times to preserve Leaflet state; hidden via CSS in list view. */}
+      <Card
+        className={`overflow-hidden ${
+          prospectionMode && prospectionView === "list" ? "hidden" : ""
+        }`}
+      >
         <div
           ref={mapRef}
           className="h-[60vh] min-h-[420px] w-full sm:h-[calc(100dvh-260px)]"
@@ -907,8 +1286,8 @@ export default function CartePage() {
         />
       </Card>
 
-      {/* Empty state under map */}
-      {!loading && totalShown === 0 && (
+      {/* Empty state under map (only in normal mode) */}
+      {!prospectionMode && !loading && totalShown === 0 && (
         <div className="rounded-2xl border border-stone-200 bg-white p-5 text-center dark:border-anthracite-800 dark:bg-anthracite-900">
           <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
             Aucun résultat dans la zone visible
@@ -917,6 +1296,18 @@ export default function CartePage() {
             {drawnPolygon
               ? "Effacez la zone dessinée ou réinitialisez les filtres."
               : "Ajustez vos filtres ou changez de calque."}
+          </p>
+        </div>
+      )}
+
+      {/* Empty state under map (prospection map view) */}
+      {prospectionMode && prospectionView === "map" && filteredMandates.length === 0 && (
+        <div className="rounded-2xl border border-stone-200 bg-white p-5 text-center dark:border-anthracite-800 dark:bg-anthracite-900">
+          <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
+            Aucun mandat ne correspond à vos critères
+          </p>
+          <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+            Essayez d&apos;élargir la marque, l&apos;arrondissement ou la recherche.
           </p>
         </div>
       )}
