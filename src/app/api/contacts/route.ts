@@ -11,6 +11,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
+  if (!hasPermission(session.role, "contact", "read")) {
+    return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search")?.trim() || undefined;
   const type = searchParams.get("type")?.trim() || undefined;
@@ -29,10 +33,8 @@ export async function GET(request: NextRequest) {
     );
     return NextResponse.json(result);
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Erreur interne" },
-      { status: 500 }
-    );
+    console.error("[contacts:GET]", err);
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }
 }
 
@@ -60,9 +62,7 @@ export async function POST(request: NextRequest) {
     const contact = await createNewContact(parsed.data);
     return NextResponse.json(contact, { status: 201 });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Erreur interne" },
-      { status: 500 }
-    );
+    console.error("[contacts:POST]", err);
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }
 }

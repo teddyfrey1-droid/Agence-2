@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
+import { applyRateLimit, PASSWORD_RESET_RATE_LIMIT } from "@/lib/rate-limit";
 
 const schema = z.object({
   token: z.string().min(1, "Token requis"),
@@ -10,6 +11,9 @@ const schema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimited = await applyRateLimit("auth-reset-password", request.headers, PASSWORD_RESET_RATE_LIMIT);
+    if (rateLimited) return rateLimited;
+
     const body = await request.json();
     const parsed = schema.safeParse(body);
     if (!parsed.success) {

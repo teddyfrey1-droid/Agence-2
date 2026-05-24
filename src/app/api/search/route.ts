@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const session = await getActiveSession();
     if (!session) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
-    const q = request.nextUrl.searchParams.get("q")?.trim();
+    const q = request.nextUrl.searchParams.get("q")?.trim()?.slice(0, 100);
     if (!q || q.length < 2) return NextResponse.json({ results: [] });
 
     const searchTerm = q.toLowerCase();

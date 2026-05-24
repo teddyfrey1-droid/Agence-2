@@ -47,9 +47,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(deal, { status: 201 });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Erreur interne" },
-      { status: 500 }
-    );
+    console.error("[deals:POST]", err);
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 });
   }
 }

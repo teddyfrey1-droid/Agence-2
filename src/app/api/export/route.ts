@@ -7,7 +7,11 @@ import type { Prisma } from "@prisma/client";
 
 function escapeCsv(val: string | number | Date | null | undefined): string {
   if (val == null) return "";
-  const str = val instanceof Date ? val.toISOString().split("T")[0] : String(val);
+  let str = val instanceof Date ? val.toISOString().split("T")[0] : String(val);
+  // Prevent CSV formula injection: prefix values starting with formula triggers
+  if (/^[=+\-@\t\r]/.test(str)) {
+    str = `'${str}`;
+  }
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
     return `"${str.replace(/"/g, '""')}"`;
   }

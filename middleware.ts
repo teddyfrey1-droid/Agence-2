@@ -70,6 +70,20 @@ function isPublishedPropertiesRequest(request: NextRequest): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // CSRF protection: reject state-changing requests from unknown origins
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method)) {
+    const origin = request.headers.get("origin");
+    if (origin) {
+      const allowed = request.nextUrl.origin;
+      if (origin !== allowed) {
+        return NextResponse.json(
+          { error: "Requête cross-origin refusée" },
+          { status: 403 }
+        );
+      }
+    }
+  }
+
   // Allow public paths
   if (isPublicPath(pathname)) {
     return NextResponse.next();

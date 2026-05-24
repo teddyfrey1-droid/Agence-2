@@ -76,8 +76,11 @@ async function redisCheckRateLimit(
   });
 
   if (!res.ok) {
-    // Redis unreachable — fail open (allow the request)
+    // Redis unreachable — fail closed on auth paths to prevent brute-force
     console.error("[RATE-LIMIT] Upstash error:", res.status);
+    if (identifier.startsWith("rl:auth-")) {
+      return { allowed: false, remaining: 0, resetAt: now + config.windowSeconds * 1000 };
+    }
     return { allowed: true, remaining: config.maxRequests - 1, resetAt: now + config.windowSeconds * 1000 };
   }
 

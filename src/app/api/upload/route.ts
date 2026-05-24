@@ -27,9 +27,14 @@ export async function POST(request: NextRequest) {
       if (!hasPermission(session.role, "property", "update")) {
         return NextResponse.json({ error: "Permission refusée" }, { status: 403 });
       }
-      const property = await prisma.property.findUnique({ where: { id: entityId }, select: { id: true } });
+      const property = await prisma.property.findUnique({ where: { id: entityId }, select: { id: true, assignedToId: true } });
       if (!property) {
         return NextResponse.json({ error: "Bien introuvable" }, { status: 404 });
+      }
+      // Ownership check: only assigned agent or MANAGER+ can upload
+      const { hasMinimumRole } = await import("@/lib/auth");
+      if (property.assignedToId !== session.userId && !hasMinimumRole(session.role, "MANAGER")) {
+        return NextResponse.json({ error: "Permission refusée — bien non assigné" }, { status: 403 });
       }
     } else if (entityType === "fieldSpotting") {
       if (!hasPermission(session.role, "field_spotting", "update")) {
@@ -64,16 +69,24 @@ export async function POST(request: NextRequest) {
     };
     const ext = extByKind[validation.kind] || "bin";
     const timestamp = Date.now();
-    const random = Math.random().toString(36).slice(2, 10);
+    const { randomBytes } = await import("crypto");
+    const random = randomBytes(8).toString("hex");
     const path = `${entityType}/${entityId}/${timestamp}-${random}.${ext}`;
 
-    // Upload to Supabase Storage
+    // Upload to Supabase Storage using the detected content type (not user-supplied)
+    const mimeByKind: Record<string, string> = {
+      jpeg: "image/jpeg",
+      png: "image/png",
+      webp: "image/webp",
+      heic: "image/heic",
+      gif: "image/gif",
+    };
     const storage = requireSupabase();
     const buffer = Buffer.from(await file.arrayBuffer());
     const { error: uploadError } = await storage.storage
       .from(STORAGE_BUCKET)
       .upload(path, buffer, {
-        contentType: file.type,
+        contentType: mimeByKind[validation.kind] || "application/octet-stream",
         upsert: false,
       });
 
