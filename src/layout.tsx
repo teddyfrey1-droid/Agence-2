@@ -39,6 +39,28 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "Retail Avenue",
+      url: SITE_URL,
+      logo: `${SITE_URL}/logo-mark.svg`,
+      sameAs: [],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: "Retail Avenue",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      inLanguage: "fr-FR",
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -51,6 +73,10 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{
           __html: `(function(){try{var t=localStorage.getItem('theme');if(t==='dark')document.documentElement.classList.add('dark')}catch(e){}})()`,
         }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         {/* Google Fonts — Plus Jakarta Sans + DM Serif Display + DM Mono */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

@@ -7,6 +7,7 @@ import {
   runOverdueTaskNudges,
   runUnassignedSearchEscalation,
 } from "@/modules/automation";
+import { pingSearchEngines, submitIndexNow } from "@/lib/seo-ping";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,6 +33,8 @@ export async function GET(req: NextRequest) {
     ["shareFollowUps", runShareFollowUps],
     ["overdueTasks", runOverdueTaskNudges],
     ["unassignedSearches", runUnassignedSearchEscalation],
+    ["seoPing", pingSearchEngines],
+    ["indexNow", submitIndexNow],
   ] as const;
 
   for (const [name, job] of jobs) {

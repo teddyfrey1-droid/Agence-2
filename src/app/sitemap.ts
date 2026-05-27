@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 const SITE_URL = process.env.APP_URL || "https://retail-avenue.fr";
 
-export const revalidate = 3600;
+export const revalidate = 600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

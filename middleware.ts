@@ -67,6 +67,8 @@ function isPublishedPropertiesRequest(request: NextRequest): boolean {
   return request.nextUrl.searchParams.get("published") === "true";
 }
 
+const CANONICAL_ORIGIN = process.env.APP_URL || "https://retail-avenue.fr";
+
 const OLD_HOSTS = [
   "retail-place.com",
   "www.retail-place.com",
@@ -79,15 +81,19 @@ const OLD_HOSTS = [
 export async function middleware(request: NextRequest) {
   const host = request.headers.get("host")?.split(":")[0] ?? "";
   if (OLD_HOSTS.includes(host)) {
-    const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://retail-avenue.fr");
+    const target = new URL(request.nextUrl.pathname + request.nextUrl.search, CANONICAL_ORIGIN);
     return NextResponse.redirect(target, 301);
   }
 
   const { pathname } = request.nextUrl;
 
-  // Allow public paths
+  // Allow public paths — inject canonical Link header for crawlers
   if (isPublicPath(pathname)) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+    const canonical = `${CANONICAL_ORIGIN}${pathname === "/" ? "" : pathname}`;
+    response.headers.set("Link", `<${canonical}>; rel="canonical"`);
+    response.headers.set("X-Robots-Tag", "index, follow");
+    return response;
   }
 
   // Allow published properties listing (public map data)
