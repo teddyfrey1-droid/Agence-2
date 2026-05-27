@@ -67,7 +67,22 @@ function isPublishedPropertiesRequest(request: NextRequest): boolean {
   return request.nextUrl.searchParams.get("published") === "true";
 }
 
+const OLD_HOSTS = [
+  "retail-place.com",
+  "www.retail-place.com",
+  "retailplace.com",
+  "www.retailplace.com",
+  "retailplace.immo",
+  "www.retailplace.immo",
+];
+
 export async function middleware(request: NextRequest) {
+  const host = request.headers.get("host")?.split(":")[0] ?? "";
+  if (OLD_HOSTS.includes(host)) {
+    const target = new URL(request.nextUrl.pathname + request.nextUrl.search, "https://retail-avenue.fr");
+    return NextResponse.redirect(target, 301);
+  }
+
   const { pathname } = request.nextUrl;
 
   // Allow public paths

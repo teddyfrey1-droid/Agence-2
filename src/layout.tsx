@@ -7,13 +7,19 @@ import { IOSInstallPrompt } from "@/components/ios-install-prompt";
 import { CookieConsentProvider } from "@/components/cookie-consent";
 import "./globals.css";
 
+const SITE_URL = process.env.APP_URL || "https://retail-avenue.fr";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${APP_NAME} — Immobilier commercial à Paris`,
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
   manifest: "/manifest.json",
+  alternates: {
+    canonical: SITE_URL,
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

@@ -118,6 +118,46 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "4mb",
     },
   },
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "retail-place.com" }],
+        destination: "https://retail-avenue.fr/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.retail-place.com" }],
+        destination: "https://retail-avenue.fr/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "retailplace.com" }],
+        destination: "https://retail-avenue.fr/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.retailplace.com" }],
+        destination: "https://retail-avenue.fr/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "retailplace.immo" }],
+        destination: "https://retail-avenue.fr/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.retailplace.immo" }],
+        destination: "https://retail-avenue.fr/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {
