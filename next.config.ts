@@ -109,6 +109,31 @@ function imageRemotePatterns() {
   }));
 }
 
+/**
+ * Canonical origin every request should ultimately land on.
+ */
+const CANONICAL_ORIGIN = (process.env.APP_URL || "https://retail-avenue.fr").replace(/\/$/, "");
+
+/**
+ * Legacy domains that must 301 to the canonical domain.
+ *
+ * These are the previous "Retail Place" domains. A permanent (301) redirect
+ * tells Google to transfer the old domains' ranking signals to
+ * retail-avenue.fr and to drop the legacy URLs from the index — consolidating
+ * all brand authority on the single canonical site.
+ *
+ * Override / extend via LEGACY_REDIRECT_HOSTS (comma-separated). For the
+ * redirect to fire, each domain must be attached to this Vercel project so its
+ * traffic reaches the app.
+ */
+const LEGACY_REDIRECT_HOSTS = (
+  process.env.LEGACY_REDIRECT_HOSTS ||
+  "retail-place.com,www.retail-place.com,retail-place.fr,www.retail-place.fr"
+)
+  .split(",")
+  .map((h) => h.trim())
+  .filter(Boolean);
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: imageRemotePatterns(),
@@ -117,6 +142,14 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "4mb",
     },
+  },
+  async redirects() {
+    return LEGACY_REDIRECT_HOSTS.map((host) => ({
+      source: "/:path*",
+      has: [{ type: "host" as const, value: host }],
+      destination: `${CANONICAL_ORIGIN}/:path*`,
+      permanent: true,
+    }));
   },
   async headers() {
     return [
