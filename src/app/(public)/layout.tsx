@@ -1,6 +1,7 @@
 import { PublicHeader } from "@/components/layout/public-header";
 import { PublicFooter } from "@/components/layout/public-footer";
 import { FloatingThemeToggle } from "@/components/floating-theme-toggle";
+import { StructuredData } from "@/components/structured-data";
 import { getSession } from "@/lib/auth";
 import { USER_ROLE_LABELS } from "@/lib/constants";
 import { getAgencyInfo } from "@/lib/agency";
@@ -22,6 +23,7 @@ export default async function PublicLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
+      <StructuredData />
       <PublicHeader user={user} showProperties={agency.showPublicProperties} />
       <main className="flex-1">{children}</main>
       <PublicFooter showProperties={agency.showPublicProperties} />

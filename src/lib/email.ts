@@ -8,7 +8,7 @@
  */
 
 const APP_URL = process.env.APP_URL || "http://localhost:3000";
-const EMAIL_FROM_RAW = process.env.EMAIL_FROM || "noreply@retailplace.immo";
+const EMAIL_FROM_RAW = process.env.EMAIL_FROM || "noreply@retailavenue.fr";
 const AGENCY_NAME = process.env.AGENCY_NAME || "Retail Avenue";
 
 /**
