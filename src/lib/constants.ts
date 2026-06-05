@@ -2,6 +2,21 @@ export const APP_NAME = "Retail Avenue";
 export const APP_DESCRIPTION =
   "Immobilier commercial & professionnel à Paris — Expertise, conseil et accompagnement sur-mesure.";
 
+/**
+ * Canonical public URL of the site. Used for metadataBase, canonical tags,
+ * sitemap, robots and structured data so every brand signal points to the
+ * single authoritative domain (retail-avenue.fr).
+ */
+export const SITE_URL = (process.env.APP_URL || "https://retail-avenue.fr").replace(/\/$/, "");
+
+/** Brand-name variants Google should associate with the entity. */
+export const BRAND_ALTERNATE_NAMES = [
+  "Retail Avenue",
+  "RetailAvenue",
+  "Retail-Avenue",
+  "Retail Avenue Paris",
+] as const;
+
 export const PARIS_CENTER = {
   lat: 48.8566,
   lng: 2.3522,
