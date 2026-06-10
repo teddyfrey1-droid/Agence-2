@@ -1,197 +1,170 @@
-"use client";
-
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
+import { getAgencyInfo } from "@/lib/agency";
+import { ContactPageForm } from "@/components/contact-page-form";
+import { ScrollReveal } from "@/components/scroll-reveal";
 
-// Note: metadata can't be exported from a "use client" file. The static
-// metadata for /contact lives in `contact/layout.tsx`.
+const REASSURANCE = [
+  {
+    title: "Réponse sous 24 h",
+    description: "Chaque demande est lue et traitée personnellement par un consultant.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 3" />
+      </svg>
+    ),
+  },
+  {
+    title: "Confidentialité absolue",
+    description: "Vos informations et votre projet restent strictement confidentiels.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 3l8 3v5c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-3z" />
+        <path d="M9 12l2 2 4-4" />
+      </svg>
+    ),
+  },
+  {
+    title: "Sans engagement",
+    description: "Un premier échange en toute liberté, pour cadrer votre projet.",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.3} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M8 12l3 3 5-6" />
+        <circle cx="12" cy="12" r="9" />
+      </svg>
+    ),
+  },
+];
 
-export default function ContactPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [consent, setConsent] = useState(false);
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-
-    // Honeypot check
-    if (formData.get("website")) {
-      return;
-    }
-
-    if (!consent) {
-      setError(
-        "Merci d'accepter la politique de confidentialité avant d'envoyer votre message."
-      );
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const res = await fetch("/api/contacts/public", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: formData.get("firstName"),
-          lastName: formData.get("lastName"),
-          email: formData.get("email"),
-          phone: formData.get("phone"),
-          company: formData.get("company"),
-          message: formData.get("message"),
-        }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Une erreur est survenue");
-      }
-
-      setSuccess(true);
-      form.reset();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Une erreur est survenue");
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
+export default async function ContactPage() {
+  const agency = await getAgencyInfo();
+  const phone = agency.phone?.trim() || null;
+  const email = agency.email?.trim() || null;
+  const location = [agency.city || "Paris", "Île-de-France"].join(" & ");
 
   return (
     <>
-      <section className="bg-gradient-to-b from-white to-brand-50 py-12">
-        <div className="container-page">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-medium uppercase tracking-widest text-brand-600">
-              Contact
-            </p>
-            <h1 className="heading-display mt-2">Contactez-nous</h1>
-            <p className="mt-4 text-lg text-anthracite-500">
-              Une question, un projet ? Notre équipe est à votre écoute.
-            </p>
-          </div>
+      {/* ── Hero — éditorial ── */}
+      <section className="relative isolate overflow-hidden bg-gradient-premium py-20 sm:py-24">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,rgba(176,146,106,0.12),transparent_55%)]" />
+        <div className="container-page text-center">
+          <p className="label-overline dark:text-champagne-400">Contact</p>
+          <h1 className="mt-5 font-serif text-4xl font-normal italic tracking-tight text-anthracite-900 sm:text-5xl md:text-6xl dark:text-stone-100">
+            Parlons de
+            <span className="block not-italic font-semibold">votre projet</span>
+          </h1>
+          <div className="mx-auto mt-7 h-px w-12 bg-champagne-400" />
+          <p className="mx-auto mt-7 max-w-xl font-sans text-base leading-relaxed text-anthracite-500 dark:text-stone-300">
+            Une question, une recherche, un bien à confier&nbsp;? Notre équipe
+            vous répond sous 24&nbsp;heures.
+          </p>
         </div>
       </section>
 
-      <section className="section-padding">
+      <section className="bg-white py-16 sm:py-20 dark:bg-anthracite-950">
         <div className="container-page">
-          <div className="mx-auto max-w-2xl">
-            {success ? (
-              <div className="rounded-premium border border-emerald-200 bg-emerald-50 p-8 text-center">
-                <h3 className="text-lg font-semibold text-emerald-800">
-                  Message envoyé avec succès
-                </h3>
-                <p className="mt-2 text-sm text-emerald-600">
-                  Nous avons bien reçu votre message. Notre équipe vous
-                  recontactera dans les plus brefs délais.
-                </p>
-                <Button
-                  variant="outline"
-                  className="mt-6"
-                  onClick={() => setSuccess(false)}
-                >
-                  Envoyer un autre message
-                </Button>
+          <div className="grid gap-14 lg:grid-cols-[5fr,7fr] lg:gap-16">
+            {/* ── Colonne gauche — coordonnées & réassurance ── */}
+            <ScrollReveal variant="left" className="block">
+              <div className="flex items-center gap-4">
+                <span className="rule-brand" />
+                <p className="label-overline dark:text-champagne-400">Nos coordonnées</p>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {error && (
-                  <div className="rounded-premium border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    {error}
+              <h2 className="mt-5 font-serif text-3xl font-normal leading-tight text-anthracite-900 sm:text-4xl dark:text-stone-100">
+                Une équipe à votre écoute,{" "}
+                <em className="font-semibold not-italic text-brand-700 dark:text-champagne-300">
+                  au cœur de Paris.
+                </em>
+              </h2>
+
+              <dl className="mt-10 space-y-px border-y border-stone-200 dark:border-stone-800">
+                {phone && (
+                  <div className="flex items-center justify-between gap-4 border-b border-stone-200 py-5 last:border-b-0 dark:border-stone-800">
+                    <dt className="font-sans text-[10px] font-semibold tracking-[0.3em] uppercase text-stone-500 dark:text-stone-400">
+                      Téléphone
+                    </dt>
+                    <dd>
+                      <a
+                        href={`tel:${phone.replace(/\s/g, "")}`}
+                        className="underline-grow font-serif text-lg text-anthracite-900 dark:text-stone-100"
+                      >
+                        {phone}
+                      </a>
+                    </dd>
                   </div>
                 )}
-
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    label="Prénom"
-                    required
-                    placeholder="Votre prénom"
-                  />
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    label="Nom"
-                    required
-                    placeholder="Votre nom"
-                  />
+                {email && (
+                  <div className="flex items-center justify-between gap-4 border-b border-stone-200 py-5 last:border-b-0 dark:border-stone-800">
+                    <dt className="font-sans text-[10px] font-semibold tracking-[0.3em] uppercase text-stone-500 dark:text-stone-400">
+                      Email
+                    </dt>
+                    <dd>
+                      <a
+                        href={`mailto:${email}`}
+                        className="underline-grow font-serif text-lg text-anthracite-900 dark:text-stone-100"
+                      >
+                        {email}
+                      </a>
+                    </dd>
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-4 py-5">
+                  <dt className="font-sans text-[10px] font-semibold tracking-[0.3em] uppercase text-stone-500 dark:text-stone-400">
+                    Secteur
+                  </dt>
+                  <dd className="font-serif text-lg text-anthracite-900 dark:text-stone-100">
+                    {location}
+                  </dd>
                 </div>
+              </dl>
 
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    label="Email"
-                    required
-                    placeholder="votre@email.com"
-                  />
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    label="Téléphone"
-                    placeholder="01 00 00 00 00"
-                  />
+              <ul className="mt-10 space-y-7">
+                {REASSURANCE.map((item) => (
+                  <li key={item.title} className="flex items-start gap-4">
+                    <span className="flex h-10 w-10 flex-none items-center justify-center rounded-full border border-champagne-300/70 text-brand-700 [&>svg]:h-5 [&>svg]:w-5 dark:border-champagne-400/40 dark:text-champagne-400">
+                      {item.icon}
+                    </span>
+                    <div>
+                      <p className="font-serif text-base font-semibold text-anthracite-900 dark:text-stone-100">
+                        {item.title}
+                      </p>
+                      <p className="mt-1 font-sans text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+                        {item.description}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-12 border border-stone-200 bg-stone-50 p-7 dark:border-stone-800 dark:bg-anthracite-900">
+                <p className="font-sans text-[10px] font-semibold tracking-[0.3em] uppercase text-champagne-700 dark:text-champagne-400">
+                  Un projet précis ?
+                </p>
+                <p className="mt-3 font-sans text-sm leading-relaxed text-stone-600 dark:text-stone-300">
+                  Gagnez du temps&nbsp;: décrivez directement votre recherche de
+                  local ou proposez votre bien.
+                </p>
+                <div className="mt-5 flex flex-col gap-3">
+                  <Link
+                    href="/recherche-local"
+                    className="underline-grow inline-flex w-fit items-center gap-2 font-sans text-[11px] tracking-[0.25em] uppercase text-brand-700 dark:text-champagne-300"
+                  >
+                    Décrire ma recherche →
+                  </Link>
+                  <Link
+                    href="/proposer-bien"
+                    className="underline-grow inline-flex w-fit items-center gap-2 font-sans text-[11px] tracking-[0.25em] uppercase text-brand-700 dark:text-champagne-300"
+                  >
+                    Proposer un bien →
+                  </Link>
                 </div>
+              </div>
+            </ScrollReveal>
 
-                <Input
-                  id="company"
-                  name="company"
-                  label="Société / Enseigne"
-                  placeholder="Nom de votre société (facultatif)"
-                />
-
-                <Textarea
-                  id="message"
-                  name="message"
-                  label="Message"
-                  required
-                  placeholder="Décrivez votre demande..."
-                  rows={5}
-                />
-
-                {/* Honeypot */}
-                <div className="hidden" aria-hidden="true">
-                  <input type="text" name="website" tabIndex={-1} autoComplete="off" />
-                </div>
-
-                <label className="flex items-start gap-3 text-sm text-anthracite-600 dark:text-stone-300">
-                  <input
-                    type="checkbox"
-                    checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
-                    className="mt-1 h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500 dark:border-stone-600 dark:bg-anthracite-800"
-                    required
-                  />
-                  <span>
-                    J&apos;accepte que les informations saisies soient utilisées
-                    pour traiter ma demande, conformément à la{" "}
-                    <Link
-                      href="/politique-confidentialite"
-                      className="text-brand-600 underline hover:text-brand-700"
-                    >
-                      politique de confidentialité
-                    </Link>
-                    . Les données marquées d&apos;un astérisque sont
-                    obligatoires. Vous disposez d&apos;un droit d&apos;accès, de
-                    rectification et de suppression de vos données.
-                  </span>
-                </label>
-
-                <Button type="submit" size="lg" isLoading={isSubmitting} className="w-full sm:w-auto">
-                  Envoyer le message
-                </Button>
-              </form>
-            )}
+            {/* ── Colonne droite — formulaire ── */}
+            <ScrollReveal variant="right" delay={120} className="block">
+              <ContactPageForm />
+            </ScrollReveal>
           </div>
         </div>
       </section>

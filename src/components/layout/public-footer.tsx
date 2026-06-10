@@ -45,7 +45,7 @@ export async function PublicFooter({
             <ul className="mt-4 space-y-2.5">
               {[
                 ...(showProperties ? [{ href: "/biens", label: "Nos biens" }] : []),
-                { href: "/agence", label: "Nos services" },
+                { href: "/agence", label: "L'agence" },
                 { href: "/recherche-local", label: "Rechercher un bien" },
                 { href: "/proposer-bien", label: "Proposer un bien" },
                 { href: "/contact", label: "Contact" },

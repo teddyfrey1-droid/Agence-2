@@ -12,8 +12,8 @@ export interface PublicHeaderUser {
 }
 
 const baseNavLinks = [
-  { href: "/agence",         label: "Services" },
-  { href: "/recherche-local",label: "Expertise" },
+  { href: "/agence",         label: "L'agence" },
+  { href: "/recherche-local",label: "Votre recherche" },
   { href: "/contact",        label: "Contact" },
 ];
 
