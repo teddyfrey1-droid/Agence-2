@@ -281,6 +281,7 @@ model User {
   propertySharesSent PropertyShare[] @relation("PropertySharesSent")
   panelOverrides    Panel[]            @relation("PanelAgentOverride")
   panelAssignments  PanelAssignment[]  @relation("PanelAssignedBy")
+  mandates          Mandate[]
 
   // Client portal — link to contact record
   linkedContactId   String?   @unique
@@ -316,6 +317,7 @@ model Contact {
   propertiesAsOwner  Property[]           @relation("PropertyOwner")
   events             Event[]
   propertyShares     PropertyShare[]
+  mandates           Mandate[]
 
   @@index([email])
   @@index([type])
@@ -430,6 +432,7 @@ model Property {
   shares        PropertyShare[]
   panels        Panel[]
   panelHistory  PanelAssignment[]
+  mandates      Mandate[]
 
   @@index([assignedToId])
   @@index([status])
@@ -684,6 +687,45 @@ model Match {
   @@index([score])
   @@index([searchRequestId, score])
   @@map("matches")
+}
+
+enum MandateStatus {
+  BROUILLON
+  ENVOYE
+  SIGNE
+  EXPIRE
+  ANNULE
+}
+
+model Mandate {
+  id          String        @id @default(cuid())
+  reference   String        @unique
+  kind        String        @default("SIMPLE") // SIMPLE, EXCLUSIF, SEMI_EXCLUSIF, CO_MANDAT, RECHERCHE
+  status      MandateStatus @default(BROUILLON)
+  startDate   DateTime      @default(now())
+  endDate     DateTime?
+  signedAt    DateTime?
+  feesPercent String?
+  feesAmount  String?
+  feesPayer   String?       // PRENEUR, BAILLEUR, ACQUEREUR, VENDEUR, PARTAGE
+  notes       String?
+
+  propertyId  String?
+  contactId   String?
+  createdById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  property  Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  contact   Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  createdBy User?     @relation(fields: [createdById], references: [id])
+
+  @@index([status])
+  @@index([endDate])
+  @@index([contactId])
+  @@index([propertyId])
+  @@map("mandates")
 }
 
 model Document {

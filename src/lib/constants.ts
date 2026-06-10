@@ -63,6 +63,30 @@ export const PROPERTY_STATUS_LABELS: Record<string, string> = {
   ARCHIVE: "Archivé",
 };
 
+export const MANDATE_KIND_LABELS: Record<string, string> = {
+  SIMPLE: "Mandat simple",
+  EXCLUSIF: "Mandat exclusif",
+  SEMI_EXCLUSIF: "Mandat semi-exclusif",
+  CO_MANDAT: "Co-mandat",
+  RECHERCHE: "Mandat de recherche",
+};
+
+export const MANDATE_STATUS_LABELS: Record<string, string> = {
+  BROUILLON: "Brouillon",
+  ENVOYE: "Envoyé pour signature",
+  SIGNE: "Signé",
+  EXPIRE: "Expiré",
+  ANNULE: "Annulé",
+};
+
+export const MANDATE_FEES_PAYER_LABELS: Record<string, string> = {
+  PRENEUR: "Preneur",
+  BAILLEUR: "Bailleur",
+  ACQUEREUR: "Acquéreur",
+  VENDEUR: "Vendeur",
+  PARTAGE: "Partagés",
+};
+
 export const DEAL_STAGE_LABELS: Record<string, string> = {
   PROSPECT: "Prospect",
   DECOUVERTE: "Découverte",

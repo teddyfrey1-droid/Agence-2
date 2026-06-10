@@ -40,6 +40,7 @@ const navGroups: NavGroup[] = [
     items: [
       { name: "Matches", href: "/dashboard/matches", icon: "M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
       { name: "Dossiers", href: "/dashboard/dossiers", icon: "M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" },
+      { name: "Mandats", href: "/dashboard/mandats", icon: "M9 12h6m-6 4h4M9 8h6M5 21h14a1 1 0 001-1V4a1 1 0 00-1-1H5a1 1 0 00-1 1v16a1 1 0 001 1zm9.5-3.5l1.5 1.5 3-3" },
       { name: "Pipeline", href: "/dashboard/dossiers/pipeline", icon: "M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" },
       { name: "Carte", href: "/dashboard/carte", icon: "M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" },
     ],

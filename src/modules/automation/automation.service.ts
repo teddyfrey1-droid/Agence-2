@@ -404,3 +404,97 @@ export async function runUnassignedSearchEscalation(): Promise<UnassignedSearchR
 
   return { notified };
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Mandate lifecycle — auto-expiry + renewal reminders
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface MandateLifecycleResult {
+  expired: number;
+  notified: number;
+}
+
+/**
+ * Two passes over active mandates:
+ *  1. mark ENVOYE/SIGNE mandates whose endDate is past as EXPIRE;
+ *  2. remind the mandate owner 30 days before expiry (once per day per mandate).
+ */
+export async function runMandateLifecycle(): Promise<MandateLifecycleResult> {
+  const now = new Date();
+  const in30Days = new Date(now.getTime() + 30 * DAY_MS);
+
+  // 1. Auto-expire
+  const toExpire = await prisma.mandate.findMany({
+    where: { status: { in: ["ENVOYE", "SIGNE"] }, endDate: { lt: now } },
+    select: { id: true, reference: true, createdById: true },
+  });
+
+  let expired = 0;
+  for (const mandate of toExpire) {
+    try {
+      await prisma.mandate.update({
+        where: { id: mandate.id },
+        data: { status: "EXPIRE" },
+      });
+      expired++;
+      if (mandate.createdById) {
+        await createNotification({
+          userId: mandate.createdById,
+          type: "SYSTEM",
+          title: "Mandat expiré",
+          message: `Le mandat ${mandate.reference} est arrivé à échéance.`,
+          link: `/dashboard/mandats/${mandate.id}`,
+        });
+      }
+    } catch (err) {
+      console.error("[automation] mandate expire failed", err);
+    }
+  }
+
+  // 2. Expiry reminders (J-30)
+  const expiringSoon = await prisma.mandate.findMany({
+    where: {
+      status: { in: ["ENVOYE", "SIGNE"] },
+      endDate: { gte: now, lte: in30Days },
+      createdById: { not: null },
+    },
+    select: { id: true, reference: true, endDate: true, createdById: true },
+  });
+
+  let notified = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (const mandate of expiringSoon) {
+    if (!mandate.createdById || !mandate.endDate) continue;
+    const days = Math.ceil((mandate.endDate.getTime() - now.getTime()) / DAY_MS);
+    // Only ping at meaningful milestones to avoid daily noise
+    if (![30, 14, 7, 3, 1].includes(days)) continue;
+
+    const alreadyToday = await prisma.notification.findFirst({
+      where: {
+        userId: mandate.createdById,
+        type: "SYSTEM",
+        link: `/dashboard/mandats/${mandate.id}`,
+        createdAt: { gte: today },
+      },
+      select: { id: true },
+    });
+    if (alreadyToday) continue;
+
+    try {
+      await createNotification({
+        userId: mandate.createdById,
+        type: "SYSTEM",
+        title: "Mandat bientôt à échéance",
+        message: `Le mandat ${mandate.reference} expire dans ${days} jour${days > 1 ? "s" : ""}.`,
+        link: `/dashboard/mandats/${mandate.id}`,
+      });
+      notified++;
+    } catch (err) {
+      console.error("[automation] mandate reminder failed", err);
+    }
+  }
+
+  return { expired, notified };
+}

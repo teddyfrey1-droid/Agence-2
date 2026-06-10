@@ -582,6 +582,7 @@ export default async function DashboardHomePage() {
             { href: "/dashboard/contacts/nouveau", label: "Nouveau contact", iconPath: "M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" },
             { href: "/dashboard/demandes/nouvelle", label: "Nouvelle demande", iconPath: "M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" },
             { href: "/dashboard/dossiers/nouveau", label: "Nouveau dossier", iconPath: "M12 10.5v6m3-3H9m4.06-7.19l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" },
+            { href: "/dashboard/mandats/nouveau", label: "Nouveau mandat", iconPath: "M9 12h6m-6 4h4M9 8h6M5 21h14a1 1 0 001-1V4a1 1 0 00-1-1H5a1 1 0 00-1 1v16a1 1 0 001 1zm9.5-3.5l1.5 1.5 3-3" },
           ].map((a) => (
             <Link
               key={a.href}

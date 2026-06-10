@@ -75,6 +75,23 @@ function fmtPrice(val: number | null): string {
   }).format(val);
 }
 
+/** Compact price for map pills: 2 500 → "2,5 k€", 850 000 → "850 k€", 1 200 000 → "1,2 M€" */
+function fmtPriceShort(val: number): string {
+  return (
+    new Intl.NumberFormat("fr-FR", {
+      notation: "compact",
+      maximumFractionDigits: 1,
+    }).format(val) + " €"
+  );
+}
+
+interface AddressHit {
+  label: string;
+  context: string;
+  lat: number;
+  lng: number;
+}
+
 const COLOR_MAP: Record<string, string> = {
   VENTE: "#886a4b",
   LOCATION: "#2563eb",
@@ -110,7 +127,85 @@ export default function CartePage() {
   const [drawMode, setDrawMode] = useState<DrawMode>("off");
   const [drawnPolygon, setDrawnPolygon] = useState<{ lat: number; lng: number }[] | null>(null);
   const [locating, setLocating] = useState(false);
+  const [addressQuery, setAddressQuery] = useState("");
+  const [addressResults, setAddressResults] = useState<AddressHit[]>([]);
+  const [showAddressResults, setShowAddressResults] = useState(false);
+  const searchMarkerRef = useRef<LeafletLayer | null>(null);
   const { addToast } = useToast();
+
+  // ── Address search — BAN (api-adresse.data.gouv.fr), debounced ──
+  useEffect(() => {
+    if (addressQuery.trim().length < 3) {
+      setAddressResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(addressQuery)}&limit=5&lat=48.8566&lon=2.3522`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const hits: AddressHit[] = (data.features || []).map(
+          (f: { properties: { label: string; context: string }; geometry: { coordinates: [number, number] } }) => ({
+            label: f.properties.label,
+            context: f.properties.context,
+            lat: f.geometry.coordinates[1],
+            lng: f.geometry.coordinates[0],
+          })
+        );
+        setAddressResults(hits);
+        setShowAddressResults(hits.length > 0);
+      } catch {
+        /* network — ignore */
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [addressQuery]);
+
+  function goToAddress(hit: AddressHit) {
+    setShowAddressResults(false);
+    setAddressQuery(hit.label);
+    const map = mapInstanceRef.current;
+    const L = leafletRef.current;
+    if (!map || !L) return;
+    if (searchMarkerRef.current) {
+      try {
+        searchMarkerRef.current.remove();
+      } catch {
+        /* ignore */
+      }
+    }
+    const icon = L.divIcon({
+      className: "",
+      html: `<div style="transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;">
+        <div style="background:#1e1f27;color:#fff;font:600 11px system-ui;padding:4px 10px;border-radius:999px;border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.35);white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis;">${hit.label}</div>
+        <div style="width:2px;height:10px;background:#1e1f27;"></div>
+      </div>`,
+      iconSize: [0, 0],
+      iconAnchor: [0, 0],
+    });
+    searchMarkerRef.current = L.marker([hit.lat, hit.lng], { icon, interactive: false }).addTo(map);
+    map.flyTo([hit.lat, hit.lng], 17, { duration: 0.8 });
+  }
+
+  function fitAllMarkers() {
+    const map = mapInstanceRef.current;
+    const L = leafletRef.current;
+    if (!map || !L) return;
+    const points: [number, number][] = [];
+    if (activeLayer === "biens" || activeLayer === "tous") {
+      for (const p of propsWithCoords) points.push([p.latitude!, p.longitude!]);
+    }
+    if (activeLayer === "terrain" || activeLayer === "tous") {
+      for (const s of spotsWithCoords) points.push([s.latitude!, s.longitude!]);
+    }
+    if (points.length === 0) {
+      addToast("Aucun marqueur à afficher", "info");
+      return;
+    }
+    map.fitBounds(L.latLngBounds(points), { padding: [48, 48], maxZoom: 16 });
+  }
 
   // Load data — best-effort, non-blocking
   useEffect(() => {
@@ -478,11 +573,16 @@ export default function CartePage() {
         const photoHtml = p.media?.[0]?.url
           ? `<img src="${p.media[0].url}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px;" />`
           : "";
+        // Price pill — readable at a glance; falls back to a dot when no price.
+        const pillValue = p.transactionType === "LOCATION" ? p.rentMonthly : p.price;
+        const pillHtml = pillValue
+          ? `<div style="transform:translate(-50%,-50%);display:inline-flex;align-items:center;background:${color};color:#fff;font:600 11px system-ui;padding:3px 9px;border-radius:999px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35);white-space:nowrap;">${fmtPriceShort(pillValue)}${p.transactionType === "LOCATION" ? "<span style='font-weight:400;opacity:0.85;'>/mois</span>" : ""}</div>`
+          : `<div style="transform:translate(-50%,-50%);width:26px;height:26px;background:${color};border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`;
         const icon = L.divIcon({
           className: "",
-          html: `<div style="width:28px;height:28px;background:${color};border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>`,
-          iconSize: [28, 28],
-          iconAnchor: [14, 14],
+          html: pillHtml,
+          iconSize: [0, 0],
+          iconAnchor: [0, 0],
         });
         const priceStr =
           p.transactionType === "LOCATION"
@@ -680,6 +780,70 @@ export default function CartePage() {
         </div>
       </div>
 
+      {/* Address search — BAN geocoding */}
+      <div className="relative">
+        <svg
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+        <input
+          type="text"
+          value={addressQuery}
+          onChange={(e) => {
+            setAddressQuery(e.target.value);
+            setShowAddressResults(true);
+          }}
+          onFocus={() => addressResults.length > 0 && setShowAddressResults(true)}
+          onBlur={() => setTimeout(() => setShowAddressResults(false), 200)}
+          placeholder="Rechercher une adresse, une rue, un quartier…"
+          className={inputClass + " pl-9 pr-9"}
+        />
+        {addressQuery && (
+          <button
+            type="button"
+            onClick={() => {
+              setAddressQuery("");
+              setAddressResults([]);
+              if (searchMarkerRef.current) {
+                try {
+                  searchMarkerRef.current.remove();
+                } catch {
+                  /* ignore */
+                }
+                searchMarkerRef.current = null;
+              }
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+            aria-label="Effacer la recherche"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        {showAddressResults && addressResults.length > 0 && (
+          <ul className="absolute z-[1000] mt-1 w-full overflow-hidden rounded-lg border border-stone-200 bg-white shadow-lg dark:border-anthracite-700 dark:bg-anthracite-900">
+            {addressResults.map((hit) => (
+              <li key={`${hit.lat}-${hit.lng}`}>
+                <button
+                  type="button"
+                  onClick={() => goToAddress(hit)}
+                  className="w-full px-3 py-2 text-left text-sm transition-colors hover:bg-stone-50 dark:hover:bg-anthracite-800"
+                >
+                  <p className="font-medium text-anthracite-800 dark:text-stone-200">{hit.label}</p>
+                  <p className="text-xs text-stone-400 dark:text-stone-500">{hit.context}</p>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {/* Toolbar — layers & draw modes, scrollable on mobile */}
       <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1">
         {/* Layer toggle */}
@@ -732,6 +896,19 @@ export default function CartePage() {
             </button>
           ))}
         </div>
+
+        {/* Fit all markers */}
+        <button
+          type="button"
+          onClick={fitAllMarkers}
+          className="inline-flex flex-shrink-0 items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-anthracite-800 dark:bg-anthracite-900 dark:text-stone-400"
+          title="Recadrer la carte sur tous les marqueurs visibles"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+          </svg>
+          <span className="hidden sm:inline">Tout afficher</span>
+        </button>
 
         {drawnPolygon && (
           <Button variant="ghost" size="sm" onClick={clearDrawnZone} className="flex-shrink-0 whitespace-nowrap">

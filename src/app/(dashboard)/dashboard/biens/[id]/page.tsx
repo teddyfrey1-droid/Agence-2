@@ -352,6 +352,13 @@ export default async function PropertyDetailPage({
               </Button>
               <PropertyPdfButton propertyId={id} />
               <PropertyContractButton propertyId={id} />
+              <Link
+                href={`/dashboard/mandats/nouveau?propertyId=${id}${property.ownerId ? `&contactId=${property.ownerId}` : ""}`}
+              >
+                <Button variant="outline" className="w-full justify-start">
+                  Nouveau mandat
+                </Button>
+              </Link>
               <DeleteButton entityId={id} entityType="properties" entityLabel="Bien" redirectTo="/dashboard/biens" />
             </CardContent>
           </Card>
