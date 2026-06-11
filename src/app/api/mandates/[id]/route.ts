@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/permissions";
 import type { Prisma } from "@prisma/client";
 import {
   deleteMandate,
+  ensureDealForMandate,
   findMandateById,
   updateMandate,
   updateMandateSchema,
@@ -97,6 +98,14 @@ export async function PATCH(
     }
 
     const mandate = await updateMandate(id, update);
+
+    // A signed mandate enters the pipeline: create the deal automatically.
+    if (data.status === "SIGNE" && !existing.dealId) {
+      await ensureDealForMandate(id).catch(() => null);
+      const fresh = await findMandateById(id);
+      return NextResponse.json(fresh ?? mandate);
+    }
+
     return NextResponse.json(mandate);
   } catch (err) {
     return NextResponse.json(

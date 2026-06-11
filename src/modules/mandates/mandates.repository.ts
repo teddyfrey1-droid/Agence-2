@@ -19,6 +19,7 @@ const MANDATE_INCLUDE = {
     select: { id: true, title: true, reference: true, address: true, city: true, district: true },
   },
   createdBy: { select: { id: true, firstName: true, lastName: true } },
+  deal: { select: { id: true, reference: true, title: true, stage: true } },
 } satisfies Prisma.MandateInclude;
 
 export async function findMandates(
@@ -92,6 +93,89 @@ export async function updateMandate(id: string, data: Prisma.MandateUpdateInput)
 
 export async function deleteMandate(id: string) {
   return prisma.mandate.delete({ where: { id } });
+}
+
+/**
+ * One-click renewal: duplicate the mandate as a fresh BROUILLON.
+ * The new period starts where the old one ends (or today if already past)
+ * and keeps the same duration (3 months when the original had no end date).
+ */
+export async function renewMandate(id: string, userId?: string) {
+  const source = await prisma.mandate.findUnique({ where: { id } });
+  if (!source) return null;
+
+  const now = new Date();
+  const start =
+    source.endDate && source.endDate.getTime() > now.getTime()
+      ? source.endDate
+      : now;
+  const durationMs =
+    source.endDate && source.endDate.getTime() > source.startDate.getTime()
+      ? source.endDate.getTime() - source.startDate.getTime()
+      : 90 * 86_400_000;
+  const end = new Date(start.getTime() + durationMs);
+
+  return prisma.mandate.create({
+    data: {
+      reference: generateReference("MA"),
+      kind: source.kind,
+      status: "BROUILLON",
+      startDate: start,
+      endDate: end,
+      feesPercent: source.feesPercent,
+      feesAmount: source.feesAmount,
+      feesPayer: source.feesPayer,
+      notes: [`Renouvellement du mandat ${source.reference}.`, source.notes]
+        .filter(Boolean)
+        .join("\n\n"),
+      contactId: source.contactId,
+      propertyId: source.propertyId,
+      createdById: userId ?? source.createdById,
+    },
+    include: MANDATE_INCLUDE,
+  });
+}
+
+/**
+ * Auto-create the pipeline deal when a mandate is signed (idempotent —
+ * does nothing if the mandate is already linked to a deal).
+ */
+export async function ensureDealForMandate(id: string) {
+  const mandate = await prisma.mandate.findUnique({
+    where: { id },
+    include: {
+      contact: { select: { firstName: true, lastName: true, company: true } },
+      property: { select: { id: true, title: true } },
+    },
+  });
+  if (!mandate || mandate.dealId) return null;
+
+  const clientName = mandate.contact
+    ? mandate.contact.company ||
+      `${mandate.contact.firstName} ${mandate.contact.lastName}`.trim()
+    : null;
+  const title =
+    [clientName, mandate.property?.title].filter(Boolean).join(" — ") ||
+    `Mandat ${mandate.reference}`;
+
+  const deal = await prisma.deal.create({
+    data: {
+      reference: generateReference("DS"),
+      title,
+      stage: "PROSPECT",
+      description: `Dossier créé automatiquement à la signature du mandat ${mandate.reference}.`,
+      contactId: mandate.contactId,
+      propertyId: mandate.propertyId,
+      assignedToId: mandate.createdById,
+    },
+  });
+
+  await prisma.mandate.update({
+    where: { id },
+    data: { dealId: deal.id },
+  });
+
+  return deal;
 }
 
 /** Counters for the Mandats page header. */

@@ -79,6 +79,7 @@ const QUICK_ACTIONS: { label: string; href: string; hint: string; icon: string }
   { label: "Nouveau bien", href: "/dashboard/biens/nouveau", hint: "Créer une fiche", icon: "M12 4.5v15m7.5-7.5h-15" },
   { label: "Repérage rapide", href: "/dashboard/terrain/capture", hint: "Photo géolocalisée", icon: "M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" },
   { label: "Nouveau contact", href: "/dashboard/contacts/nouveau", hint: "Scanner une carte", icon: "M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z" },
+  { label: "Nouveau mandat", href: "/dashboard/mandats/nouveau", hint: "Client + bien + signature", icon: "M9 12h6m-6 4h4M9 8h6M5 21h14a1 1 0 001-1V4a1 1 0 00-1-1H5a1 1 0 00-1 1v16a1 1 0 001 1z" },
   { label: "Pipeline", href: "/dashboard/dossiers/pipeline", hint: "Kanban des dossiers", icon: "M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" },
 ];
 

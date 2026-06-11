@@ -99,7 +99,23 @@ const COLOR_MAP: Record<string, string> = {
   FOND_DE_COMMERCE: "#7c3aed",
 };
 
-type Layer = "biens" | "terrain" | "tous";
+type Layer = "biens" | "terrain" | "tous" | "mandats";
+
+interface MapMandate {
+  propertyId: string;
+  kind: string;
+  status: string;
+  endDate: string | null;
+  reference: string;
+}
+
+const MANDATE_KIND_SHORT: Record<string, string> = {
+  SIMPLE: "Mandat simple",
+  EXCLUSIF: "Mandat exclusif",
+  SEMI_EXCLUSIF: "Mandat semi-exclusif",
+  CO_MANDAT: "Co-mandat",
+  RECHERCHE: "Mandat de recherche",
+};
 type DrawMode = "off" | "rect" | "circle" | "free";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -119,6 +135,7 @@ export default function CartePage() {
 
   const [properties, setProperties] = useState<MapProperty[]>([]);
   const [spottings, setSpottings] = useState<MapSpotting[]>([]);
+  const [mandates, setMandates] = useState<MapMandate[]>([]);
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [showFilters, setShowFilters] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -194,8 +211,11 @@ export default function CartePage() {
     const L = leafletRef.current;
     if (!map || !L) return;
     const points: [number, number][] = [];
-    if (activeLayer === "biens" || activeLayer === "tous") {
-      for (const p of propsWithCoords) points.push([p.latitude!, p.longitude!]);
+    if (activeLayer !== "terrain") {
+      for (const p of propsWithCoords) {
+        if (activeLayer === "mandats" && !mandateByProperty[p.id]) continue;
+        points.push([p.latitude!, p.longitude!]);
+      }
     }
     if (activeLayer === "terrain" || activeLayer === "tous") {
       for (const s of spotsWithCoords) points.push([s.latitude!, s.longitude!]);
@@ -212,9 +232,10 @@ export default function CartePage() {
     let cancelled = false;
     (async () => {
       try {
-        const [propRes, spotRes] = await Promise.all([
+        const [propRes, spotRes, mandateRes] = await Promise.all([
           fetch("/api/properties?published=true"),
           fetch("/api/field-spotting?perPage=200"),
+          fetch("/api/mandates?perPage=100"),
         ]);
         if (cancelled) return;
         if (propRes.ok) {
@@ -224,6 +245,30 @@ export default function CartePage() {
         if (spotRes.ok) {
           const data = await spotRes.json();
           setSpottings(data.items || []);
+        }
+        if (mandateRes.ok) {
+          const data = await mandateRes.json();
+          const active = (data.items || [])
+            .filter(
+              (m: { status: string; property: { id: string } | null }) =>
+                (m.status === "SIGNE" || m.status === "ENVOYE") && m.property?.id
+            )
+            .map(
+              (m: {
+                property: { id: string };
+                kind: string;
+                status: string;
+                endDate: string | null;
+                reference: string;
+              }) => ({
+                propertyId: m.property.id,
+                kind: m.kind,
+                status: m.status,
+                endDate: m.endDate,
+                reference: m.reference,
+              })
+            );
+          setMandates(active);
         }
       } catch {
         /* network / auth — leave lists empty */
@@ -286,6 +331,17 @@ export default function CartePage() {
   const propsWithCoords = useMemo(
     () => filteredProperties.filter((p) => p.latitude && p.longitude && inDrawnArea(p.latitude, p.longitude)),
     [filteredProperties, inDrawnArea]
+  );
+
+  const mandateByProperty = useMemo(() => {
+    const map: Record<string, MapMandate> = {};
+    for (const m of mandates) map[m.propertyId] = m;
+    return map;
+  }, [mandates]);
+
+  const mandatePropsCount = useMemo(
+    () => propsWithCoords.filter((p) => mandateByProperty[p.id]).length,
+    [propsWithCoords, mandateByProperty]
   );
   const spotsWithCoords = useMemo(
     () => filteredSpots.filter((s) => s.latitude && s.longitude && inDrawnArea(s.latitude, s.longitude)),
@@ -567,9 +623,23 @@ export default function CartePage() {
     }
     markersRef.current = [];
 
-    if (activeLayer === "biens" || activeLayer === "tous") {
+    if (activeLayer === "biens" || activeLayer === "tous" || activeLayer === "mandats") {
       for (const p of propsWithCoords) {
-        const color = COLOR_MAP[p.transactionType] || "#886a4b";
+        const mandate = mandateByProperty[p.id];
+        if (activeLayer === "mandats" && !mandate) continue;
+
+        let color = COLOR_MAP[p.transactionType] || "#886a4b";
+        let mandateLine = "";
+        if (mandate) {
+          const end = mandate.endDate ? new Date(mandate.endDate) : null;
+          const days = end ? Math.ceil((end.getTime() - Date.now()) / 86_400_000) : null;
+          const urgent = days !== null && days <= 30;
+          // On the mandate layer the pill color encodes urgency, not transaction type
+          if (activeLayer === "mandats") {
+            color = urgent ? "#d97706" : mandate.status === "SIGNE" ? "#059669" : "#64748b";
+          }
+          mandateLine = `<p style="font-size:10px;font-weight:600;margin:4px 0 0;color:${urgent ? "#d97706" : "#059669"};">${MANDATE_KIND_SHORT[mandate.kind] || mandate.kind}${end ? ` · expire le ${end.toLocaleDateString("fr-FR")}` : ""}${urgent && days !== null ? ` (J-${Math.max(days, 0)})` : ""}</p>`;
+        }
         const photoHtml = p.media?.[0]?.url
           ? `<img src="${p.media[0].url}" style="width:100%;height:80px;object-fit:cover;border-radius:6px;margin-bottom:6px;" />`
           : "";
@@ -599,6 +669,7 @@ export default function CartePage() {
             ${p.surfaceTotal ? `<p style="color:#888;font-size:11px;margin:0;">${p.surfaceTotal} m²</p>` : ""}
             <p style="color:#999;font-size:10px;margin:4px 0 0;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:4px;"></span>${TRANSACTION_TYPE_LABELS[p.transactionType] || p.transactionType} — ${PROPERTY_TYPE_LABELS[p.type] || p.type}</p>
             ${p.isCoMandat ? '<p style="color:#2563eb;font-size:10px;font-weight:600;margin:4px 0 0;">Co-mandat</p>' : ""}
+            ${mandateLine}
             <a href="/dashboard/biens/${p.id}" style="display:block;margin-top:8px;font-size:11px;color:#886a4b;text-decoration:none;font-weight:600;">Voir le bien →</a>
           </div>`;
         const marker = L.marker([p.latitude!, p.longitude!], { icon }).bindPopup(popup).addTo(map);
@@ -634,7 +705,7 @@ export default function CartePage() {
         markersRef.current.push(marker);
       }
     }
-  }, [propsWithCoords, spotsWithCoords, mapReady, activeLayer]);
+  }, [propsWithCoords, spotsWithCoords, mapReady, activeLayer, mandateByProperty]);
 
   const activeFilterCount =
     Object.values(filters).filter(Boolean).length + (drawnPolygon ? 1 : 0);
@@ -743,6 +814,8 @@ export default function CartePage() {
               <>
                 {(activeLayer === "biens" || activeLayer === "tous") &&
                   `${propsWithCoords.length} bien${propsWithCoords.length !== 1 ? "s" : ""}`}
+                {activeLayer === "mandats" &&
+                  `${mandatePropsCount} bien${mandatePropsCount !== 1 ? "s" : ""} sous mandat actif`}
                 {activeLayer === "tous" && " · "}
                 {(activeLayer === "terrain" || activeLayer === "tous") &&
                   `${spotsWithCoords.length} repérage${spotsWithCoords.length !== 1 ? "s" : ""}`}
@@ -848,7 +921,7 @@ export default function CartePage() {
       <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 pb-1">
         {/* Layer toggle */}
         <div className="inline-flex flex-shrink-0 rounded-lg border border-stone-200 dark:border-anthracite-800 overflow-hidden">
-          {(["tous", "biens", "terrain"] as Layer[]).map((l) => (
+          {(["tous", "biens", "terrain", "mandats"] as Layer[]).map((l) => (
             <button
               key={l}
               onClick={() => setActiveLayer(l)}
@@ -858,7 +931,7 @@ export default function CartePage() {
                   : "bg-white text-stone-600 hover:bg-stone-50 dark:bg-anthracite-900 dark:text-stone-400"
               }`}
             >
-              {l === "tous" ? "Tous" : l === "biens" ? "Biens" : "Terrain"}
+              {l === "tous" ? "Tous" : l === "biens" ? "Biens" : l === "terrain" ? "Terrain" : "Mandats"}
             </button>
           ))}
         </div>

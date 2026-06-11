@@ -6,6 +6,7 @@ import {
   MANDATE_KIND_LABELS,
   MANDATE_STATUS_LABELS,
   MANDATE_FEES_PAYER_LABELS,
+  DEAL_STAGE_LABELS,
 } from "@/lib/constants";
 import { Badge, getStatusBadgeVariant } from "@/components/ui/badge";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
@@ -112,6 +113,31 @@ export default async function MandatDetailPage({
 
       {/* Actions */}
       <MandateActions mandateId={mandate.id} status={mandate.status} propertyId={mandate.propertyId} />
+
+      {/* Dossier lié — créé automatiquement à la signature */}
+      {mandate.deal && (
+        <Link
+          href={`/dashboard/dossiers/${mandate.deal.id}`}
+          className="flex items-center justify-between gap-3 rounded-lg border border-brand-200 bg-brand-50 px-4 py-3 transition-colors hover:bg-brand-100/70 dark:border-brand-800/30 dark:bg-brand-900/20 dark:hover:bg-brand-900/30"
+        >
+          <div className="flex items-center gap-3">
+            <svg className="h-5 w-5 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-anthracite-800 dark:text-stone-200">
+                Dossier lié : {mandate.deal.title}
+              </p>
+              <p className="text-xs text-stone-500 dark:text-stone-400">
+                {mandate.deal.reference} · {DEAL_STAGE_LABELS[mandate.deal.stage] || mandate.deal.stage}
+              </p>
+            </div>
+          </div>
+          <svg className="h-4 w-4 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </Link>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Client */}
