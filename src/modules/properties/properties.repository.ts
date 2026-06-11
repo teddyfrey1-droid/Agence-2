@@ -148,6 +148,35 @@ export async function findPublishedProperties(page = 1, perPage = 12) {
   return { items, total, page, perPage, totalPages: Math.ceil(total / perPage) };
 }
 
+/** All geolocated public properties — feeds the public /biens map view. */
+export async function findPublishedPropertiesForMap() {
+  return prisma.property.findMany({
+    where: {
+      isPublished: true,
+      status: "ACTIF",
+      confidentiality: "PUBLIC",
+      latitude: { not: null },
+      longitude: { not: null },
+    },
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      transactionType: true,
+      district: true,
+      city: true,
+      latitude: true,
+      longitude: true,
+      price: true,
+      rentMonthly: true,
+      surfaceTotal: true,
+      media: { where: { isPrimary: true }, take: 1, select: { url: true } },
+    },
+    orderBy: { publishedAt: "desc" },
+    take: 500,
+  });
+}
+
 export async function createProperty(data: Prisma.PropertyCreateInput) {
   return prisma.property.create({ data });
 }

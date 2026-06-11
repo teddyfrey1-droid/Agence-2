@@ -553,3 +553,54 @@ export async function sendContractEmail(params: {
     }),
   });
 }
+
+// ─── Property Alert Email (public subscribers) ───────────────────────
+
+export async function sendPropertyAlertEmail(params: {
+  to: string;
+  properties: { id: string; title: string; location: string; priceLabel: string; typeLabel: string }[];
+  unsubscribeUrl: string;
+}): Promise<boolean> {
+  const { to, properties, unsubscribeUrl } = params;
+  if (properties.length === 0) return true;
+
+  const rows = properties
+    .slice(0, 8)
+    .map(
+      (p) => `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 10px;border:1px solid #ece6d8;border-radius:10px;">
+        <tr>
+          <td style="padding:14px 18px;">
+            <p style="margin:0 0 2px;font-size:11px;color:#a3815a;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">${escapeHtml(p.typeLabel)}</p>
+            <p style="margin:0 0 3px;font-size:15px;font-weight:700;color:#1a1a2e;">
+              <a href="${APP_URL}/biens/${escapeHtml(p.id)}" style="color:#1a1a2e;text-decoration:none;">${escapeHtml(p.title)}</a>
+            </p>
+            <p style="margin:0;font-size:13px;color:#6e695f;">${escapeHtml(p.location)} · <strong style="color:#886a4b;">${escapeHtml(p.priceLabel)}</strong></p>
+          </td>
+        </tr>
+      </table>`
+    )
+    .join("");
+
+  const content = `
+    <p style="margin:0 0 14px;">Bonjour,</p>
+    <p style="margin:0 0 16px;">
+      ${properties.length > 1 ? `${properties.length} nouveaux locaux correspondent` : "Un nouveau local correspond"} à votre alerte :
+    </p>
+    ${rows}`;
+
+  return sendEmail({
+    to,
+    subject:
+      properties.length > 1
+        ? `${properties.length} nouveaux locaux correspondent à votre alerte`
+        : `Nouveau local : ${properties[0].title}`,
+    html: brandedLayout({
+      eyebrow: "Alerte nouveautés",
+      title: "De nouvelles adresses pour vous",
+      content,
+      cta: { label: "Voir tous les biens", href: `${APP_URL}/biens` },
+      footerNote: `Vous recevez cet email car vous avez activé une alerte sur ${escapeHtml(AGENCY_NAME)}. <a href="${escapeHtml(unsubscribeUrl)}" style="color:#a68a4e;">Se désinscrire</a>`,
+    }),
+  });
+}

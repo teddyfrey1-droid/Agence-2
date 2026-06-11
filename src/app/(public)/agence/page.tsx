@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { APP_NAME } from "@/lib/constants";
+import { QUARTIERS } from "@/lib/quartiers";
 import { ScrollReveal } from "@/components/scroll-reveal";
 import { AnimatedCounter } from "@/components/animated-counter";
 import { MANIFESTE_CONTENT } from "@/lib/homepage-content";
@@ -71,18 +72,6 @@ const METIERS = [
   },
 ];
 
-const QUARTIERS = [
-  "Grands Boulevards",
-  "Le Marais",
-  "Saint-Germain-des-Prés",
-  "Champs-Élysées",
-  "Opéra & Vendôme",
-  "Montorgueil",
-  "Bastille & Charonne",
-  "Batignolles",
-  "Rive Gauche",
-  "Canal Saint-Martin",
-];
 
 export default function AgencePage() {
   return (
@@ -306,13 +295,14 @@ export default function AgencePage() {
 
             <div className="mt-10 flex flex-wrap gap-2.5">
               {QUARTIERS.map((quartier) => (
-                <span
-                  key={quartier}
+                <Link
+                  key={quartier.slug}
+                  href={`/quartiers/${quartier.slug}`}
                   className="inline-flex items-center gap-2 border border-stone-200 bg-white px-4 py-2 font-sans text-xs text-stone-600 transition-colors duration-300 hover:border-champagne-400/70 hover:text-anthracite-900 dark:border-stone-800 dark:bg-anthracite-950 dark:text-stone-400 dark:hover:border-champagne-400/50 dark:hover:text-stone-200"
                 >
                   <span aria-hidden className="block h-1 w-1 rotate-45 bg-champagne-400" />
-                  {quartier}
-                </span>
+                  {quartier.name}
+                </Link>
               ))}
             </div>
           </ScrollReveal>

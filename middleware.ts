@@ -13,6 +13,8 @@ const publicPaths = [
   "/contact",
   "/recherche-local",
   "/proposer-bien",
+  "/estimation",
+  "/quartiers",
   "/login",
   "/inscription",
   "/activation",
@@ -30,6 +32,7 @@ const publicApiPaths = [
   "/api/contacts/public",
   "/api/search-requests/public",
   "/api/properties/public",
+  "/api/alerts/public",
   "/api/property-shares/",
   "/api/setup",
 ];
@@ -40,6 +43,10 @@ function isPublicPath(pathname: string): boolean {
 
   // Property detail pages are public
   if (pathname.startsWith("/biens/")) return true;
+
+  // Quartier SEO pages and alert unsubscribe links are public
+  if (pathname.startsWith("/quartiers/")) return true;
+  if (pathname.startsWith("/alertes/")) return true;
 
   // Panel QR landing (public — scanners are anonymous prospects)
   if (pathname.startsWith("/panneau/")) return true;

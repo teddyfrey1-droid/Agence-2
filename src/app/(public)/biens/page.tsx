@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { findPublishedProperties } from "@/modules/properties";
+import { findPublishedProperties, findPublishedPropertiesForMap } from "@/modules/properties";
 import { formatPrice, formatSurface } from "@/lib/utils";
 import { PROPERTY_TYPE_LABELS, TRANSACTION_TYPE_LABELS } from "@/lib/constants";
+import { PublicPropertiesMap, type PublicMapProperty } from "@/components/public-properties-map";
+import { PropertyAlertForm } from "@/components/property-alert-form";
 
 export const metadata: Metadata = {
   title: "Nos biens",
@@ -15,11 +17,38 @@ export const metadata: Metadata = {
 export default async function BiensPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; vue?: string }>;
 }) {
   const params = await searchParams;
   const page = parseInt(params.page || "1", 10);
+  const isMapView = params.vue === "carte";
   const { items: properties, total, totalPages } = await findPublishedProperties(page);
+
+  let mapProperties: PublicMapProperty[] = [];
+  if (isMapView) {
+    const raw = await findPublishedPropertiesForMap();
+    mapProperties = raw.map((p) => {
+      const isLoc = p.transactionType === "LOCATION";
+      const priceLabel = isLoc
+        ? p.rentMonthly
+          ? `${formatPrice(p.rentMonthly)}/mois`
+          : "Sur demande"
+        : p.price
+          ? formatPrice(p.price)
+          : "Sur demande";
+      return {
+        id: p.id,
+        title: p.title,
+        typeLabel: PROPERTY_TYPE_LABELS[p.type] || p.type,
+        priceLabel,
+        location: p.district || p.city,
+        surfaceLabel: p.surfaceTotal ? formatSurface(p.surfaceTotal) : null,
+        latitude: p.latitude!,
+        longitude: p.longitude!,
+        photoUrl: p.media[0]?.url || null,
+      };
+    });
+  }
 
   return (
     <>
@@ -47,7 +76,40 @@ export default async function BiensPage({
 
       <section className="bg-white py-16 sm:py-20 dark:bg-anthracite-950">
         <div className="container-page">
-          {properties.length === 0 ? (
+          {/* Toggle Liste / Carte */}
+          {total > 0 && (
+            <div className="mb-12 flex justify-center">
+              <div className="inline-flex border border-stone-200 dark:border-stone-800">
+                {[
+                  { href: "/biens", label: "Liste", active: !isMapView },
+                  { href: "/biens?vue=carte", label: "Carte", active: isMapView },
+                ].map((tab) => (
+                  <Link
+                    key={tab.label}
+                    href={tab.href}
+                    aria-current={tab.active ? "page" : undefined}
+                    className={`px-8 py-2.5 font-sans text-[10px] tracking-[0.3em] uppercase transition-colors ${
+                      tab.active
+                        ? "bg-anthracite-900 text-white dark:bg-champagne-500 dark:text-anthracite-950"
+                        : "bg-white text-stone-500 hover:text-anthracite-900 dark:bg-anthracite-950 dark:text-stone-400 dark:hover:text-stone-200"
+                    }`}
+                  >
+                    {tab.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {isMapView ? (
+            <>
+              <PublicPropertiesMap properties={mapProperties} />
+              <p className="mt-5 text-center font-sans text-[10px] tracking-[0.25em] uppercase text-stone-400 dark:text-stone-500">
+                {mapProperties.length} bien{mapProperties.length > 1 ? "s" : ""} géolocalisé
+                {mapProperties.length > 1 ? "s" : ""} — cliquez sur un prix pour découvrir l&apos;adresse
+              </p>
+            </>
+          ) : properties.length === 0 ? (
             <div className="mx-auto max-w-md py-12 text-center">
               <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-brand-50 text-brand-500 dark:bg-brand-900/20 dark:text-brand-400">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -180,6 +242,25 @@ export default async function BiensPage({
               )}
             </>
           )}
+        </div>
+      </section>
+
+      {/* ── Alerte nouvelles annonces ── */}
+      <section className="border-t border-stone-200 bg-stone-50 py-20 sm:py-24 dark:border-stone-800 dark:bg-anthracite-900">
+        <div className="container-page">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="label-overline dark:text-champagne-400">Ne manquez rien</p>
+            <h2 className="mt-4 font-serif text-3xl font-normal italic text-anthracite-900 sm:text-4xl dark:text-stone-100">
+              Soyez alerté avant tout le monde
+            </h2>
+            <p className="mx-auto mt-5 max-w-lg font-sans text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+              Recevez par email chaque nouveau local correspondant à vos critères,
+              dès sa mise en ligne. Désinscription en un clic.
+            </p>
+          </div>
+          <div className="mx-auto mt-10 max-w-2xl">
+            <PropertyAlertForm />
+          </div>
         </div>
       </section>
     </>

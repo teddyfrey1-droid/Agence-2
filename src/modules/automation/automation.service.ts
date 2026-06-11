@@ -498,3 +498,110 @@ export async function runMandateLifecycle(): Promise<MandateLifecycleResult> {
 
   return { expired, notified };
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Public property alerts — email subscribers about new published listings
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface PropertyAlertResult {
+  alerts: number;
+  emailsSent: number;
+}
+
+/**
+ * For every active alert, find listings published since the alert was last
+ * served (or created) and email them in a single digest. Idempotent thanks
+ * to `lastSentAt`.
+ */
+export async function runPropertyAlerts(): Promise<PropertyAlertResult> {
+  const { sendPropertyAlertEmail } = await import("@/lib/email");
+  const { PROPERTY_TYPE_LABELS } = await import("@/lib/constants");
+  const { SITE_URL } = await import("@/lib/site");
+
+  const alerts = await prisma.propertyAlert.findMany({
+    where: { isActive: true },
+  });
+  if (alerts.length === 0) return { alerts: 0, emailsSent: 0 };
+
+  // One shared pool of recent listings (7-day window covers cron downtime)
+  const recent = await prisma.property.findMany({
+    where: {
+      isPublished: true,
+      status: "ACTIF",
+      confidentiality: "PUBLIC",
+      publishedAt: { gte: new Date(Date.now() - 7 * DAY_MS) },
+    },
+    select: {
+      id: true,
+      title: true,
+      type: true,
+      transactionType: true,
+      district: true,
+      city: true,
+      price: true,
+      rentMonthly: true,
+      surfaceTotal: true,
+      publishedAt: true,
+    },
+    orderBy: { publishedAt: "desc" },
+    take: 100,
+  });
+  if (recent.length === 0) return { alerts: alerts.length, emailsSent: 0 };
+
+  const fmt = new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  });
+
+  let emailsSent = 0;
+  for (const alert of alerts) {
+    const since = alert.lastSentAt ?? alert.createdAt;
+    const matches = recent.filter((p) => {
+      if (!p.publishedAt || p.publishedAt <= since) return false;
+      if (alert.transactionType && p.transactionType !== alert.transactionType) return false;
+      if (alert.propertyTypes.length > 0 && !alert.propertyTypes.includes(p.type)) return false;
+      if (alert.districts.length > 0 && (!p.district || !alert.districts.includes(p.district)))
+        return false;
+      if (alert.budgetMax) {
+        const value = p.transactionType === "LOCATION" ? p.rentMonthly : p.price;
+        if (value && value > alert.budgetMax) return false;
+      }
+      if (alert.surfaceMin && p.surfaceTotal && p.surfaceTotal < alert.surfaceMin) return false;
+      return true;
+    });
+    if (matches.length === 0) continue;
+
+    try {
+      const ok = await sendPropertyAlertEmail({
+        to: alert.email,
+        properties: matches.map((p) => ({
+          id: p.id,
+          title: p.title,
+          location: p.district || p.city,
+          typeLabel: PROPERTY_TYPE_LABELS[p.type] || p.type,
+          priceLabel:
+            p.transactionType === "LOCATION"
+              ? p.rentMonthly
+                ? `${fmt.format(p.rentMonthly)}/mois`
+                : "Sur demande"
+              : p.price
+                ? fmt.format(p.price)
+                : "Sur demande",
+        })),
+        unsubscribeUrl: `${SITE_URL}/alertes/desinscription?token=${alert.token}`,
+      });
+      if (ok) {
+        emailsSent++;
+        await prisma.propertyAlert.update({
+          where: { id: alert.id },
+          data: { lastSentAt: new Date() },
+        });
+      }
+    } catch (err) {
+      console.error("[automation] property alert email failed", err);
+    }
+  }
+
+  return { alerts: alerts.length, emailsSent };
+}

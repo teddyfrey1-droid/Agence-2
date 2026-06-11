@@ -1020,3 +1020,25 @@ model PanelScan {
   @@index([createdAt])
   @@map("panel_scans")
 }
+
+// ============================================================
+// PROPERTY ALERTS (public visitors — new listing notifications)
+// ============================================================
+
+model PropertyAlert {
+  id              String    @id @default(cuid())
+  email           String
+  transactionType String?
+  propertyTypes   String[]
+  districts       String[]
+  budgetMax       Int?
+  surfaceMin      Int?
+  token           String    @unique @default(cuid())
+  isActive        Boolean   @default(true)
+  lastSentAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([isActive])
+  @@index([email])
+  @@map("property_alerts")
+}

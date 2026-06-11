@@ -7,6 +7,7 @@ import {
   runOverdueTaskNudges,
   runUnassignedSearchEscalation,
   runMandateLifecycle,
+  runPropertyAlerts,
 } from "@/modules/automation";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,7 @@ export async function GET(req: NextRequest) {
     ["overdueTasks", runOverdueTaskNudges],
     ["unassignedSearches", runUnassignedSearchEscalation],
     ["mandateLifecycle", runMandateLifecycle],
+    ["propertyAlerts", runPropertyAlerts],
   ] as const;
 
   for (const [name, job] of jobs) {

@@ -46,8 +46,10 @@ export async function PublicFooter({
               {[
                 ...(showProperties ? [{ href: "/biens", label: "Nos biens" }] : []),
                 { href: "/agence", label: "L'agence" },
+                { href: "/quartiers", label: "Nos quartiers" },
                 { href: "/recherche-local", label: "Rechercher un bien" },
                 { href: "/proposer-bien", label: "Proposer un bien" },
+                { href: "/estimation", label: "Estimation gratuite" },
                 { href: "/contact", label: "Contact" },
               ].map((link) => (
                 <li key={link.href}>
