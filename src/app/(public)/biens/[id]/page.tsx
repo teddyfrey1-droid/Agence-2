@@ -9,6 +9,7 @@ import {
   PROPERTY_TYPE_LABELS,
   TRANSACTION_TYPE_LABELS,
 } from "@/lib/constants";
+import { SITE_URL } from "@/lib/site";
 
 export async function generateMetadata({
   params,
@@ -104,8 +105,45 @@ export default async function PropertyDetailPage({
     keyFacts.push({ label: "H. sous plafond", value: `${property.ceilingHeight} m` });
   }
 
+  // Structured data — helps Google index the listing with price & location
+  const listingJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    name: property.title,
+    url: `${SITE_URL}/biens/${property.id}`,
+    description: property.description?.slice(0, 300) || undefined,
+    image: property.media[0]?.url || `${SITE_URL}/hero-paris.jpg`,
+    datePosted: (property.publishedAt || property.createdAt).toISOString(),
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: property.city,
+      postalCode: property.zipCode || undefined,
+      addressCountry: "FR",
+    },
+    ...(property.surfaceTotal
+      ? {
+          floorSize: {
+            "@type": "QuantitativeValue",
+            value: property.surfaceTotal,
+            unitCode: "MTK",
+          },
+        }
+      : {}),
+    offers: {
+      "@type": "Offer",
+      price: isLocation ? property.rentMonthly ?? undefined : property.price ?? undefined,
+      priceCurrency: "EUR",
+      availability: "https://schema.org/InStock",
+      ...(isLocation ? { priceSpecification: { "@type": "UnitPriceSpecification", price: property.rentMonthly ?? undefined, priceCurrency: "EUR", unitText: "MOIS" } } : {}),
+    },
+  };
+
   return (
     <article className="bg-white pb-24 dark:bg-anthracite-950">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(listingJsonLd) }}
+      />
       {/* ── Gallery — full-bleed, sober ── */}
       <section className="relative">
         <div className="relative grid gap-1 overflow-hidden bg-stone-100 sm:grid-cols-4 sm:grid-rows-2 dark:bg-anthracite-900">

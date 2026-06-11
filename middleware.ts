@@ -70,6 +70,27 @@ function isPublishedPropertiesRequest(request: NextRequest): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── Canonical host — 301 from legacy domains & www variants ──
+  // Permanently redirect the old brand domain (retail-place.com) and any
+  // www. variant to the canonical apex so Google consolidates ranking
+  // signals on retail-avenue.fr.
+  const host = (request.headers.get("host") || "").toLowerCase().split(":")[0];
+  const CANONICAL_HOST = "retail-avenue.fr";
+  const LEGACY_HOSTS = new Set([
+    "retail-place.com",
+    "www.retail-place.com",
+    "retail-place.fr",
+    "www.retail-place.fr",
+    `www.${CANONICAL_HOST}`,
+  ]);
+  if (LEGACY_HOSTS.has(host)) {
+    const url = request.nextUrl.clone();
+    url.protocol = "https:";
+    url.host = CANONICAL_HOST;
+    url.port = "";
+    return NextResponse.redirect(url, 301);
+  }
+
   // Allow public paths
   if (isPublicPath(pathname)) {
     return NextResponse.next();

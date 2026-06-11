@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/constants";
+import { SITE_URL } from "@/lib/site";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/toast";
 import { PWARegister } from "@/components/pwa-register";
@@ -7,11 +8,40 @@ import { CookieConsentProvider } from "@/components/cookie-consent";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  applicationName: APP_NAME,
   title: {
     default: `${APP_NAME} — Immobilier commercial à Paris`,
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
+  keywords: [
+    "Retail Avenue",
+    "immobilier commercial Paris",
+    "local commercial Paris",
+    "boutique à louer Paris",
+    "cession de bail Paris",
+    "fonds de commerce Paris",
+    "murs commerciaux",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: SITE_URL,
+    siteName: APP_NAME,
+    title: `${APP_NAME} — Immobilier commercial à Paris`,
+    description: APP_DESCRIPTION,
+    images: [{ url: "/hero-paris.jpg", width: 1200, height: 630, alt: APP_NAME }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${APP_NAME} — Immobilier commercial à Paris`,
+    description: APP_DESCRIPTION,
+    images: ["/hero-paris.jpg"],
+  },
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

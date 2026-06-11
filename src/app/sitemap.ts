@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
 import { prisma } from "@/lib/prisma";
 
-const SITE_URL = process.env.APP_URL || "https://retail-avenue.fr";
 
 export const revalidate = 3600;
 
